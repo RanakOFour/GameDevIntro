@@ -3,12 +3,14 @@
 
 #include <memory>
 
+#include "RanakEngine/Math/Vector2.h"
 #include "RanakEngine/IO/KBInfo.h"
 #include "RanakEngine/IO/MouseInfo.h"
 
 namespace RanakEngine::Core
 {
     class Manager;
+    class Scene;
 }
 
 namespace RanakEngine::IO
@@ -25,22 +27,29 @@ namespace RanakEngine::IO
         KBInfo m_kbInfo;
         MouseInfo m_mouseInfo;
 
-        Manager();
+        Manager(Vector2 _screenSize);
         public:
         ~Manager();
 
-        static std::shared_ptr<IO::Manager> Init();
+        static std::shared_ptr<IO::Manager> Init(Vector2 _screenSize);
         static std::weak_ptr<IO::Manager> Instance();
+
+        void Stop();
 
         std::string OpenFileDialog();
         std::string SaveFileDialog();
 
         void UpdateInputs();
-        std::weak_ptr<Window> GetWindow();
-        std::weak_ptr<Audio> GetAudio();
 
         bool GetKeyDown(char _key);
-        std::weak_ptr<MouseInfo> GetMouseInfo();
+        bool WindowFocused();
+
+        void Draw(std::shared_ptr<Core::Scene> _sceneToDraw);
+
+        std::weak_ptr<Window> GetWindow();
+        std::weak_ptr<Audio> GetAudio();
+        MouseInfo GetMouseInfo();
+        KBInfo GetKBInfo();
     };
 }
 

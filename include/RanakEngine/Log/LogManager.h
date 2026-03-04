@@ -9,6 +9,11 @@
 
 #include "GL/glew.h"
 
+namespace RanakEngine::IO
+{
+    class Manager;
+}
+
 namespace RanakEngine::Log
 {
     struct Message
@@ -27,6 +32,7 @@ namespace RanakEngine::Log
 
     class Manager
     {
+        friend IO::Manager;
         private:
         /// Static weak pointer to the Logger singleton instance
         static inline std::weak_ptr<Log::Manager> m_self;

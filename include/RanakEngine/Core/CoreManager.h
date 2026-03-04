@@ -25,21 +25,20 @@ namespace RanakEngine::Core
         static inline std::weak_ptr<Core::Manager> m_self;
         std::weak_ptr<IO::Manager> m_ioManager;
         std::weak_ptr<Physics::Manager> m_physicsManager;
-        std::weak_ptr<LuaContext> m_luaContext;
+
+        std::shared_ptr<LuaContext> m_luaContext;
 
         std::shared_ptr<Scene> m_currentScene;
         bool m_running;
         bool m_debug;
-        bool m_deltaTime;
-        bool m_targetFPS;
+        float m_deltaTime;
+        float m_targetFPS;
 
-        void Update();
         Manager(bool _debug);
-
         public:
         ~Manager();
 
-        static std::shared_ptr<Core::Manager> Init();
+        static std::shared_ptr<Core::Manager> Init(bool _debug);
         static std::weak_ptr<Core::Manager> Instance();
 
         void Start();

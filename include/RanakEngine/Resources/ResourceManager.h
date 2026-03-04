@@ -41,7 +41,6 @@ namespace RanakEngine::Resources
             }
             
             return std::static_pointer_cast<T>(m_resourcesMap[_path]);
-        
         };
     };
 }

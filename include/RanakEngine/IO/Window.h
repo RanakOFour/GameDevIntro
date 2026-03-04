@@ -14,8 +14,6 @@ namespace RanakEngine::IO
     class Manager;
     class Window
     {
-        friend Manager;
-        void UpdateInputs();
         private:
         std::shared_ptr<SDL_Window> m_sdlWindow;
         SDL_GLContext m_sdlglContext;
@@ -28,7 +26,12 @@ namespace RanakEngine::IO
         Window(Vector2 _screenSize);
         ~Window();
 
+        void Swap();
+
         bool IsMouseInside();
+        void SetRelativeWindow(bool _value);
+        bool GetRelativeWindow();
+        Vector4 GetClearColour();
     };
 }
 
