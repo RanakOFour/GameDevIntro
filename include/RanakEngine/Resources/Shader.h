@@ -4,8 +4,7 @@
 #define SHADER_H
 
 #include "RanakEngine/Resources/Resource.h"
-#include "RanakEngine/Math/Vector2.h"
-#include "RanakEngine/Math/Vector4.h"
+#include "RanakEngine/Math.h"
 
 #include "GL/glew.h"
 #include "GLM/ext.hpp"
@@ -87,7 +86,7 @@ namespace RanakEngine::Resources
          * @param _uniformName Name of the uniform variable.
          * @param _value The vector value to set.
          */
-        void SetUniform(const std::string& _uniformName, glm::vec3 _value);
+        void SetUniform(const std::string& _uniformName, Vector3 _value);
 
         /**
          * @brief Sets a vec2 uniform value.

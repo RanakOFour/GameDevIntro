@@ -207,9 +207,9 @@ namespace RanakEngine::Resources
         glUniform4f(glGetUniformLocation(m_ID, _uniformName.c_str()), _value.x, _value.y, _value.z, _value.w);
     }
 
-    void Shader::SetUniform(const std::string& _uniformName, glm::vec3 _value)
+    void Shader::SetUniform(const std::string& _uniformName, Vector3 _value)
     {
-        glUniform3fv(glGetUniformLocation(m_ID, _uniformName.c_str()), 1, glm::value_ptr(_value));
+        glUniform3f(glGetUniformLocation(m_ID, _uniformName.c_str()), _value.x, _value.y, _value.z);
     }
 
     void Shader::SetUniform(const std::string& _uniformName, Vector2 _value)
