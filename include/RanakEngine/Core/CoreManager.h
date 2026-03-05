@@ -5,7 +5,6 @@
 
 namespace RanakEngine
 {
-    class LuaContext;
     namespace IO
     {
         class Manager;
@@ -24,6 +23,7 @@ namespace RanakEngine
 
 namespace RanakEngine::Core
 {
+    class LuaContext;
     class Category;
     class CategoryFactory;
     class Scene;

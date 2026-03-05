@@ -14,22 +14,36 @@ namespace RanakEngine::Resources
 
 namespace RanakEngine::Core
 {
+    class LuaContext;
     class Category;
     class Rule
     {
+        friend LuaContext;
         private:
         std::string m_name;
         std::vector<std::weak_ptr<Category>> m_categories;
         sol::table m_table;
 
+        static void DefineUsertype(sol::state& _state)
+        {
+            _state.new_usertype<Rule>("Rule", "name", sol::readonly(&Rule::m_name),
+                                              "getCategories", sol::readonly(&Rule::GetCategories),
+                                              "Update", sol::readonly(&Rule::Update),
+                                              "Draw", sol::readonly(&Rule::Draw));
+        }
+
         public:
         Rule();
-        Rule(Resources::LuaFile _file);
+        Rule(std::weak_ptr<Resources::LuaFile> _file);
 
         ~Rule();
 
         void Update(float _dt);
         void Draw();
+
+        std::string GetName();
+        std::vector<std::string> GetCategories();
+        sol::table& GetData();
     };
 }
 

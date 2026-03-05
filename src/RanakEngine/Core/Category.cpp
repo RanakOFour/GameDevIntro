@@ -1,5 +1,5 @@
 #include "RanakEngine/Core/Category.h"
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
 
 namespace RanakEngine::Core
 {
@@ -30,9 +30,33 @@ namespace RanakEngine::Core
 
     }
 
+    void CloneTable(sol::table& _toCopy, sol::table& _target, LuaContext* _context)
+    {
+        auto l_copyPairs = _toCopy.pairs();
+        for(auto l_pair : l_copyPairs)
+        {
+            if(l_pair.second.get_type() == sol::type::table)
+            {
+                sol::table l_newCopyTarget = l_pair.second.as<sol::table>();
+                _target[l_pair.first] = _context->CreateTable();
+                sol::table l_newTarget = _target.raw_get<sol::table>(l_pair.first);
+                CloneTable(l_newCopyTarget, l_newTarget, _context);
+            }
+            else
+            {
+                _target[l_pair.first] = l_pair.second;
+            }
+        }
+    }
+
     sol::table& Category::AddMember(int _id)
     {
-        sol::table l_newTable = m_baseAttributeTable;
+        auto l_luaContext = LuaContext::Instance().lock();
+        
+        // Create new table for entity
+        sol::table l_newTable = l_luaContext->CreateTable();
+        CloneTable(m_baseAttributeTable, l_newTable, l_luaContext.get());
+
         m_entityDataTables.push_back(l_newTable);
         m_entityToIndex[_id] = m_size;
         m_indexToEntity[m_size] = _id;

@@ -2,7 +2,7 @@
 #include "RanakEngine/Core/CategoryFactory.h"
 #include "RanakEngine/Core/Category.h"
 #include "RanakEngine/Resources.h"
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
 
 
 namespace RanakEngine::Core
@@ -21,13 +21,13 @@ namespace RanakEngine::Core
     std::weak_ptr<Category> CategoryFactory::RegisterCategory(sol::table _definitionTable)
     {
         // Give category default name of Category{0}, where {0} is m_size, or the registered name is not null
-        std::string l_categoryName = _definitionTable.get<std::string>("name");
+        std::string l_categoryName = _definitionTable.raw_get<std::string>("name");
         if(l_categoryName == "")
         {
             l_categoryName = "Category" + std::to_string(m_size);
         }
 
-        sol::table l_baseAttributes = _definitionTable.get<sol::table>("baseAttributes");
+        sol::table l_baseAttributes = _definitionTable.raw_get<sol::table>("baseAttributes");
 
         auto l_newCategoryPtr = std::make_shared<Category>(l_categoryName, l_baseAttributes);
 

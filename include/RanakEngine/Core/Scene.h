@@ -42,12 +42,10 @@ namespace Core
         void AddEntityToCategory(int _id, std::bitset<1024> _bitset);
         void RemoveEntity(int _id);
 
-        void AddCategory(std::weak_ptr<Category> _file);
-
         void RemoveCategory(std::bitset<1024> _signature);
 
         void AddRule(Rule& _rule);
-        void RemoveRule();
+        void RemoveRule(Rule& _rule);
 
         void Update(float _deltaTime);
         void Draw();

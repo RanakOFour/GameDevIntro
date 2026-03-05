@@ -1,13 +1,16 @@
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
+#include "RanakEngine/Core/Rule.h"
 
-namespace RanakEngine
+namespace RanakEngine::Core
 {
     LuaContext::LuaContext()
     : m_state()
     , m_loadedScripts()
     {
         m_state.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table);
-        m_categoryFactory = std::make_shared<Core::CategoryFactory>();
+        m_categoryFactory = std::make_shared<CategoryFactory>();
+        Category::DefineUsertype(m_state);
+        Rule::DefineUsertype(m_state);
     }
 
     LuaContext::~LuaContext()
@@ -50,13 +53,13 @@ namespace RanakEngine
         return m_state.create_table();
     }
 
-    std::weak_ptr<Core::Category> LuaContext::CreateCategory(std::weak_ptr<Resources::LuaFile> _file)
+    std::weak_ptr<Category> LuaContext::CreateCategory(std::weak_ptr<Resources::LuaFile> _file)
     {
         sol::table l_categoryTable = RunScript<sol::table>(_file);
         return m_categoryFactory->RegisterCategory(l_categoryTable);
     }
 
-    std::weak_ptr<Core::Category> LuaContext::GetCategory(std::bitset<1024> _signature)
+    std::weak_ptr<Category> LuaContext::GetCategory(std::bitset<1024> _signature)
     {
         return m_categoryFactory->GetBySignature(_signature);
     }

@@ -10,10 +10,12 @@
 
 namespace RanakEngine::Core
 {
+    class LuaContext;
     class CategoryFactory;
     class EntityRegistry;
     class Category
     {
+        friend LuaContext;
         friend CategoryFactory;
         private:
         std::string m_name;
@@ -24,6 +26,25 @@ namespace RanakEngine::Core
         std::vector<sol::table> m_entityDataTables;
         std::map<int, int> m_entityToIndex;
         std::map<int, int> m_indexToEntity;
+
+        static void DefineUsertype(sol::state& _state)
+        {
+            _state.new_usertype<Category>("Category", "name", sol::readonly(&Category::m_name),
+                                                      "attributes", sol::readonly(&Category::m_baseAttributeTable),
+                                                      "getMembers", sol::readonly(&Category::GetMembers),
+                                                      "getDataFor", &Category::GetDataFor);
+        };
+
+        std::vector<int> GetMembers()
+        {
+            std::vector<int> l_toReturn;
+            for(auto l_pair : m_entityToIndex)
+            {
+                l_toReturn.push_back(l_pair.first);
+            }
+
+            return l_toReturn;
+        }
 
         public:
         Category();

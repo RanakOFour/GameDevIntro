@@ -10,7 +10,7 @@
 #include <memory>
 #include <map>
 
-namespace RanakEngine
+namespace RanakEngine::Core
 {
     class LuaContext
     {

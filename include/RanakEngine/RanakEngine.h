@@ -3,13 +3,12 @@
 
 #include <memory>
 
-#include "RanakEngine/LuaContext.h"
 #include "RanakEngine/Math.h"
 #include "RanakEngine/Log.h"
 #include "RanakEngine/Resources.h"
 #include "RanakEngine/Core.h"
 #include "RanakEngine/IO.h"
-// #include "RanakEngine/Phsyics.h"
+// #include "RanakEngine/Physics.h"
 
 namespace RanakEngine
 {

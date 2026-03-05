@@ -1,5 +1,5 @@
 #include "RanakEngine/Core/CoreManager.h"
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Scene.h"
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Log.h"

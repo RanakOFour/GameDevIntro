@@ -1,5 +1,5 @@
 #include "RanakEngine/Core/Scene.h"
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/CategoryFactory.h"
 #include "RanakEngine/Core/Category.h"
 
@@ -7,7 +7,7 @@
 
 namespace RanakEngine::Core
 {
-    Core::Scene::Scene()
+    Scene::Scene()
     : m_name("Scene")
     , m_registry()
     , m_rules()
@@ -15,10 +15,11 @@ namespace RanakEngine::Core
         auto l_luaContext = LuaContext::Instance().lock();
         m_sceneTable = l_luaContext->CreateTable();
         l_luaContext->AddVariable<sol::table>("Scene", m_sceneTable);
-        m_sceneTable.set("Registry", m_registry.GetTable());
+        m_sceneTable.set("Entities", m_registry.GetEntityTable());
+        m_sceneTable.set("Categories", m_registry.GetCategoryTable());
     }
 
-    Core::Scene::Scene(sol::table _tableData)
+    Scene::Scene(sol::table _tableData)
     : m_name(_tableData["name"])
     , m_registry()
     , m_rules()
@@ -28,7 +29,12 @@ namespace RanakEngine::Core
         l_luaContext->AddVariable<sol::table>("Scene", m_sceneTable);
     }
 
-    int Core::Scene::AddEntity()
+    Scene::~Scene()
+    {
+        
+    }
+
+    int Scene::AddEntity()
     {
         return m_registry.AddEntity();
     }
@@ -51,9 +57,42 @@ namespace RanakEngine::Core
         m_registry.RemoveEntity(_id);
     }
 
-    void Scene::AddCategory(std::weak_ptr<Category> _category)
+    void Scene::RemoveCategory(std::bitset<1024> _signature)
     {
-        auto l_newCategory = _category.lock();
-        m_sceneTable.get<sol::table>("Categories").add(l_newCategory->GetName(), l_newCategory->GetBaseData());
+        m_registry.RemoveCategory(_signature);
+    }
+
+    void Scene::AddRule(Rule& _rule)
+    {
+        m_rules.push_back(_rule);
+    }
+
+    void Scene::RemoveRule(Rule& _rule)
+    {
+        std::string l_name = _rule.GetName();
+        for(int i = 0; i < m_rules.size(); i++)
+        {
+            if(m_rules[i].GetName() == l_name)
+            {
+                m_rules.erase(m_rules.begin() + i);
+                break;
+            }
+        }
+    }
+
+    void Scene::Update(float _dt)
+    {
+        for(Rule& l_rule : m_rules)
+        {
+            l_rule.Update(_dt);
+        }
+    }
+
+    void Scene::Draw()
+    {
+        for(Rule& l_rule : m_rules)
+        {
+            l_rule.Draw();
+        }
     }
 }

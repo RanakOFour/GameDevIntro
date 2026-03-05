@@ -1,5 +1,5 @@
 #include "RanakEngine/Resources/LuaFile.h"
-#include "RanakEngine/LuaContext.h"
+#include "RanakEngine/Core/LuaContext.h"
 
 #include <sstream>
 #include <memory>
@@ -10,7 +10,6 @@ namespace RanakEngine::Resources
     : Resource(_filePath, ResourceType::LUA)
     , m_toBeReloaded(false)
     , m_name()
-    , m_contentType()
     {
         int l_nameStart = _filePath.find_last_of('/');
         int l_dotPos = _filePath.find_last_of('.');
@@ -33,10 +32,5 @@ namespace RanakEngine::Resources
     {
         std::string l_toReturn = std::string(m_contents.data());
         return l_toReturn;
-    }
-
-    LuaFile::FileContents LuaFile::GetContents()
-    {
-        return m_contentType;
     }
 }
