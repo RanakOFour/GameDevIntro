@@ -26,9 +26,9 @@ namespace RanakEngine::Resources
         Resource(std::string _path, ResourceType _type);
         ~Resource();
 
-        inline std::string GetPath() { return m_path; };
-        inline std::string GetContents() { return std::string(m_contents.data()); };
-        inline ResourceType GetResourceType() { return m_type; };
+        std::string GetPath();
+        std::string GetContents();
+        ResourceType GetResourceType();
     };
 }
 

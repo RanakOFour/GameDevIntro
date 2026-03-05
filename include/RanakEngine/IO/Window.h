@@ -11,7 +11,6 @@
 
 namespace RanakEngine::IO
 {
-    class Manager;
     class Window
     {
         private:

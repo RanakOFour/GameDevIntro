@@ -3,22 +3,30 @@
 
 #include <memory>
 
-namespace RanakEngine::IO
+namespace RanakEngine
 {
-    class Manager;
+    class LuaContext;
+    namespace IO
+    {
+        class Manager;
+    };
+
+    namespace Physics
+    {
+        class Manager;
+    }
+
+    namespace Resources
+    {
+        class LuaFile;
+    }
 }
-
-
-namespace RanakEngine::Physics
-{
-    class Manager;
-}
-
-class LuaContext;
-class Scene;
 
 namespace RanakEngine::Core
 {
+    class Category;
+    class CategoryFactory;
+    class Scene;
     class Manager
     {
         private:
@@ -43,7 +51,7 @@ namespace RanakEngine::Core
 
         void Start();
         void Stop();
-
+        
         void SetScene(std::shared_ptr<Scene> _scene);
         std::weak_ptr<Scene> GetScene();
 

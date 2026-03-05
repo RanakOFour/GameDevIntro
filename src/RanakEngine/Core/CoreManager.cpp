@@ -1,5 +1,5 @@
 #include "RanakEngine/Core/CoreManager.h"
-#include "RanakEngine/Core/LuaContext.h"
+#include "RanakEngine/LuaContext.h"
 #include "RanakEngine/Core/Scene.h"
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Log.h"
@@ -18,6 +18,11 @@ namespace RanakEngine::Core
         m_luaContext = LuaContext::Init();
         m_currentScene = std::make_shared<Scene>();
     };
+
+    Core::Manager::~Manager()
+    {
+        
+    }
 
     std::shared_ptr<Core::Manager> Core::Manager::Init(bool _debug)
     {

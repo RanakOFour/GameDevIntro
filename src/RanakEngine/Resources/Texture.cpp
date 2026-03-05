@@ -10,10 +10,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace RanakEngine
+namespace RanakEngine::Resources
 {
 	Texture::Texture(std::string _path)
-	: Resource(ResourceType::texture, _path)
+	: Resource(_path, ResourceType::TEXTURE)
 	, m_dirty(true)
 	, m_size(0, 0)
 	, m_id(0)
@@ -28,7 +28,7 @@ namespace RanakEngine
 			throw std::exception();
 		}
 
-		m_data.assign(data, data + m_size.x * m_size.y * 4);
+		m_contents.assign(data, data + m_size.x * m_size.y * 4);
 
 		// Free the loaded data because we now have a copy on the GPU
 		free(data);
@@ -52,7 +52,7 @@ namespace RanakEngine
 			glBindTexture(GL_TEXTURE_2D, m_id);
 
 			// Upload the image data to the bound texture unit in the GPU
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_data.data());
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_contents.data());
 
 			// Generate Mipmap so the texture can be mapped correctly
 			glGenerateMipmap(GL_TEXTURE_2D);
@@ -111,7 +111,7 @@ namespace RanakEngine
 					++data;
 				}
 
-				m_data.push_back((float)newCol);
+				m_contents.push_back((float)newCol);
 			}
 		}
 

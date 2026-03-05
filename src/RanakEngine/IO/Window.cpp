@@ -54,9 +54,12 @@ namespace RanakEngine::IO
 
         int l_winWidth = _screenSize.x;
         int l_winHeight = _screenSize.y;
-        m_sdlWindow = std::make_shared<SDL_Window>(SDL_CreateWindow("RanakEngine",
-                                    l_winWidth, l_winHeight,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_TRANSPARENT));
+
+        m_sdlWindow = std::shared_ptr<SDL_Window>(
+            SDL_CreateWindow("RanakEngine",
+                            l_winWidth, l_winHeight,
+                            SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL | SDL_WINDOW_TRANSPARENT),
+            SDL_DestroyWindow);
 
         m_sdlglContext = SDL_GL_CreateContext(m_sdlWindow.get());
 

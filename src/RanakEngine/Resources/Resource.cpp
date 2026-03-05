@@ -11,6 +11,7 @@ namespace RanakEngine::Resources
 
     Resource::~Resource()
     {
+        
     }
 
     std::string Resource::GetPath()

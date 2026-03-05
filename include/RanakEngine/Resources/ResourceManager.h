@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <map>
+#include <filesystem>
 
 #include "RanakEngine/Log.h"
 #include "RanakEngine/Resources/Resource.h"
@@ -27,20 +28,20 @@ namespace RanakEngine::Resources
             std::filesystem::path l_fsPath(_path);
             if(!std::filesystem::exists(l_fsPath))
             {
-                Logger::LogMessage(Log::Message::WARNING, "Resources::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
+                Log::Manager::LogMessage(Log::Message::WARNING, "Resources::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
                 return std::weak_ptr<T>();
             }
 
-            if(m_resourcesMap[_path] == nullptr)
+            if(m_resourceMap[_path] == nullptr)
             {
                 std::shared_ptr<T> l_newResource;
                 
                 l_newResource = std::make_shared<T>(_path);
                 
-                m_resourcesMap[_path] = std::static_pointer_cast<Resource>(l_newResource);
+                m_resourceMap[_path] = std::static_pointer_cast<Resource>(l_newResource);
             }
             
-            return std::static_pointer_cast<T>(m_resourcesMap[_path]);
+            return std::static_pointer_cast<T>(m_resourceMap[_path]);
         };
     };
 }

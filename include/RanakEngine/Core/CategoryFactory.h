@@ -2,32 +2,40 @@
 #define CATEGORYFACTORY_H
 
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <bitset>
 #include <vector>
 
 #include "RanakEngine/Core/Category.h"
 #include "RanakEngine/Resources/LuaFile.h"
 
-namespace RanakEngine::Core
+namespace RanakEngine
+{
+    class LuaContext;
+namespace Core
 {
     class CategoryFactory
     {
+        friend LuaContext;
         private:
-        std::map<std::bitset<1024>, std::shared_ptr<Category>> m_signatures;
-        std::map<Resources::LuaFile, std::shared_ptr<Category>> m_categories;
-        std::map<std::string, std::shared_ptr<Category>> m_byName;
+        int m_size;
 
+        // These are unordered as I do not care to specify less than (operator<) overloads for bitset and string
+        std::unordered_map<std::bitset<1024>, std::shared_ptr<Category>> m_signatureToCategory;
+        std::unordered_map<std::string, std::bitset<1024>> m_nameToSignature;
+
+        std::weak_ptr<Category> RegisterCategory(sol::table _definitionTable);
         public:
         CategoryFactory();
         ~CategoryFactory();
 
-        std::weak_ptr<Category> Load(std::weak_ptr<Resources::LuaFile> _file);
         std::weak_ptr<Category> GetByName(std::string _name);
         std::weak_ptr<Category> GetBySignature(std::bitset<1024> _signature);
-        std::vector<std::weak_ptr<Category>> GetAllCategories(std::bitset<1024> _combinedSignature);
-        void DeleteCategory(std::string _name);
+        std::vector<std::weak_ptr<Category>> GetCategories(std::bitset<1024> _combinedSignature);
+        void RenameCategory(std::bitset<1024> _signature, std::string _name);
+
     };
+}
 }
 
 #endif

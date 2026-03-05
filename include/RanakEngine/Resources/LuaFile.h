@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "Resources/Resource.h"
+#include "RanakEngine/Resources/Resource.h"
 
 namespace RanakEngine::Resources
 {
@@ -19,14 +19,11 @@ namespace RanakEngine::Resources
         private:
         bool m_toBeReloaded;
         std::string m_name;
-        FileContents m_contents;
+        FileContents m_contentType;
 
         public:
         LuaFile(std::string _filePath);
         ~LuaFile();
-
-        void Reload();
-        void Run();
 
         std::string GetName();
         std::string GetCode();

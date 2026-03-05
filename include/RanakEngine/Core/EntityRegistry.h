@@ -8,12 +8,17 @@
 
 #include "sol/sol.hpp"
 
-namespace RanakEngine::Core
+namespace RanakEngine
+{
+    class LuaContext;
+namespace Core
 {
     class Category;
     class EntityRegistry
     {
         private:
+        std::shared_ptr<LuaContext> m_luaContext;
+
         int m_nextFreeId;
         std::vector<int> m_idsToDelete;
         std::vector<int> m_freeIds;
@@ -43,7 +48,9 @@ namespace RanakEngine::Core
         int GetEntityCount();
         std::vector<int> GetEntityIDs();
         std::vector<Category> GetAllCategories();
+        sol::table& GetTable();
     };
+}
 }
 
 #endif

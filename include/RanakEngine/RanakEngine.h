@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "RanakEngine/LuaContext.h"
 #include "RanakEngine/Math.h"
 #include "RanakEngine/Log.h"
 #include "RanakEngine/Resources.h"

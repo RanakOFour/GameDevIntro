@@ -10,9 +10,11 @@
 
 namespace RanakEngine::Core
 {
+    class CategoryFactory;
     class EntityRegistry;
     class Category
     {
+        friend CategoryFactory;
         private:
         std::string m_name;
         std::bitset<1024> m_signature;
@@ -24,12 +26,16 @@ namespace RanakEngine::Core
         std::map<int, int> m_indexToEntity;
 
         public:
-        Category(sol::table _baseAttributes);
+        Category();
+        Category(std::string _name, sol::table _baseAttributes);
         ~Category();
 
-        void AddMember(int _id, EntityRegistry& _registry);
-        void RemoveMember(int id, EntityRegistry& _registry);
+        sol::table& AddMember(int _id);
+        void RemoveMember(int id);
 
+        sol::table& GetBaseData();
+        sol::table GetDataFor(int _id);
+        std::string GetName();
         std::bitset<1024> GetSignature();
     };
 }

@@ -1,0 +1,94 @@
+#include "RanakEngine/Core/Category.h"
+#include "RanakEngine/LuaContext.h"
+
+namespace RanakEngine::Core
+{
+    Category::Category()
+    : m_name()
+    , m_signature()
+    , m_size(0)
+    , m_entityDataTables()
+    , m_entityToIndex()
+    , m_indexToEntity()
+    {
+        m_baseAttributeTable = LuaContext::Instance().lock()->CreateTable();
+    }
+
+    Category::Category(std::string _name, sol::table _baseAttributes)
+    : m_name(_name)
+    , m_signature()
+    , m_size(0)
+    , m_entityDataTables()
+    , m_entityToIndex()
+    , m_indexToEntity()
+    {
+        m_baseAttributeTable = _baseAttributes;
+    }
+
+    Category::~Category()
+    {
+
+    }
+
+    sol::table& Category::AddMember(int _id)
+    {
+        sol::table l_newTable = m_baseAttributeTable;
+        m_entityDataTables.push_back(l_newTable);
+        m_entityToIndex[_id] = m_size;
+        m_indexToEntity[m_size] = _id;
+        m_size++;
+
+        return m_entityDataTables.back();
+    }
+
+    void Category::RemoveMember(int _id)
+    {
+        auto l_entToInd = m_entityToIndex.find(_id);
+        // Can't find ID
+        if(l_entToInd == m_entityToIndex.end())
+        {
+            return;
+        }
+
+        // Get indexes to delete
+        int l_indexToRemove = l_entToInd->second;
+        int l_last = m_size - 1;
+
+        sol::table l_tableData = m_entityDataTables[l_indexToRemove];
+
+        // Shift ids into the back of the maps
+        m_entityDataTables[l_indexToRemove] = m_entityDataTables[l_last];
+
+        // Replace the old position of the ids with the data at the back to preserve contiguousness
+        int l_entityInLast = m_indexToEntity[l_last];
+        m_entityToIndex[l_entityInLast] = l_indexToRemove;
+        m_indexToEntity[l_indexToRemove] = l_entityInLast;
+
+        m_entityToIndex.erase(_id);
+        m_indexToEntity.erase(l_last);
+
+        m_entityDataTables.pop_back();
+
+        m_size--;
+    }
+
+    sol::table& Category::GetBaseData()
+    {
+        return m_baseAttributeTable;
+    }
+
+    sol::table Category::GetDataFor(int _id)
+    {
+        return m_entityDataTables[m_entityToIndex[_id]];
+    }
+
+    std::string Category::GetName()
+    {
+        return m_name;
+    }
+
+    std::bitset<1024> Category::GetSignature()
+    {
+        return m_signature;
+    }
+}
