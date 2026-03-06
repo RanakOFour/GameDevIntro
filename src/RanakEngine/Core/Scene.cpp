@@ -82,17 +82,21 @@ namespace RanakEngine::Core
 
     void Scene::Update(float _dt)
     {
+        auto l_contextPtr = m_luaContext.lock();
+
         for(Rule& l_rule : m_rules)
         {
-            l_rule.Update(_dt);
+            l_rule.Update(_dt, l_contextPtr.get());
         }
     }
 
     void Scene::Draw()
     {
+        auto l_contextPtr = m_luaContext.lock();
+
         for(Rule& l_rule : m_rules)
         {
-            l_rule.Draw();
+            l_rule.Draw(l_contextPtr.get());
         }
     }
 }

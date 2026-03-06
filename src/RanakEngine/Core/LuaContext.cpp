@@ -7,10 +7,12 @@ namespace RanakEngine::Core
     : m_state()
     , m_loadedScripts()
     {
-        m_state.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table);
+        // Opens all basic libraries
+        m_state.open_libraries();
+        
         m_categoryFactory = std::make_shared<CategoryFactory>();
         Category::DefineUsertype(m_state);
-        Rule::DefineUsertype(m_state);
+        //Rule::DefineUsertype(m_state);
     }
 
     LuaContext::~LuaContext()

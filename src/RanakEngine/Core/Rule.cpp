@@ -14,6 +14,19 @@ namespace RanakEngine::Core
     : m_name()
     , m_categories()
     {
-        m_table = LuaContext::Instance().lock()->CreateTable();
+        auto l_contextPtr = LuaContext::Instance().lock();
+        m_table = l_contextPtr->RunScript<sol::table>(_file);
+    }
+
+    Rule::~Rule()
+    {
+
+    }
+
+    void Rule::Update(float _dt, LuaContext* _context)
+    {
+        // Get entities that match signature
+
+        // Call update function passing in each entity's data
     }
 }
