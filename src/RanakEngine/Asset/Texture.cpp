@@ -1,6 +1,6 @@
 // Texture code taken from previous 3DGP work
 
-#include "RanakEngine/Resources/Texture.h"
+#include "RanakEngine/Asset/Texture.h"
 
 #include "GL/glew.h"
 #include "GLM/ext.hpp"
@@ -10,10 +10,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
 	Texture::Texture(std::string _path)
-	: Resource(_path, ResourceType::TEXTURE)
+	: AssetFile(_path, AssetType::TEXTURE)
 	, m_dirty(true)
 	, m_size(0, 0)
 	, m_id(0)

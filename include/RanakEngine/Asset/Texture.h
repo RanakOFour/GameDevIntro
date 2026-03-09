@@ -4,7 +4,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "RanakEngine/Resources/Resource.h"
+#include "RanakEngine/Asset/AssetFile.h"
 
 #include "GL/glew.h"
 #include "GLM/ext.hpp"
@@ -12,18 +12,18 @@
 #include <string>
 #include <vector>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     /**
      * @class Texture
-     * @brief Resource class for loading and managing OpenGL textures.
+     * @brief Asset class for loading and managing OpenGL textures.
      * 
      * Loads image data from disk and creates OpenGL texture objects.
      * Supports common image formats through stb_image.
      * 
-     * @see Resource
+     * @see Asset
      */
-    class Texture : public Resource
+    class Texture : public AssetFile
     {
     protected:
         bool m_dirty;       ///< Whether the texture needs to be reuploaded

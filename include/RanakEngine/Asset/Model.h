@@ -3,7 +3,7 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include "RanakEngine/Resources/Resource.h"
+#include "RanakEngine/Asset/AssetFile.h"
 
 #include "GL/glew.h"
 #include "GLM/glm.hpp"
@@ -13,7 +13,7 @@
 #include <vector>
 #include <stdexcept>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
   /**
    * @struct Vertex
@@ -56,7 +56,7 @@ namespace RanakEngine::Resources
     };
   };  
 
-  class Model : public Resource
+  class Model : public AssetFile
   {
     std::vector<Face> m_faces;
     GLuint m_vaoId;
@@ -109,7 +109,7 @@ namespace RanakEngine::Resources
   };
 
   inline Model::Model(std::string _path)
-    : Resource(_path, ResourceType::MODEL)
+    : AssetFile(_path, AssetType::MODEL)
     , m_vboId(0)
     , m_vaoId(0)
     , m_dirty(false)
@@ -208,7 +208,7 @@ namespace RanakEngine::Resources
   };
 
   inline Model::Model(const Model& _copy)
-    : Resource("", ResourceType::MODEL)
+    : AssetFile("", AssetType::MODEL)
     , m_vboId(0)
     , m_vaoId(0)
     , m_faces(_copy.m_faces)

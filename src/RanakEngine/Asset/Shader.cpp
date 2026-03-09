@@ -1,16 +1,16 @@
 // Code taken from elsewhere, not markable
 
-#include "RanakEngine/Resources/Shader.h"
+#include "RanakEngine/Asset/Shader.h"
 #include "RanakEngine/Log.h"
 
 #include <vector>
 #include <fstream>
 #include <sstream>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     Shader::Shader(std::string _path)
-    : Resource(_path, ResourceType::SHADER)
+    : AssetFile(_path, AssetType::SHADER)
     , m_ID(0)
     {
         int l_splitPos = _path.find_first_of(';');

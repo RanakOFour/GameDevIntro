@@ -123,6 +123,12 @@ namespace RanakEngine::Core
                           m_categories[_signature]->GetName()
                           )
                           .abandon();
+
+            // The registry does not have to manage empty categories
+            if(m_categories[_signature]->GetSize() == 0)
+            {
+                m_categories.erase(_signature);
+            }
         }
 
         //Update entity signature
@@ -163,6 +169,11 @@ namespace RanakEngine::Core
         }
 
         return l_entities;
+    }
+
+    sol::table EntityRegistry::GetEntityAttributes(int _id)
+    {
+        return m_dataTable.traverse_raw_get<sol::table>("Entities", _id, "attributes");
     }
 
     bool EntityRegistry::Empty()

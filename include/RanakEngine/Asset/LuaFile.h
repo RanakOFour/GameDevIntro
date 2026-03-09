@@ -3,11 +3,11 @@
 
 #include <string>
 
-#include "RanakEngine/Resources/Resource.h"
+#include "RanakEngine/Asset/AssetFile.h"
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
-    class LuaFile : public Resource
+    class LuaFile : public AssetFile
     {
         public:
 

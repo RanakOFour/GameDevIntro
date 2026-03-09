@@ -15,7 +15,7 @@ namespace RanakEngine
         class Manager;
     }
 
-    namespace Resources
+    namespace Asset
     {
         class LuaFile;
     }

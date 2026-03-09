@@ -57,6 +57,7 @@ namespace RanakEngine::Core
         sol::table& GetBaseData();
         sol::table GetDataFor(int _id);
         std::string GetName();
+        int GetSize();
         std::bitset<1024> GetSignature();
     };
 }

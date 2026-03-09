@@ -1,7 +1,7 @@
 
 #include "RanakEngine/Core/CategoryFactory.h"
 #include "RanakEngine/Core/Category.h"
-#include "RanakEngine/Resources.h"
+#include "RanakEngine/Assets.h"
 #include "RanakEngine/Core/LuaContext.h"
 
 

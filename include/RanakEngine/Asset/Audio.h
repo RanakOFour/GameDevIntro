@@ -1,22 +1,22 @@
 #ifndef AUDIO_RESOURCE_H
 #define AUDIO_RESOURCE_H
 
-#include "RanakEngine/Resources/Resource.h"
+#include "RanakEngine/Asset/AssetFile.h"
 #include "SDL3/SDL_audio.h"
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     /**
      * @class Audio
-     * @brief Resource class for loading and managing audio files.
+     * @brief Asset class for loading and managing audio files.
      * 
      * Loads audio data from disk and provides access to the audio buffer
      * and format specification for playback through IOManager.
      * 
-     * @see Resource
+     * @see Asset
      * @see IOManager
      */
-    class Audio : public Resource
+    class Audio : public AssetFile
     {
         private:
         SDL_AudioSpec m_spec;   ///< Audio format specification

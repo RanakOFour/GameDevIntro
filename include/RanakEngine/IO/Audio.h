@@ -3,8 +3,14 @@
 
 #include <string>
 #include <map>
+#include <memory>
 
 #include "SDL3/SDL_audio.h"
+
+namespace RanakEngine::Asset
+{
+    class Audio;
+};
 
 namespace RanakEngine::IO
 {
@@ -12,17 +18,17 @@ namespace RanakEngine::IO
     {
         private:
         SDL_AudioDeviceID m_audioDevice;
-        std::map<std::string, SDL_AudioStream> m_streams;
+        std::map<std::string, SDL_AudioStream*> m_activeStreams;
         
         public:
         Audio();
         ~Audio();
 
-        void Start(std::string _name);
-        void Stop(std::string _name);
-        void Pause(std::string _name);
-        void Resume(std::string _name);
-        void SetAudioVolume(std::string _name, float _volume);
+        bool Play(std::weak_ptr<Asset::Audio> _audio, bool _loop);
+        void Stop(const std::string& _audioName);
+        void Pause(const std::string& _audioName);
+        void Resume(const std::string& _audioName);
+        void SetAudioVolume(const std::string& _audioName, float _volume);
         void StopAllAudio();
     };
 }

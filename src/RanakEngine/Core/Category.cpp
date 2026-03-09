@@ -111,6 +111,11 @@ namespace RanakEngine::Core
         return m_name;
     }
 
+    int Category::GetSize()
+    {
+        return m_size;
+    }
+
     std::bitset<1024> Category::GetSignature()
     {
         return m_signature;

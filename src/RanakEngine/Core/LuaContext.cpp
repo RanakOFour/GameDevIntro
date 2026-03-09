@@ -35,7 +35,7 @@ namespace RanakEngine::Core
         return m_self;
     }
 
-    void LuaContext::LoadScript(std::weak_ptr<Resources::LuaFile> _file)
+    void LuaContext::LoadScript(std::weak_ptr<Asset::LuaFile> _file)
     {
         auto l_file = _file.lock();
         std::string l_path = l_file->GetPath();
@@ -55,7 +55,7 @@ namespace RanakEngine::Core
         return m_state.create_table();
     }
 
-    std::weak_ptr<Category> LuaContext::CreateCategory(std::weak_ptr<Resources::LuaFile> _file)
+    std::weak_ptr<Category> LuaContext::CreateCategory(std::weak_ptr<Asset::LuaFile> _file)
     {
         sol::table l_categoryTable = RunScript<sol::table>(_file);
         return m_categoryFactory->RegisterCategory(l_categoryTable);

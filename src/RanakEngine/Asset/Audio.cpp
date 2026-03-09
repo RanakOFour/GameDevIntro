@@ -1,12 +1,12 @@
-#include "RanakEngine/Resources/Audio.h"
+#include "RanakEngine/Asset/Audio.h"
 #include "RanakEngine/Log.h"
 
 #include <stdexcept>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     Audio::Audio(std::string _path)
-    : Resource(_path, ResourceType::AUDIO)
+    : AssetFile(_path, AssetType::AUDIO)
     , m_buffer(nullptr)
     , m_bufferSize(0)
     {

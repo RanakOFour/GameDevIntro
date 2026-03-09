@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "RanakEngine/Core/Category.h"
-#include "RanakEngine/Resources/LuaFile.h"
+#include "RanakEngine/Asset/LuaFile.h"
 
 namespace RanakEngine
 {

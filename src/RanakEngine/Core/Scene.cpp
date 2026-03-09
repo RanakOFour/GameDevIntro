@@ -59,7 +59,12 @@ namespace RanakEngine::Core
 
     void Scene::RemoveCategory(std::bitset<1024> _signature)
     {
-        m_registry.RemoveCategory(_signature);
+        std::vector<int> l_entities = m_registry.GetEntitiesWith(_signature);
+        
+        for(int l_entity : l_entities)
+        {
+            m_registry.RemoveFromCategory(l_entity, _signature);
+        }
     }
 
     void Scene::AddRule(Rule& _rule)
@@ -86,7 +91,7 @@ namespace RanakEngine::Core
 
         for(Rule& l_rule : m_rules)
         {
-            l_rule.Update(_dt, l_contextPtr.get());
+            l_rule.Update(_dt, m_registry);
         }
     }
 
@@ -96,7 +101,7 @@ namespace RanakEngine::Core
 
         for(Rule& l_rule : m_rules)
         {
-            l_rule.Draw(l_contextPtr.get());
+            l_rule.Draw(m_registry);
         }
     }
 }

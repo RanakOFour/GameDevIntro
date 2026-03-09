@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
-    enum ResourceType
+    enum AssetType
     {
         TEXTURE,
         MODEL,
@@ -15,20 +15,20 @@ namespace RanakEngine::Resources
         LUA
     };
 
-    class Resource
+    class AssetFile
     {
         protected:
         std::string m_path;
         std::vector<char> m_contents;
-        ResourceType m_type;
+        AssetType m_type;
 
         public:
-        Resource(std::string _path, ResourceType _type);
-        ~Resource();
+        AssetFile(std::string _path, AssetType _type);
+        ~AssetFile();
 
         std::string GetPath();
         std::string GetContents();
-        ResourceType GetResourceType();
+        AssetType GetAssetType();
     };
 }
 

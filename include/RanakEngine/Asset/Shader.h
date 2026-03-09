@@ -3,7 +3,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include "RanakEngine/Resources/Resource.h"
+#include "RanakEngine/Asset/AssetFile.h"
 #include "RanakEngine/Math.h"
 
 #include "GL/glew.h"
@@ -11,7 +11,7 @@
 
 #include <string>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     /**
      * @enum ShaderType
@@ -25,14 +25,14 @@ namespace RanakEngine::Resources
 
     /**
      * @class Shader
-     * @brief Resource class for loading and managing OpenGL shader programs.
+     * @brief Asset class for loading and managing OpenGL shader programs.
      * 
      * Compiles and links shader source files into OpenGL shader programs.
      * Supports both compute shaders and traditional vertex/fragment pairs.
      * 
-     * @see Resource
+     * @see Asset
      */
-    class Shader : public Resource
+    class Shader : public AssetFile
     {
         private:
         GLuint m_ID;                ///< OpenGL shader program ID

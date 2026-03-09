@@ -1,7 +1,7 @@
 #ifndef RANAKLUA_H
 #define RANAKLUA_H
 
-#include "RanakEngine/Resources/LuaFile.h"
+#include "RanakEngine/Asset/LuaFile.h"
 #include "RanakEngine/Core/CategoryFactory.h"
 
 #define SOL_ALL_SAFETIES_ON 1
@@ -28,10 +28,10 @@ namespace RanakEngine::Core
         static std::shared_ptr<LuaContext> Init();
         static std::weak_ptr<LuaContext> Instance();
 
-        void LoadScript(std::weak_ptr<Resources::LuaFile> _file);
+        void LoadScript(std::weak_ptr<Asset::LuaFile> _file);
 
         template<typename T>
-        T RunScript(std::weak_ptr<Resources::LuaFile> _file)
+        T RunScript(std::weak_ptr<Asset::LuaFile> _file)
         {
             auto l_file = _file.lock();
             std::string l_path = l_file->GetPath();
@@ -63,7 +63,7 @@ namespace RanakEngine::Core
 
         sol::table CreateTable();
 
-        std::weak_ptr<Core::Category> CreateCategory(std::weak_ptr<Resources::LuaFile> _file);
+        std::weak_ptr<Core::Category> CreateCategory(std::weak_ptr<Asset::LuaFile> _file);
         std::weak_ptr<Core::Category> GetCategory(std::bitset<1024> _signature);
 
         template<typename T>

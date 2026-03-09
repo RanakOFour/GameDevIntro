@@ -5,7 +5,7 @@
 
 #include "RanakEngine/Math.h"
 #include "RanakEngine/Log.h"
-#include "RanakEngine/Resources.h"
+#include "RanakEngine/Assets.h"
 #include "RanakEngine/Core.h"
 #include "RanakEngine/IO.h"
 // #include "RanakEngine/Physics.h"
@@ -15,7 +15,7 @@ namespace RanakEngine
     struct EngineContents
     {
         std::shared_ptr<Log::Manager> logger;
-        std::shared_ptr<Resources::Manager> resources;
+        std::shared_ptr<Asset::Manager> resources;
         std::shared_ptr<Core::Manager> core;
         std::shared_ptr<IO::Manager> io;
         // std::shared_ptr<Physics::Manager> physics;
@@ -25,7 +25,7 @@ namespace RanakEngine
     {
         EngineContents l_toReturn;
         l_toReturn.logger = Log::Manager::Init();
-        l_toReturn.resources = Resources::Manager::Init();
+        l_toReturn.resources = Asset::Manager::Init();
         l_toReturn.core = Core::Manager::Init(_debug);
         l_toReturn.io = IO::Manager::Init(_screenSize);
         // l_toReturn.physics = Physics::Manager::Init();

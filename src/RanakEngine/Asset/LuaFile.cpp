@@ -1,13 +1,13 @@
-#include "RanakEngine/Resources/LuaFile.h"
+#include "RanakEngine/Asset/LuaFile.h"
 #include "RanakEngine/Core/LuaContext.h"
 
 #include <sstream>
 #include <memory>
 
-namespace RanakEngine::Resources
+namespace RanakEngine::Asset
 {
     LuaFile::LuaFile(std::string _filePath)
-    : Resource(_filePath, ResourceType::LUA)
+    : AssetFile(_filePath, AssetType::LUA)
     , m_toBeReloaded(false)
     , m_name()
     {

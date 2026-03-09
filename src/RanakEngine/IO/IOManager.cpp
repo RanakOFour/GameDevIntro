@@ -19,6 +19,11 @@ namespace RanakEngine::IO
         m_kbInfo.kbSize = 322;
     }
 
+    IO::Manager::~Manager()
+    {
+        
+    }
+
     std::shared_ptr<IO::Manager> IO::Manager::Init(Vector2 _screenSize)
     {
         std::shared_ptr<IO::Manager> l_toReturn;

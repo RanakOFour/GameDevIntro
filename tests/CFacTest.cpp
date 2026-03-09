@@ -1,8 +1,8 @@
 #include "RanakEngine/Core/CategoryFactory.h"
-#include "RanakEngine/Resources.h"
+#include "RanakEngine/Asset.h"
 
 namespace REC = RanakEngine::Core;
-namespace RER = RanakEngine::Resources;
+namespace RER = RanakEngine::Asset;
 
 
 
