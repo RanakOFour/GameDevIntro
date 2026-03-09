@@ -24,13 +24,6 @@ namespace RanakEngine::Core
         }
     }
 
-    Rule::Rule(std::weak_ptr<Asset::LuaFile> _file)
-    {
-        auto l_contextPtr = LuaContext::Instance().lock();
-        m_table = l_contextPtr->RunScript<sol::table>(_file);
-        m_context = LuaContext::Instance();
-    }
-
     Rule::~Rule()
     {
 

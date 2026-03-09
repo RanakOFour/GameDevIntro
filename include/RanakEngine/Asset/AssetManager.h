@@ -1,5 +1,5 @@
-#ifndef RESOURCEMANAGER_H
-#define RESOURCEMANAGER_H
+#ifndef ASSETMANAGER_H
+#define ASSETMANAGER_H
 
 #include <memory>
 #include <map>

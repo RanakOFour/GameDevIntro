@@ -1,5 +1,3 @@
-// Code taken from previous work, not markable
-
 #ifndef MODEL_H
 #define MODEL_H
 

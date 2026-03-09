@@ -1,5 +1,3 @@
-// Code taken from elsewhere, not markable
-
 #ifndef SHADER_H
 #define SHADER_H
 

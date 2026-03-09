@@ -32,7 +32,7 @@ namespace RanakEngine::Core
             _state.new_usertype<Category>("Category", "name", sol::readonly(&Category::m_name),
                                                       "attributes", sol::readonly(&Category::m_baseAttributeTable),
                                                       "getMembers", sol::readonly(&Category::GetMembers),
-                                                      "getDataFor", &Category::GetDataFor,
+                                                      "getAttributesFor", sol::readonly(&Category::GetAttributesFor),
                                                       sol::constructors<Category()>());
         };
 
@@ -55,8 +55,11 @@ namespace RanakEngine::Core
         sol::table& AddMember(int _id);
         void RemoveMember(int id);
 
+
+        sol::table GetAttributesFor(int _id);
+        std::vector<int> GetMembers();
+
         sol::table& GetBaseData();
-        sol::table GetDataFor(int _id);
         std::string GetName();
         int GetSize();
         std::bitset<1024> GetSignature();

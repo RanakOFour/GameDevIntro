@@ -11,7 +11,7 @@ namespace RanakEngine::Core
         m_state.open_libraries();
         
         m_categoryFactory = std::make_shared<CategoryFactory>();
-        Category::DefineUsertype(m_state);
+        //Category::DefineUsertype(m_state);
         //Rule::DefineUsertype(m_state);
     }
 

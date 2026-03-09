@@ -38,7 +38,6 @@ namespace RanakEngine::Core
         public:
         Rule();
         Rule(sol::table _dataTable);
-        Rule(std::weak_ptr<Asset::LuaFile> _file);
 
         ~Rule();
 

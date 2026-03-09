@@ -1,6 +1,3 @@
-
-// Texture code taken from previous 3DGP work
-
 #ifndef TEXTURE_H
 #define TEXTURE_H
 

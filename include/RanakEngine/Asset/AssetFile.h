@@ -1,5 +1,5 @@
-#ifndef RESOURCE_H
-#define RESOURCE_H
+#ifndef ASSET_H
+#define ASSET_H
 
 #include <string>
 #include <vector>

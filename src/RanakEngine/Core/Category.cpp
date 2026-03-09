@@ -101,8 +101,13 @@ namespace RanakEngine::Core
         return m_baseAttributeTable;
     }
 
-    sol::table Category::GetDataFor(int _id)
+    sol::table Category::GetAttributesFor(int _id)
     {
+        if(m_entityToIndex.find(_id) == m_entityToIndex.end())
+        {
+            return nullptr;
+        }
+
         return m_entityDataTables[m_entityToIndex[_id]];
     }
 
