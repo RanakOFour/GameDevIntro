@@ -5,16 +5,26 @@
 namespace RanakEngine::Core
 {
     Rule::Rule()
-    : m_name()
-    , m_categories()
     {
         m_table = LuaContext::Instance().lock()->CreateTable();
         m_context = LuaContext::Instance();
     }
 
+    Rule::Rule(sol::table _dataTable)
+    : m_signature()
+    {
+        m_context = LuaContext::Instance();
+        auto l_context = m_context.lock();
+
+        // Create signature
+        auto l_categoryNames = m_table.raw_get<sol::table>("categories").pairs();
+
+        for(auto l_namePair : l_categoryNames)
+        {
+        }
+    }
+
     Rule::Rule(std::weak_ptr<Asset::LuaFile> _file)
-    : m_name()
-    , m_categories()
     {
         auto l_contextPtr = LuaContext::Instance().lock();
         m_table = l_contextPtr->RunScript<sol::table>(_file);
@@ -26,10 +36,12 @@ namespace RanakEngine::Core
 
     }
 
-    void Rule::Update(float _dt, EntityRegistry& _registry)
+    void Rule::Update(EntityRegistry& _registry)
     {
         sol::protected_function l_updateFunction = m_table.raw_get<sol::function>("Update");
         
+
+        // Early quit for no function found/defined
         if(!l_updateFunction.valid())
         {
             return;
@@ -44,7 +56,7 @@ namespace RanakEngine::Core
             for(int l_entity: l_entities)
             {
                 sol::table l_entityData = _registry.GetEntityAttributes(l_entity);
-                l_updateFunction(l_entityData, _dt);
+                l_updateFunction(l_entityData);
             }
         }
     }
@@ -53,6 +65,7 @@ namespace RanakEngine::Core
     {
         sol::protected_function l_drawFunction = m_table.raw_get<sol::function>("Draw");
         
+        // Early quit for no function found/defined
         if(!l_drawFunction.valid())
         {
             return;

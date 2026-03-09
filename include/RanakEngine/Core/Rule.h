@@ -25,7 +25,6 @@ namespace RanakEngine::Core
         std::weak_ptr<LuaContext> m_context;
 
         std::string m_name;
-        std::vector<std::weak_ptr<Category>> m_categories;
         std::bitset<1024> m_signature;
         sol::table m_table;
 
@@ -38,11 +37,20 @@ namespace RanakEngine::Core
 
         public:
         Rule();
+        Rule(sol::table _dataTable);
         Rule(std::weak_ptr<Asset::LuaFile> _file);
 
         ~Rule();
 
-        void Update(float _dt, EntityRegistry& _registry);
+        /* These will call the stand-in functions inside the m_table,
+         passing in each entities data to the lua function 1 by one.
+         This way, the lua function will have the header:
+         Rule:Update(_entityData),
+         Where _entityData is a table containing a single entities data.
+         I should also probably hold the dt value somewhere else, too
+
+         */
+        void Update(EntityRegistry& _registry);
         void Draw(EntityRegistry& _registry);
 
         std::string GetName();

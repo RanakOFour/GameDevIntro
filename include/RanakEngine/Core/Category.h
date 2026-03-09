@@ -32,7 +32,8 @@ namespace RanakEngine::Core
             _state.new_usertype<Category>("Category", "name", sol::readonly(&Category::m_name),
                                                       "attributes", sol::readonly(&Category::m_baseAttributeTable),
                                                       "getMembers", sol::readonly(&Category::GetMembers),
-                                                      "getDataFor", &Category::GetDataFor);
+                                                      "getDataFor", &Category::GetDataFor,
+                                                      sol::constructors<Category()>());
         };
 
         std::vector<int> GetMembers()
