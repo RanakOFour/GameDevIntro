@@ -6,14 +6,14 @@
 #include <bitset>
 #include <vector>
 
-#include "RanakEngine/Core/Category.h"
-#include "RanakEngine/Asset/LuaFile.h"
+#include "sol/sol.hpp"
 
 namespace RanakEngine
 {
-    class LuaContext;
 namespace Core
 {
+    class LuaContext;
+    class Category;
     class CategoryFactory
     {
         friend LuaContext;

@@ -91,7 +91,7 @@ namespace RanakEngine::Core
 
         for(Rule& l_rule : m_rules)
         {
-            l_rule.Update(_dt, m_registry);
+            l_rule.Update(m_registry);
         }
     }
 

@@ -1,5 +1,3 @@
-// Texture code taken from previous 3DGP work
-
 #include "RanakEngine/Asset/Texture.h"
 
 #include "GL/glew.h"

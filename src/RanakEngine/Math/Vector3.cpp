@@ -1,4 +1,5 @@
 #include "RanakEngine/Math/Vector3.h"
+#include "RanakEngine/Math/Vector2.h"
 #include <cmath>
 
 Vector3::Vector3()
@@ -15,6 +16,13 @@ Vector3::Vector3(float _value)
 , z(_value)
 {
 };
+
+Vector3::Vector3(Vector2 _xy, float _z)
+{
+    x = _xy.x;
+    y = _xy.y;
+    z = _z;
+}
 
 Vector3::Vector3(float _x, float _y, float _z)
 : x(_x)

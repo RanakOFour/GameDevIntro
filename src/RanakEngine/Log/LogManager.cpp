@@ -1,5 +1,5 @@
 #include "RanakEngine/Log/LogManager.h"
-#include "RanakEngine/Core.h"
+#include "RanakEngine/Core/CoreManager.h"
 
 #include "GL/glew.h"
 

@@ -2,7 +2,7 @@
 #include "RanakEngine/IO/Audio.h"
 #include "RanakEngine/IO/Window.h"
 
-#include "RanakEngine/Log.h"
+#include "RanakEngine/Log/LogManager.h"
 #include "RanakEngine/Core/CoreManager.h"
 #include "RanakEngine/Core/Scene.h"
 
@@ -42,19 +42,14 @@ namespace RanakEngine::IO
         return m_self;
     }
 
-    void IO::Manager::Stop()
-    {
-
-    }
-
     std::string IO::Manager::OpenFileDialog()
     {
-
+        return "";
     }
 
     std::string IO::Manager::SaveFileDialog()
     {
-
+        return "";
     }
 
     void IO::Manager::UpdateInputs()
@@ -64,9 +59,9 @@ namespace RanakEngine::IO
         bool l_scroll = false;
         SDL_Event l_event;
 
-        m_mouseInfo.deltas.x = 0.0f;
-        m_mouseInfo.deltas.y = 0.0f;
-        m_mouseInfo.deltas.z = 0.0f;
+        m_mouseInfo.deltaPosition.x = 0.0f;
+        m_mouseInfo.deltaPosition.y = 0.0f;
+        m_mouseInfo.deltaScroll = 0.0f;
 
         while (SDL_PollEvent(&l_event))
         {
@@ -99,18 +94,18 @@ namespace RanakEngine::IO
                 break;
 
             case SDL_EVENT_MOUSE_WHEEL:
-                m_mouseInfo.deltas.z = -l_event.wheel.y;
-                if (m_mouseInfo.deltas.z != 0.0f)
+                m_mouseInfo.deltaScroll = -l_event.wheel.y;
+                if (m_mouseInfo.deltaScroll != 0.0f)
                 {
                     l_scroll = true;
                 }
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
-                m_mouseInfo.deltas.x = l_event.motion.xrel;
-                m_mouseInfo.deltas.y = l_event.motion.yrel;
+                m_mouseInfo.deltaPosition.x = l_event.motion.xrel;
+                m_mouseInfo.deltaPosition.y = l_event.motion.yrel;
 
-                if (m_mouseInfo.deltas.x != 0.0f && m_mouseInfo.deltas.y != 0.0f)
+                if (m_mouseInfo.deltaPosition.x != 0.0f && m_mouseInfo.deltaPosition.y != 0.0f)
                 {
                     l_movement = true;
                 }
@@ -165,6 +160,26 @@ namespace RanakEngine::IO
         m_window->Swap();
     }
 
+    void IO::Manager::SetScreenSize(Vector2 _size)
+    {
+        m_window->SetScreenSize(_size);
+    }
+
+    Vector2 IO::Manager::GetScreenSize()
+    {
+        return m_window->GetScreenSize();
+    }
+
+    void IO::Manager::SetClearColour(Vector4 _colour)
+    {
+        m_window->SetClearColour(_colour);
+    }
+
+    Vector4 IO::Manager::GetClearColour()
+    {
+        return m_window->GetClearColour();
+    }
+
     std::weak_ptr<Window> IO::Manager::GetWindow()
     {
         return m_window;
@@ -175,9 +190,9 @@ namespace RanakEngine::IO
         return m_audio;
     }
 
-    MouseInfo IO::Manager::GetMouseInfo()
+    MouseInfo* IO::Manager::GetMouseInfo()
     {
-        return m_mouseInfo;
+        return &m_mouseInfo;
     }
 
     KBInfo IO::Manager::GetKBInfo()

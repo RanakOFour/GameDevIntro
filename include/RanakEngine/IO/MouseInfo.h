@@ -11,7 +11,10 @@ namespace RanakEngine::IO
      */
     struct MouseInfo
     {
-        Vector3 deltas; ///< Mouse movement deltas since last frame
+        Vector2 deltaPosition; ///< Mouse movement deltas since last frame
+        
+        float deltaScroll;
+
         Vector2 position; ///< Current mouse position in screen coordinates
         bool RMBDown; ///< Whether the right mouse button is currently pressed
         bool LMBDown; ///< Whether the left mouse button is currently pressed

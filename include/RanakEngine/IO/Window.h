@@ -30,6 +30,11 @@ namespace RanakEngine::IO
         bool IsMouseInside();
         void SetRelativeWindow(bool _value);
         bool GetRelativeWindow();
+
+        void SetScreenSize(Vector2 _size);
+        Vector2 GetScreenSize();
+
+        void SetClearColour(Vector4 _colour);
         Vector4 GetClearColour();
     };
 }

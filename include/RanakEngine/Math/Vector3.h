@@ -5,6 +5,8 @@
 
 #include <string>
 
+struct Vector2;
+
 /**
  * @struct Vector3
  * @brief Custom 3D vector struct providing interoperability between GLM and ReactPhysics3D.
@@ -31,6 +33,14 @@ struct Vector3
      * @param _value The value for all components.
      */
     Vector3(float _value);
+
+    /**
+     * @brief Creates a vector with given components.
+     * 
+     * @param _xy The X and Y components as a Vector2.
+     * @param _z The Z component.
+     */
+    Vector3(Vector2 _xy, float _z);
 
     /**
      * @brief Creates a vector with given components.

@@ -1,4 +1,6 @@
 #include "RanakEngine/Math/Vector4.h"
+#include "RanakEngine/Math/Vector3.h"
+#include "RanakEngine/Math/Vector2.h"
 
 #include <cmath>
 
@@ -36,6 +38,30 @@ Vector4::Vector4(glm::vec4 _v)
 {
 
 };
+
+Vector4::Vector4(Vector2 _xy, Vector2 _zw)
+{
+    x = _xy.x;
+    y = _xy.y;
+    z = _zw.x;
+    w = _zw.y;
+}
+
+Vector4::Vector4(Vector2 _xy, float _z, float _w)
+{
+    x = _xy.x;
+    y = _xy.y;
+    z = _z;
+    w = _w;
+}
+
+Vector4::Vector4(Vector3 _xyz, float _w)
+{
+    x = _xyz.x;
+    y = _xyz.y;
+    z = _xyz.z;
+    w = _w;
+}
 
 float Vector4::Length()
 {

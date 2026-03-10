@@ -2,7 +2,10 @@
 #define SHADER_H
 
 #include "RanakEngine/Asset/AssetFile.h"
-#include "RanakEngine/Math.h"
+
+#include "RanakEngine/Math/Vector2.h"
+#include "RanakEngine/Math/Vector3.h"
+#include "RanakEngine/Math/Vector4.h"
 
 #include "GL/glew.h"
 #include "GLM/ext.hpp"

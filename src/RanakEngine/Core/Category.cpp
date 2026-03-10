@@ -111,6 +111,17 @@ namespace RanakEngine::Core
         return m_entityDataTables[m_entityToIndex[_id]];
     }
 
+    std::vector<int> Category::GetMembers()
+    {
+        std::vector<int> l_toReturn;
+        for(auto l_pair : m_entityToIndex)
+        {
+            l_toReturn.push_back(l_pair.first);
+        }
+
+        return l_toReturn;
+    }
+
     std::string Category::GetName()
     {
         return m_name;

@@ -12,6 +12,7 @@
 
 namespace RanakEngine::Core
 {
+    class CategoryFactory;
     class LuaContext
     {
         private:
@@ -77,6 +78,8 @@ namespace RanakEngine::Core
         {
             m_state.new_usertype<T>(std::forward(_args)...);
         }
+
+        void SetGlobal(std::string _name, sol::object& _obj);
 
         sol::state* GetState() { return &m_state; };
     };

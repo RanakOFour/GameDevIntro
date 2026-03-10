@@ -65,4 +65,9 @@ namespace RanakEngine::Core
     {
         return m_categoryFactory->GetBySignature(_signature);
     }
+
+    void LuaContext::SetGlobal(std::string _name, sol::object& _obj)
+    {
+        m_state[_name] = _obj;
+    }
 }

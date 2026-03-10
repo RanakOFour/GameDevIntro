@@ -36,7 +36,9 @@ namespace RanakEngine
     void Shutdown(EngineContents& _contents)
     {
         // _contents.physics->Stop()
-        _contents.io->Stop();
+        RanakEngine::IO::Stop();
+        RanakEngine::Log::Stop();
+        
         _contents.core->Stop();
         _contents.logger->Stop();
     }

@@ -34,8 +34,6 @@ namespace RanakEngine::IO
         static std::shared_ptr<IO::Manager> Init(Vector2 _screenSize);
         static std::weak_ptr<IO::Manager> Instance();
 
-        void Stop();
-
         std::string OpenFileDialog();
         std::string SaveFileDialog();
 
@@ -44,11 +42,17 @@ namespace RanakEngine::IO
         bool GetKeyDown(char _key);
         bool WindowFocused();
 
+        void SetScreenSize(Vector2 _size);
+        Vector2 GetScreenSize();
+
+        void SetClearColour(Vector4 _colour);
+        Vector4 GetClearColour();
+
         void Draw(std::shared_ptr<Core::Scene> _sceneToDraw);
 
         std::weak_ptr<Window> GetWindow();
         std::weak_ptr<Audio> GetAudio();
-        MouseInfo GetMouseInfo();
+        MouseInfo* GetMouseInfo();
         KBInfo GetKBInfo();
     };
 }

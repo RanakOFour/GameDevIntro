@@ -6,6 +6,9 @@
 #include <string>
 #include <cmath>
 
+struct Vector2;
+struct Vector3;
+
 /**
  * @struct Vector4
  * @brief Custom 4D vector struct providing interoperability with GLM.
@@ -49,6 +52,12 @@ struct Vector4
      * @param _v The GLM vector to copy from.
      */
     Vector4(glm::vec4 _v);
+
+    Vector4(Vector2 _xy, Vector2 _zw);
+
+    Vector4(Vector2 _xy, float _z, float _w);
+
+    Vector4(Vector3 _xyz, float _w);
 
     /**
      * @brief Converts to GLM vec4.

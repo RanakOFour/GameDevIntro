@@ -5,7 +5,7 @@
 #include <map>
 #include <filesystem>
 
-#include "RanakEngine/Log.h"
+#include "RanakEngine/Log/LogManager.h"
 #include "RanakEngine/Asset/AssetFile.h"
 
 namespace RanakEngine::Asset

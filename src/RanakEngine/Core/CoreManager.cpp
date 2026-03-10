@@ -1,8 +1,8 @@
 #include "RanakEngine/Core/CoreManager.h"
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Scene.h"
-#include "RanakEngine/IO.h"
-#include "RanakEngine/Log.h"
+#include "RanakEngine/IO/IOManager.h"
+#include "RanakEngine/Log/LogManager.h"
 
 #include "SDL3/SDL.h"
 

@@ -1,5 +1,5 @@
 #include "RanakEngine/IO/Window.h"
-#include "RanakEngine/Log.h"
+#include "RanakEngine/Log/LogManager.h"
 
 bool InitGL()
 {
@@ -108,6 +108,22 @@ namespace RanakEngine::IO
     bool Window::GetRelativeWindow()
     {
         return SDL_GetWindowRelativeMouseMode(m_sdlWindow.get());
+    }
+
+    void Window::SetScreenSize(Vector2 _size)
+    {
+        m_screenSize = _size;
+        m_aspectRatio = m_screenSize.x / m_screenSize.y;
+    }
+
+    Vector2 Window::GetScreenSize()
+    {
+        return m_screenSize;
+    }
+
+    void Window::SetClearColour(Vector4 _colour)
+    {
+        m_clearColour = _colour;
     }
 
     Vector4 Window::GetClearColour()

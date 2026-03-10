@@ -29,23 +29,14 @@ namespace RanakEngine::Core
 
         static void DefineUsertype(sol::state& _state)
         {
-            _state.new_usertype<Category>("Category", "name", sol::readonly(&Category::m_name),
-                                                      "attributes", sol::readonly(&Category::m_baseAttributeTable),
-                                                      "getMembers", sol::readonly(&Category::GetMembers),
-                                                      "getAttributesFor", sol::readonly(&Category::GetAttributesFor),
-                                                      sol::constructors<Category()>());
+            _state.new_usertype<Category>("Category", sol::constructors<Category()>(),
+                                            "name", sol::readonly(&Category::m_name),
+                                            "attributes", sol::readonly(&Category::m_baseAttributeTable),
+                                            "getMembers", sol::readonly(&Category::GetMembers),
+                                            "getAttributesFor", sol::readonly(&Category::GetAttributesFor),
+                                            "getSize", sol::readonly(&Category::GetSize)
+                                         );
         };
-
-        std::vector<int> GetMembers()
-        {
-            std::vector<int> l_toReturn;
-            for(auto l_pair : m_entityToIndex)
-            {
-                l_toReturn.push_back(l_pair.first);
-            }
-
-            return l_toReturn;
-        }
 
         public:
         Category();

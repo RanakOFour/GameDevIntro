@@ -1,7 +1,5 @@
-// Code taken from elsewhere, not markable
-
 #include "RanakEngine/Asset/Shader.h"
-#include "RanakEngine/Log.h"
+#include "RanakEngine/Log/LogManager.h"
 
 #include <vector>
 #include <fstream>
