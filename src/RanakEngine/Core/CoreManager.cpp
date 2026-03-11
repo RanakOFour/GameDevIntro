@@ -9,34 +9,30 @@
 namespace RanakEngine::Core
 {
     Core::Manager::Manager(bool _debug)
-    : m_running(false)
-    , m_debug(_debug)
-    , m_deltaTime(0.0f)
-    , m_targetFPS(60.0f)
+        : m_running(false), m_debug(_debug), m_deltaTime(0.0f), m_targetFPS(60.0f)
     {
         m_ioManager = IO::Manager::Instance();
-        m_luaContext = LuaContext::Instance().lock();
+        m_luaContext = LuaContext::Init();
         m_currentScene = std::make_shared<Scene>();
     };
 
     Core::Manager::~Manager()
     {
-        
     }
 
     std::shared_ptr<Core::Manager> Core::Manager::Init(bool _debug)
     {
-        if(m_self.lock() == nullptr)
+        if (m_self.lock() == nullptr)
         {
             std::shared_ptr<Core::Manager> l_toReturn;
-            Core::Manager* l_manager = new Core::Manager(_debug);
+            Core::Manager *l_manager = new Core::Manager(_debug);
             l_toReturn.reset(l_manager);
-            
+
             l_toReturn->m_self = l_toReturn;
 
             return l_toReturn;
         }
-        
+
         return m_self.lock();
     };
 
@@ -55,7 +51,7 @@ namespace RanakEngine::Core
         Uint64 l_startCounters = SDL_GetPerformanceCounter();
         Uint64 l_currentCounters = 0.0f;
 
-        while(m_running)
+        while (m_running)
         {
             l_startCounters = l_currentCounters;
             l_currentCounters = SDL_GetPerformanceCounter();
@@ -63,16 +59,15 @@ namespace RanakEngine::Core
             m_deltaTime = ((float)(l_currentCounters - l_startCounters) / (float)SDL_GetPerformanceFrequency());
             Log::Message("DeltaTime: " + std::to_string(m_deltaTime) + "s");
 
-
             // Update IO
             l_IOManager->UpdateInputs();
 
-            if(l_IOManager->WindowFocused())
+            if (l_IOManager->WindowFocused())
             {
                 // Do systems
                 m_currentScene->Update(m_deltaTime);
 
-                //m_Physics.lock()->Update(m_deltaTime);
+                // m_Physics.lock()->Update(m_deltaTime);
             }
 
             l_IOManager->Draw(m_currentScene);

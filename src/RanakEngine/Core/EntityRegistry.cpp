@@ -5,10 +5,7 @@
 namespace RanakEngine::Core
 {
     EntityRegistry::EntityRegistry()
-    : m_nextFreeId(0)
-    , m_freeIds()
-    , m_categories()
-    , m_entityBitset()
+        : m_nextFreeId(0), m_freeIds(), m_categories(), m_entityBitset()
     {
         m_luaContext = LuaContext::Instance().lock();
         m_dataTable = m_luaContext->CreateTable();
@@ -18,14 +15,13 @@ namespace RanakEngine::Core
 
     EntityRegistry::~EntityRegistry()
     {
-
     }
 
     int EntityRegistry::AddEntity()
     {
         int l_newID{-1};
 
-        if(!m_freeIds.empty())
+        if (!m_freeIds.empty())
         {
             l_newID = m_freeIds.back();
             m_freeIds.pop_back();
@@ -36,7 +32,7 @@ namespace RanakEngine::Core
         }
 
         m_dataTable.raw_get<sol::table>("Entities")
-                     .create_named(l_newID);
+            .create_named(l_newID);
 
         return l_newID;
     }
@@ -47,21 +43,21 @@ namespace RanakEngine::Core
 
         // Clear table
         m_dataTable.traverse_raw_get<sol::table>(
-                          "Entities",
-                          _id)
-                     .clear();
+                       "Entities",
+                       _id)
+            .clear();
     }
 
     void EntityRegistry::DeleteFlaggedEntities()
     {
-        for(int l_id : m_idsToDelete)
+        for (int l_id : m_idsToDelete)
         {
             auto l_idSignature = m_entityBitset[l_id];
 
-            for(auto l_pair : m_categories)
+            for (auto l_pair : m_categories)
             {
                 // If there is a match
-                if((l_idSignature & l_pair.first).any())
+                if ((l_idSignature & l_pair.first).any())
                 {
                     l_pair.second->RemoveMember(l_id);
                 }
@@ -78,32 +74,31 @@ namespace RanakEngine::Core
     void EntityRegistry::AddToCategory(int _id, std::bitset<1024> _signature)
     {
         // Add to registry if not logged already
-        if(m_categories.find(_signature) == m_categories.end())
+        if (m_categories.find(_signature) == m_categories.end())
         {
             // Ask context for registered category
             std::shared_ptr<Category> l_categoryPtr = m_luaContext->GetCategory(_signature).lock();
 
-            if(l_categoryPtr.get() != nullptr)
+            if (l_categoryPtr.get() != nullptr)
             {
                 // Add valid ptr to category map
                 m_categories[_signature] = l_categoryPtr;
                 m_dataTable.raw_get<sol::table>("Categories")
-                           .set(l_categoryPtr->GetName(), l_categoryPtr.get());
+                    .set(l_categoryPtr->GetName(), l_categoryPtr.get());
             }
             else
             {
                 return;
             }
         }
-        
+
         // Category is registered
         // Edit entityData in table
         m_dataTable.traverse_raw_get<sol::table>(
-                          "Entities",
-                          _id,
-                          "attributes")
-                        .set(m_categories[_signature]->GetName(), m_categories[_signature]->AddMember(_id)
-                    );
+                       "Entities",
+                       _id,
+                       "attributes")
+            .set(m_categories[_signature]->GetName(), m_categories[_signature]->AddMember(_id));
 
         // Update entity signature
         m_entityBitset[_id] |= _signature;
@@ -112,32 +107,31 @@ namespace RanakEngine::Core
     void EntityRegistry::RemoveFromCategory(int _id, std::bitset<1024> _signature)
     {
         // Category is registered
-        if(m_categories.find(_signature) != m_categories.end())
+        if (m_categories.find(_signature) != m_categories.end())
         {
             m_categories[_signature]->RemoveMember(_id);
             // There's probably a faster way to do this, but I haven't found it yet
             m_dataTable.traverse_raw_get<sol::table>(
-                          "Entities",
-                          _id,
-                          "attributes",
-                          m_categories[_signature]->GetName()
-                          )
-                          .abandon();
+                           "Entities",
+                           _id,
+                           "attributes",
+                           m_categories[_signature]->GetName())
+                .abandon();
 
             // The registry does not have to manage empty categories
-            if(m_categories[_signature]->GetSize() == 0)
+            if (m_categories[_signature]->GetSize() == 0)
             {
                 m_categories.erase(_signature);
             }
         }
 
-        //Update entity signature
+        // Update entity signature
         m_entityBitset[_id] ^= _signature;
     }
 
     sol::table EntityRegistry::GetEntityTable()
     {
-        return m_dataTable.raw_get<sol::table>("Entitites");
+        return m_dataTable.raw_get<sol::table>("Entities");
     }
 
     sol::table EntityRegistry::GetCategoryTable()
@@ -147,7 +141,7 @@ namespace RanakEngine::Core
 
     std::weak_ptr<Category> EntityRegistry::GetCategory(std::bitset<1024> _signature)
     {
-        if(m_categories.find(_signature) != m_categories.end())
+        if (m_categories.find(_signature) != m_categories.end())
         {
             return m_categories[_signature];
         }
@@ -158,11 +152,11 @@ namespace RanakEngine::Core
     std::vector<int> EntityRegistry::GetEntitiesWith(std::bitset<1024> _combinedSignature)
     {
         std::vector<int> l_entities;
-        for(auto l_pair : m_entityBitset)
+        for (auto l_pair : m_entityBitset)
         {
             // entity has signature if the signature is a subset of the entity's
             // Therefore, it is also correct if the signature and not(entity sig) is empty
-            if((_combinedSignature & ~l_pair.second).none())
+            if ((_combinedSignature & ~l_pair.second).none())
             {
                 l_entities.push_back(l_pair.first);
             }

@@ -10,7 +10,6 @@
 #include "RanakEngine/IO.h"
 // #include "RanakEngine/Physics.h"
 
-
 namespace RanakEngine
 {
     struct EngineContents
@@ -32,17 +31,13 @@ namespace RanakEngine
         l_toReturn.core = Core::Init(_debug);
         // l_toReturn.physics = Physics::Init();
 
-
-
         return l_toReturn;
     };
 
-    void Shutdown(EngineContents& _contents)
+    void Shutdown(EngineContents &_contents)
     {
         // Physics::Stop();
-        RanakEngine::IO::Stop();
-        RanakEngine::Log::Stop();
-        
+        Log::Stop();
         Asset::Stop();
         IO::Stop();
         Core::Stop();

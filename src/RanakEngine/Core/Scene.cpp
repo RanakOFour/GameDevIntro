@@ -8,9 +8,7 @@
 namespace RanakEngine::Core
 {
     Scene::Scene()
-    : m_name("Scene")
-    , m_registry()
-    , m_rules()
+        : m_name("Scene"), m_registry(), m_rules()
     {
         auto l_luaContext = LuaContext::Instance().lock();
         m_sceneTable = l_luaContext->CreateTable();
@@ -20,10 +18,7 @@ namespace RanakEngine::Core
     }
 
     Scene::Scene(sol::table _tableData)
-    : m_name(_tableData["name"])
-    , m_registry()
-    , m_rules()
-    , m_sceneTable(_tableData)
+        : m_name(_tableData["name"]), m_registry(), m_rules(), m_sceneTable(_tableData)
     {
         auto l_luaContext = LuaContext::Instance().lock();
         l_luaContext->AddVariable<sol::table>("Scene", m_sceneTable);
@@ -31,7 +26,6 @@ namespace RanakEngine::Core
 
     Scene::~Scene()
     {
-        
     }
 
     int Scene::AddEntity()
@@ -60,24 +54,24 @@ namespace RanakEngine::Core
     void Scene::RemoveCategory(std::bitset<1024> _signature)
     {
         std::vector<int> l_entities = m_registry.GetEntitiesWith(_signature);
-        
-        for(int l_entity : l_entities)
+
+        for (int l_entity : l_entities)
         {
             m_registry.RemoveFromCategory(l_entity, _signature);
         }
     }
 
-    void Scene::AddRule(Rule& _rule)
+    void Scene::AddRule(Rule &_rule)
     {
         m_rules.push_back(_rule);
     }
 
-    void Scene::RemoveRule(Rule& _rule)
+    void Scene::RemoveRule(Rule &_rule)
     {
         std::string l_name = _rule.GetName();
-        for(int i = 0; i < m_rules.size(); i++)
+        for (int i = 0; i < m_rules.size(); i++)
         {
-            if(m_rules[i].GetName() == l_name)
+            if (m_rules[i].GetName() == l_name)
             {
                 m_rules.erase(m_rules.begin() + i);
                 break;
@@ -89,7 +83,7 @@ namespace RanakEngine::Core
     {
         auto l_contextPtr = m_luaContext.lock();
 
-        for(Rule& l_rule : m_rules)
+        for (Rule &l_rule : m_rules)
         {
             l_rule.Update(m_registry);
         }
@@ -99,7 +93,7 @@ namespace RanakEngine::Core
     {
         auto l_contextPtr = m_luaContext.lock();
 
-        for(Rule& l_rule : m_rules)
+        for (Rule &l_rule : m_rules)
         {
             l_rule.Draw(m_registry);
         }
