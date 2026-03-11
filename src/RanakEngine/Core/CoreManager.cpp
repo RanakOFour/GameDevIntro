@@ -26,13 +26,18 @@ namespace RanakEngine::Core
 
     std::shared_ptr<Core::Manager> Core::Manager::Init(bool _debug)
     {
-        std::shared_ptr<Core::Manager> l_toReturn;
-        Core::Manager* l_manager = new Core::Manager(_debug);
-        l_toReturn.reset(l_manager);
-        
-        l_toReturn->m_self = l_toReturn;
+        if(m_self.lock() == nullptr)
+        {
+            std::shared_ptr<Core::Manager> l_toReturn;
+            Core::Manager* l_manager = new Core::Manager(_debug);
+            l_toReturn.reset(l_manager);
+            
+            l_toReturn->m_self = l_toReturn;
 
-        return l_toReturn;
+            return l_toReturn;
+        }
+        
+        return m_self.lock();
     };
 
     std::weak_ptr<Core::Manager> Core::Manager::Instance()

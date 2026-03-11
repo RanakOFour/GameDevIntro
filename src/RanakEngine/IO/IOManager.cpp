@@ -26,15 +26,20 @@ namespace RanakEngine::IO
 
     std::shared_ptr<IO::Manager> IO::Manager::Init(Vector2 _screenSize)
     {
-        std::shared_ptr<IO::Manager> l_toReturn;
-        IO::Manager* l_manager = new IO::Manager(_screenSize);
-        l_toReturn.reset(l_manager);
-        
-        l_toReturn->m_self = l_toReturn;
+        if(m_self.lock() == nullptr)
+        {
+            std::shared_ptr<IO::Manager> l_toReturn;
+            IO::Manager* l_manager = new IO::Manager(_screenSize);
+            l_toReturn.reset(l_manager);
+            
+            l_toReturn->m_self = l_toReturn;
 
-        glDebugMessageCallback(Log::Manager::GLDebugMessageCallback, 0);
+            glDebugMessageCallback(Log::Manager::GLDebugMessageCallback, 0);
 
-        return l_toReturn;
+            return l_toReturn;
+        }
+
+        return m_self.lock();
     };
 
     std::weak_ptr<IO::Manager> IO::Manager::Instance()

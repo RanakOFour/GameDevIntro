@@ -31,7 +31,7 @@ bool InitGL()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ALPHA);
 
-    RanakEngine::Log::Error(l_logMessage);
+    RanakEngine::Log::Message(l_logMessage);
 
     return true;
 }

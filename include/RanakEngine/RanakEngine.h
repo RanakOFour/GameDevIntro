@@ -10,6 +10,7 @@
 #include "RanakEngine/IO.h"
 // #include "RanakEngine/Physics.h"
 
+
 namespace RanakEngine
 {
     struct EngineContents
@@ -24,13 +25,14 @@ namespace RanakEngine
     {
         EngineContents l_toReturn;
 
-        Core::LuaContext::Init();
         Log::Init();
 
         l_toReturn.resources = Asset::Init();
         l_toReturn.io = IO::Init(_screenSize);
         l_toReturn.core = Core::Init(_debug);
         // l_toReturn.physics = Physics::Init();
+
+
 
         return l_toReturn;
     };

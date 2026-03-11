@@ -7,6 +7,7 @@
 namespace RanakEngine::IO
 {
     Audio::Audio()
+    : m_audioDevice(0)
     {
         if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
         {

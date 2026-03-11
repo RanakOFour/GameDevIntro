@@ -7,23 +7,23 @@ namespace RanakEngine::Asset
 {
     namespace
     {
-        std::shared_ptr<Asset::Manager> AssetManager;
+        static std::shared_ptr<Asset::Manager> AssetManager;
         static sol::table AssetTable;
+    }
 
-        void DefineLuaTypes()
-        {
-            auto l_context = Core::LuaContext::Instance().lock();
+    void DefineLuaTypes()
+    {
+        auto l_context = Core::LuaContext::Instance().lock();
 
-            AssetTable = l_context->CreateTable();
+        AssetTable = l_context->CreateTable();
 
-            l_context->SetGlobal("Asset", AssetTable);
-        }
+        l_context->SetGlobal("Asset", AssetTable);
     }
 
     std::shared_ptr<Asset::Manager> Init()
     {
         AssetManager = Asset::Manager::Init();
-        DefineLuaTypes();
+        //DefineLuaTypes();
         return AssetManager;
     }
 
