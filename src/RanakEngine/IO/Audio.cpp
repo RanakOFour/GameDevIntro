@@ -1,6 +1,6 @@
 #include "RanakEngine/IO/Audio.h"
 #include "RanakEngine/Asset/Audio.h"
-#include "RanakEngine/Log/LogManager.h"
+#include "RanakEngine/Log.h"
 
 #include "SDL3/SDL.h"
 
@@ -10,8 +10,7 @@ namespace RanakEngine::IO
     {
         if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, 
-                "Failed to initialize SDL Audio: " + std::string(SDL_GetError()));
+            Log::Error("Failed to initialize SDL Audio: " + std::string(SDL_GetError()));
         }
         else
         {
@@ -19,13 +18,12 @@ namespace RanakEngine::IO
             m_audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
             if (m_audioDevice == 0)
             {
-                Log::Manager::LogMessage(Log::Message::ERROR, 
-                    "Failed to open audio device: " + std::string(SDL_GetError()));
+                Log::Error("Failed to open audio device: " + std::string(SDL_GetError()));
             }
             else
             {
                 SDL_ResumeAudioDevice(m_audioDevice);
-                Log::Manager::LogMessage(Log::Message::DEBUG, "Audio device initialized");
+                Log::Debug("Audio device initialized");
             }
         }
     }
@@ -46,7 +44,7 @@ namespace RanakEngine::IO
         Asset::Audio* l_audio = _audio.lock().get();
         if (!l_audio)
         {
-            Log::Manager::LogMessage(Log::Message::WARNING, "PlayAudio: Audio resource is null");
+            Log::Warning("PlayAudio: Audio resource is null");
             return false;
         }
         
@@ -58,8 +56,7 @@ namespace RanakEngine::IO
         
         if (!l_stream)
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, 
-                "Failed to create audio stream: " + std::string(SDL_GetError()));
+            Log::Error("Failed to create audio stream: " + std::string(SDL_GetError()));
             return false;
         }
         
@@ -68,7 +65,7 @@ namespace RanakEngine::IO
             l_audio->GetBuffer(), 
             l_audio->GetBufferSize()) < 0)
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, "Failed to queue audio data");
+            Log::Error("Failed to queue audio data");
             SDL_DestroyAudioStream(l_stream);
             return false;
         }
@@ -76,7 +73,7 @@ namespace RanakEngine::IO
         // Bind stream to device and play
         if (SDL_BindAudioStream(m_audioDevice, l_stream) < 0)
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, "Failed to bind audio stream");
+            Log::Error("Failed to bind audio stream");
             SDL_DestroyAudioStream(l_stream);
             return false;
         }
@@ -84,8 +81,7 @@ namespace RanakEngine::IO
         // Store stream for later control
         m_activeStreams[l_audio->GetPath()] = l_stream;
         
-        Log::Manager::LogMessage(Log::Message::DEBUG, 
-            "Now playing: " + l_audio->GetPath());
+        Log::Debug("Now playing: " + l_audio->GetPath());
         
         return true;
     }

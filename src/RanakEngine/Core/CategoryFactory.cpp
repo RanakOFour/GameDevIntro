@@ -1,9 +1,11 @@
 
 #include "RanakEngine/Core/CategoryFactory.h"
 #include "RanakEngine/Core/Category.h"
-#include "RanakEngine/Asset/LuaFile.h"
 #include "RanakEngine/Core/LuaContext.h"
 
+#include "RanakEngine/Asset/LuaFile.h"
+
+#include "RanakEngine/Log.h"
 
 namespace RanakEngine::Core
 {
@@ -26,6 +28,8 @@ namespace RanakEngine::Core
         {
             l_categoryName = "Category" + std::to_string(m_size);
         }
+
+        Log::Message("Registering category " + l_categoryName + "...\n");
 
         sol::table l_baseAttributes = _definitionTable.raw_get<sol::table>("baseAttributes");
 

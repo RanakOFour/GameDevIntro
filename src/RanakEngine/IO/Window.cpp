@@ -1,5 +1,5 @@
 #include "RanakEngine/IO/Window.h"
-#include "RanakEngine/Log/LogManager.h"
+#include "RanakEngine/Log.h"
 
 bool InitGL()
 {
@@ -17,7 +17,7 @@ bool InitGL()
         l_logMessage = "GLEW failed to initialise with message: " +
                         std::string((char*)glewGetErrorString(err)) +
                         "\nErr num: " + std::to_string(err);
-        RanakEngine::Log::Manager::LogMessage(RanakEngine::Log::Message::ERROR, l_logMessage);
+        RanakEngine::Log::Error(l_logMessage);
         return false;
     }
 
@@ -31,7 +31,7 @@ bool InitGL()
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ALPHA);
 
-    RanakEngine::Log::Manager::LogMessage(RanakEngine::Log::Message::ERROR, l_logMessage);
+    RanakEngine::Log::Error(l_logMessage);
 
     return true;
 }
@@ -45,7 +45,7 @@ namespace RanakEngine::IO
     {
         if(SDL_Init(SDL_INIT_VIDEO) < 0)
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, "Cannot initialise SDL");
+            Log::Error("Cannot initialise SDL");
         }
 
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
@@ -65,7 +65,7 @@ namespace RanakEngine::IO
 
         if(!InitGL())
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, "Could not initialise GL");
+            Log::Error("Could not initialise GL");
         }
 
         /*

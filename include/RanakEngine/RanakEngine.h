@@ -14,7 +14,6 @@ namespace RanakEngine
 {
     struct EngineContents
     {
-        std::shared_ptr<Log::Manager> logger;
         std::shared_ptr<Asset::Manager> resources;
         std::shared_ptr<Core::Manager> core;
         std::shared_ptr<IO::Manager> io;
@@ -24,23 +23,27 @@ namespace RanakEngine
     EngineContents Initialise(bool _debug, Vector2 _screenSize)
     {
         EngineContents l_toReturn;
-        l_toReturn.logger = Log::Manager::Init();
-        l_toReturn.resources = Asset::Manager::Init();
-        l_toReturn.core = Core::Manager::Init(_debug);
-        l_toReturn.io = IO::Manager::Init(_screenSize);
-        // l_toReturn.physics = Physics::Manager::Init();
+
+        Core::LuaContext::Init();
+        Log::Init();
+
+        l_toReturn.resources = Asset::Init();
+        l_toReturn.io = IO::Init(_screenSize);
+        l_toReturn.core = Core::Init(_debug);
+        // l_toReturn.physics = Physics::Init();
 
         return l_toReturn;
     };
 
     void Shutdown(EngineContents& _contents)
     {
-        // _contents.physics->Stop()
+        // Physics::Stop();
         RanakEngine::IO::Stop();
         RanakEngine::Log::Stop();
         
-        _contents.core->Stop();
-        _contents.logger->Stop();
+        Asset::Stop();
+        IO::Stop();
+        Core::Stop();
     }
 }
 

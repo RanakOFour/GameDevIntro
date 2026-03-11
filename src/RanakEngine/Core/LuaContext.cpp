@@ -1,6 +1,8 @@
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Rule.h"
 
+#include "RanakEngine/Log.h"
+
 namespace RanakEngine::Core
 {
     LuaContext::LuaContext()
@@ -32,6 +34,12 @@ namespace RanakEngine::Core
 
     std::weak_ptr<LuaContext> LuaContext::Instance()
     {
+        if(!m_self.lock())
+        {
+            Log::Message("LuaContext instance was requested but it doesn't exist! Creating new instance...\n");
+            return Init();
+        }
+
         return m_self;
     }
 
@@ -45,7 +53,7 @@ namespace RanakEngine::Core
         if(!m_loadedScripts[l_path].valid())
         {
             sol::error l_err = m_loadedScripts[l_path];
-            printf("Could not load script \"%s\"!\n%s\n", l_path.c_str(), l_err.what());
+            Log::Message("Could not load script " + l_path + "!\n" + std::string(l_err.what()));
             m_loadedScripts.erase(l_path);
         }
     }
@@ -57,6 +65,7 @@ namespace RanakEngine::Core
 
     std::weak_ptr<Category> LuaContext::CreateCategory(std::weak_ptr<Asset::LuaFile> _file)
     {
+        Log::Message("Creating category from file " + _file.lock()->GetPath() + "...\n");
         sol::table l_categoryTable = RunScript<sol::table>(_file);
         return m_categoryFactory->RegisterCategory(l_categoryTable);
     }

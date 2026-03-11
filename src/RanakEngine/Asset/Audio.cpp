@@ -1,5 +1,5 @@
 #include "RanakEngine/Asset/Audio.h"
-#include "RanakEngine/Log/LogManager.h"
+#include "RanakEngine/Log.h"
 
 #include <stdexcept>
 
@@ -14,13 +14,12 @@ namespace RanakEngine::Asset
         // SDL_LoadWAV returns true on success, false on failure
         if (!SDL_LoadWAV(_path.c_str(), &m_spec, &m_buffer, &m_bufferSize))
         {
-            Log::Manager::LogMessage(Log::Message::ERROR, 
-                "Failed to load audio file: " + _path + 
-                " - " + std::string(SDL_GetError()));
+            Log::Error("Failed to load audio file: " + _path + " - " + std::string(SDL_GetError()));
+
             throw std::runtime_error("Failed to load audio: " + _path);
         }
         
-        Log::Manager::LogMessage(Log::Message::DEBUG,
+        Log::Debug("Loaded audio: " + _path + 
             "Loaded audio: " + _path + 
             " | Channels: " + std::to_string(m_spec.channels) +
             " | Sample Rate: " + std::to_string(m_spec.freq) + " Hz" +

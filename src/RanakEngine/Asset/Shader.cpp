@@ -1,5 +1,5 @@
 #include "RanakEngine/Asset/Shader.h"
-#include "RanakEngine/Log/LogManager.h"
+#include "RanakEngine/Log.h"
 
 #include <vector>
 #include <fstream>
@@ -32,7 +32,7 @@ namespace RanakEngine::Asset
                 l_fragPath = l_temp;
             }
 
-            Log::Manager::LogMessage(Log::Message::NORMAL, "Attempting to create fragvert shader with paths:\n" + l_vertPath + "\n" + l_fragPath + "\npaths.");
+            Log::Message("Attempting to create fragvert shader with paths:\n" + l_vertPath + "\n" + l_fragPath + "\npaths.");
 
             std::ifstream l_stream;
             l_stream.open(l_vertPath);
@@ -45,7 +45,7 @@ namespace RanakEngine::Asset
             char* l_code = (char*)l_shaderCode.c_str();
 
             std::string l_debug = "Vertex shader code: " + l_shaderCode;
-            Log::Manager::LogMessage(Log::Message::DEBUG, l_debug);
+            Log::Debug(l_debug);
             
             GLuint l_vertexShader = glCreateShader(GL_VERTEX_SHADER);
             glShaderSource(l_vertexShader, 1, &l_code, NULL);
@@ -63,7 +63,7 @@ namespace RanakEngine::Asset
                 if(l_errorEnum != 0)
                 {
                     std::string l_errorString = "Could not compile vertex shader: Errornum: " + std::to_string(l_errorEnum) + ". " + std::string(L_errorLog);
-                    Log::Manager::LogMessage(Log::Message::ERROR, l_errorString);
+                    Log::Error(l_errorString);
 
                     glDeleteVertexShaderEXT(l_vertexShader);
                 }
@@ -95,7 +95,7 @@ namespace RanakEngine::Asset
                 if(l_errorEnum != 0)
                 {
                     std::string l_errorString = "Could not compile fragment shader: Errornum: " + std::to_string(l_errorEnum) + ". " + std::string(L_errorLog);
-                    Log::Manager::LogMessage(Log::Message::ERROR, l_errorString);
+                    Log::Error(l_errorString);
 
                     glDeleteFragmentShaderATI(l_fragmentShader);
                 }
@@ -121,7 +121,7 @@ namespace RanakEngine::Asset
                 // GL_NO_ERROR is 0
                 if(l_errorEnum != 0)
                 {
-                    Log::Manager::LogMessage(Log::Message::ERROR, "Failed to compile shader program. Error code: " + std::to_string(l_errorEnum));
+                    Log::Error("Failed to compile shader program. Error code: " + std::to_string(l_errorEnum));
                 }
             }
 
@@ -159,7 +159,7 @@ namespace RanakEngine::Asset
             if(!success)
             {
                 glGetShaderInfoLog(compute, 1024, NULL, infoLog);
-                Log::Manager::LogMessage(Log::Message::ERROR, "SHADER_COMPILATION_ERROR of type: Compute\n" + std::string(infoLog) + "\n -- --------------------------------------------------- -- ");
+                Log::Error("SHADER_COMPILATION_ERROR of type: Compute\n" + std::string(infoLog) + "\n -- --------------------------------------------------- -- ");
             }
 
             m_ID = glCreateProgram();
@@ -170,7 +170,7 @@ namespace RanakEngine::Asset
             if(!success)
             {
                 glGetProgramInfoLog(m_ID, 1024, NULL, infoLog);
-                Log::Manager::LogMessage(Log::Message::ERROR, "PROGRAM_LINKING_ERROR of type: Program\n" + std::string(infoLog) + "\n -- --------------------------------------------------- -- ");
+                Log::Error("PROGRAM_LINKING_ERROR of type: Program\n" + std::string(infoLog) + "\n -- --------------------------------------------------- -- ");
             }
 
             glDeleteShader(compute);

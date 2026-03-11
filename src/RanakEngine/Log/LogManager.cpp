@@ -31,7 +31,7 @@ namespace RanakEngine::Log
 
     void Manager::Monitor()
     {
-        Message l_currentMessage;
+        MessageContent l_currentMessage;
         Manager* l_Logger = m_self.lock().get();
         while(!l_Logger)
         {
@@ -61,23 +61,23 @@ namespace RanakEngine::Log
                 // Print non-debug messages
                 switch(l_currentMessage.severity)
                 {
-                    case Message::DEBUG:
+                    case MessageContent::DEBUG:
                     if(l_core->IsDebug())
                     {
                         printf("DEBUG: %s\n", l_currentMessage.contents.c_str());
                     }
                     break;
 
-                    case Message::ERROR:
+                    case MessageContent::ERROR:
                     printf("ERROR: %s\n", l_currentMessage.contents.c_str());
                     throw(std::runtime_error(""));
                     break;
 
-                    case Message::NORMAL:
+                    case MessageContent::NORMAL:
                     printf("LOG: %s\n", l_currentMessage.contents.c_str());
                     break;
 
-                    case Message::WARNING:
+                    case MessageContent::WARNING:
                     printf("WARNING: %s\n", l_currentMessage.contents.c_str());
                     break;
                 }
@@ -137,7 +137,7 @@ namespace RanakEngine::Log
         }
 
         // Print out the rest of the queue
-        Message l_currentMessage;
+        MessageContent l_currentMessage;
         while(!m_messageQueue.empty())
         {
             l_currentMessage = m_messageQueue.front();
@@ -146,23 +146,23 @@ namespace RanakEngine::Log
             // Print non-debug messages
             switch(l_currentMessage.severity)
             {
-                case Message::DEBUG:
+                case MessageContent::DEBUG:
                 if(Core::Manager::Instance().lock()->IsDebug())
                 {
                     printf("DEBUG: %s\n", l_currentMessage.contents.c_str());
                 }
                 break;
 
-                case Message::ERROR:
+                case MessageContent::ERROR:
                 printf("ERROR: %s\n", l_currentMessage.contents.c_str());
                 throw(std::runtime_error(""));
                 break;
 
-                case Message::NORMAL:
+                case MessageContent::NORMAL:
                 printf("LOG: %s\n", l_currentMessage.contents.c_str());
                 break;
 
-                case Message::WARNING:
+                case MessageContent::WARNING:
                 printf("WARNING: %s\n", l_currentMessage.contents.c_str());
                 break;
             }
@@ -171,8 +171,8 @@ namespace RanakEngine::Log
 
     void Log::Manager::LogMessage(int _severity, std::string _message)
     {
-        Message l_newMessage;
-        l_newMessage.severity = (Message::Severity)_severity;
+        MessageContent l_newMessage;
+        l_newMessage.severity = (MessageContent::Severity)_severity;
         l_newMessage.contents = _message;
 
         auto l_self = m_self.lock();
@@ -181,7 +181,7 @@ namespace RanakEngine::Log
         if(l_self)
         {
             l_self->m_threadMutex.lock();
-            l_self->m_messageQueue.push(Message{(Message::Severity)_severity, _message});
+            l_self->m_messageQueue.push(MessageContent{(MessageContent::Severity)_severity, _message});
             l_self->m_threadMutex.unlock();
         }
     }

@@ -2,7 +2,7 @@
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Scene.h"
 #include "RanakEngine/IO/IOManager.h"
-#include "RanakEngine/Log/LogManager.h"
+#include "RanakEngine/Log.h"
 
 #include "SDL3/SDL.h"
 
@@ -15,7 +15,7 @@ namespace RanakEngine::Core
     , m_targetFPS(60.0f)
     {
         m_ioManager = IO::Manager::Instance();
-        m_luaContext = LuaContext::Init();
+        m_luaContext = LuaContext::Instance().lock();
         m_currentScene = std::make_shared<Scene>();
     };
 
@@ -56,7 +56,7 @@ namespace RanakEngine::Core
             l_currentCounters = SDL_GetPerformanceCounter();
 
             m_deltaTime = ((float)(l_currentCounters - l_startCounters) / (float)SDL_GetPerformanceFrequency());
-            Log::Manager::LogMessage(Log::Message::NORMAL, "DeltaTime: " + std::to_string(m_deltaTime) + "s");
+            Log::Message("DeltaTime: " + std::to_string(m_deltaTime) + "s");
 
 
             // Update IO

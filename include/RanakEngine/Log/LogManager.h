@@ -16,7 +16,7 @@ namespace RanakEngine::IO
 
 namespace RanakEngine::Log
 {
-    struct Message
+    struct MessageContent
     {
         enum Severity
         {
@@ -37,7 +37,7 @@ namespace RanakEngine::Log
         /// Static weak pointer to the Logger singleton instance
         static inline std::weak_ptr<Log::Manager> m_self;
         
-        std::queue<Message> m_messageQueue; ///< Thread-safe queue of pending log messages
+        std::queue<MessageContent> m_messageQueue; ///< Thread-safe queue of pending log messages
         std::thread m_watchThread; ///< Background thread for monitoring/processing logs
         std::mutex m_threadMutex; ///< Mutex protecting the message queue
 

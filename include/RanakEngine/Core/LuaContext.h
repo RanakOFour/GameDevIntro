@@ -1,5 +1,5 @@
-#ifndef RANAKLUA_H
-#define RANAKLUA_H
+#ifndef LUACONTEXT_H
+#define LUACONTEXT_H
 
 #include "RanakEngine/Asset/LuaFile.h"
 #include "RanakEngine/Core/CategoryFactory.h"

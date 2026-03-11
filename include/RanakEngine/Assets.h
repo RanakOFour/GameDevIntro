@@ -8,4 +8,10 @@
 #include "RanakEngine/Asset/Texture.h"
 #include "RanakEngine/Asset/AssetManager.h"
 
+namespace RanakEngine::Asset
+{
+    std::shared_ptr<Asset::Manager> Init();
+    void Stop();
+}
+
 #endif

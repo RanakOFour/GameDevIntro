@@ -2,7 +2,7 @@ local Category = {}
 
 Category.name = "MyCategory"
 Category.members = {}
-Category.attributes = {
+Category.baseAttributes = {
 funkyValue = 7
 }
 

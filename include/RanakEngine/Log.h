@@ -3,45 +3,36 @@
 
 #include "RanakEngine/Log/LogManager.h"
 
-#include "RanakEngine/Core/LuaContext.h"
-#include "sol/sol.hpp"
-
 namespace RanakEngine::Log
 {
-    // Unnamed namespace for 'internal' Lua bindings
     namespace
     {
-        static sol::table LogTable;
         std::shared_ptr<Log::Manager> LogManager;
-
-        void DefineLuaTypes()
-        {
-            auto l_context = Core::LuaContext::Instance().lock();
-
-            LogTable = l_context->CreateTable();
-
-            LogTable.set_function("Message", [](const std::string& _message) { LogManager->LogMessage(Log::Message::NORMAL, _message); });
-            LogTable.set_function("Debug", [](const std::string& _message) { LogManager->LogMessage(Log::Message::DEBUG, _message); });
-            LogTable.set_function("Warning", [](const std::string& _message) { LogManager->LogMessage(Log::Message::WARNING, _message); });
-            LogTable.set_function("Error", [](const std::string& _message) { LogManager->LogMessage(Log::Message::ERROR, _message); });
-
-            l_context->SetGlobal("Log", LogTable);
-        }
     };
 
-    std::shared_ptr<Log::Manager> Init()
+    
+    static void Message(std::string _message)
     {
-        LogManager = Log::Manager::Init();
-        DefineLuaTypes();
-        return LogManager;
+        LogManager->LogMessage(Log::MessageContent::NORMAL, _message);
     }
 
-    void Stop()
+    static void Debug(std::string _message)
     {
-        LogManager->Stop();
-        LogManager.reset();
-        LogTable.clear();
+        LogManager->LogMessage(Log::MessageContent::DEBUG, _message);
     }
+
+    static void Warning(std::string _message)
+    {
+        LogManager->LogMessage(Log::MessageContent::WARNING, _message);
+    }
+
+    static void Error(std::string _message)
+    {
+        LogManager->LogMessage(Log::MessageContent::ERROR, _message);
+    }
+
+    void Init();
+    void Stop();
 }
 
 #endif
