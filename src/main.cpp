@@ -15,7 +15,7 @@ int main()
     RE::Log::Message("Test entity created. Creating test category");
 
     // Load category
-    auto l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/test.lua");
+    auto l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Test.lua");
     auto l_context = RE::Core::LuaContext::Instance().lock();
     auto l_category = l_context->CreateCategory(l_categoryFile);
 
@@ -27,7 +27,7 @@ int main()
     // Load new rule
     RE::Log::Message("Creating new rule");
 
-    auto l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/test.lua");
+    auto l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/Test.lua");
     RE::Core::Rule l_newRule = l_context->RunScript<RE::Core::Rule>(l_ruleFile);
 
     // Add rule to scene

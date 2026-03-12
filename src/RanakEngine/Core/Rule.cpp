@@ -5,86 +5,6 @@
 #include "RanakEngine/Log.h"
 #include "RanakEngine/Math.h"
 
-void PrintTable(sol::table _table)
-{
-    printf("Printing table data:\n");
-    auto l_tablePairs = _table.pairs();
-
-    // Iterate key-value pairs of the table
-    for(auto l_pair : l_tablePairs)
-    {
-        sol::object l_obj = l_pair.first;
-        std::cout << "Entry: ";
-        switch(l_obj.get_type())
-        {
-            case sol::type::string:
-            std::cout << l_obj.as<std::string>();
-            break;
-
-            case sol::type::boolean:
-            std::cout << l_obj.as<bool>() ? "True" : "False";
-            break;
-
-            case sol::type::number:
-            std::cout << l_obj.as<float>();
-            break;
-
-            case sol::type::nil:
-            std::cout << "Nil";
-            break;
-
-            case sol::type::function:
-            std::cout << "Function";
-            break;
-
-            case sol::type::table:
-            std::cout << "Table";
-            PrintTable(l_obj.as<sol::table>());
-            break;
-
-            default:
-            std::cout << "Type is not known";
-            break;
-        }
-
-        l_obj = l_pair.second;
-        std::cout << " Value: ";
-        switch(l_obj.get_type())
-        {
-            case sol::type::string:
-            std::cout << l_obj.as<std::string>();
-            break;
-
-            case sol::type::boolean:
-            std::cout << l_obj.as<bool>() ? "True" : "False";
-            break;
-
-            case sol::type::number:
-            std::cout << l_obj.as<float>();
-            break;
-            
-            case sol::type::nil:
-            std::cout << "Nil";
-            break;
-
-            case sol::type::function:
-            std::cout << "Function";
-            break;
-
-            case sol::type::table:
-            std::cout << "Table\n";
-            PrintTable(l_obj.as<sol::table>());
-            break;
-
-            default:
-            std::cout << "Type is not known";
-            break;
-        }
-
-        std::cout << std::endl;
-    }
-}
-
 namespace RanakEngine::Core
 {
     void Rule::CreateSignature()
@@ -142,7 +62,6 @@ namespace RanakEngine::Core
             for(int l_entity: l_entities)
             {
                 sol::table l_entityData = _registry.GetEntityAttributes(l_entity);
-                PrintTable(l_entityData);
                 m_updateFunction(this, l_entityData);
             }
         }

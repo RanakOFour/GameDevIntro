@@ -20,7 +20,7 @@ namespace RanakEngine::Math
 #pragma region MATHSETUP
 
         // Add usertypes for Vector2, Vector3, and Vector4
-        MathTable.new_usertype<Vector2>("Vector2",
+        l_context->AddUserType<Vector2>("Vector2",
                                         sol::constructors<Vector2(), Vector2(float), Vector2(float, float)>(),
                                         "x", &Vector2::x,
                                         "y", &Vector2::y,
@@ -31,7 +31,7 @@ namespace RanakEngine::Math
                                         "Normalize", &Vector2::Normalise,
                                         "Normalized", &Vector2::Normalised);
 
-        MathTable.new_usertype<Vector3>("Vector3",
+        l_context->AddUserType<Vector3>("Vector3",
                                         sol::constructors<Vector3(), Vector3(float), Vector3(Vector2, float), Vector3(float, float, float)>(),
                                         "x", &Vector3::x,
                                         "y", &Vector3::y,
@@ -43,7 +43,7 @@ namespace RanakEngine::Math
                                         "Normalize", &Vector3::Normalise,
                                         "Normalized", &Vector3::Normalised);
 
-        MathTable.new_usertype<Vector4>("Vector4",
+        l_context->AddUserType<Vector4>("Vector4",
                                         sol::constructors<Vector4(), Vector4(float), Vector4(Vector2, float, float),
                                                           Vector4(Vector2, Vector2), Vector4(Vector3, float),
                                                           Vector4(float, float, float, float)>(),
@@ -74,7 +74,7 @@ namespace RanakEngine::Math
         l_context->SetGlobal("Math", MathTable);
     };
 
-    void ClearTable()
+    void Stop()
     {
         MathTable.clear();
     }

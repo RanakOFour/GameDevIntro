@@ -2,6 +2,7 @@
 #define RANAKLOG_H
 
 #include "RanakEngine/Log/LogManager.h"
+#include "sol/sol.hpp"
 
 namespace RanakEngine::Log
 {
@@ -29,6 +30,8 @@ namespace RanakEngine::Log
     {
         LogManager->LogMessage(Log::MessageContent::ERROR, _message);
     }
+
+    void Table(sol::table);
 
     void DefineLuaLib();
 

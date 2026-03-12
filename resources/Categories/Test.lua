@@ -1,8 +1,8 @@
-NewCategory = Category.new()
+local NewCategory = Category.new()
 NewCategory.name = "TestCategory"
-NewCategory.attributes = {
+NewCategory.baseAttributes = {
     gravity = 9.81,
-    position = Math.Vector2.new(0, 0),
+    position = Vector2.new(0, 0),
     rotation = 0
 }
 

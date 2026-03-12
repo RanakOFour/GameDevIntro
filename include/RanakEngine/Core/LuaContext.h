@@ -76,7 +76,7 @@ namespace RanakEngine::Core
         template <typename T, typename... Args>
         void AddUserType(Args &&..._args)
         {
-            m_state.new_usertype<T>(std::forward(_args)...);
+            m_state.new_usertype<T>(std::forward<Args>(_args)...);
         }
 
         void SetGlobal(std::string _name, sol::object &_obj);

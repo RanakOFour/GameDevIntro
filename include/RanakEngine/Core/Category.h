@@ -31,7 +31,7 @@ namespace RanakEngine::Core
         {
             _state.new_usertype<Category>("Category", sol::constructors<Category()>(),
                                             "name", &Category::m_name,
-                                            "attributes", &Category::m_baseAttributeTable,
+                                            "baseAttributes", &Category::m_baseAttributeTable,
                                             "getMembers", sol::readonly(&Category::GetMembers),
                                             "getAttributesFor", sol::readonly(&Category::GetAttributesFor),
                                             "getSize", sol::readonly(&Category::GetSize)

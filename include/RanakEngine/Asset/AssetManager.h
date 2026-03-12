@@ -28,7 +28,7 @@ namespace RanakEngine::Asset
             std::filesystem::path l_fsPath(_path);
             if(!std::filesystem::exists(l_fsPath))
             {
-                Log::Warning("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
+                Log::Error("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
                 return std::weak_ptr<T>();
             }
 
