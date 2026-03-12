@@ -10,7 +10,6 @@ namespace RanakEngine::Log
         std::shared_ptr<Log::Manager> LogManager;
     };
 
-    
     static void Message(std::string _message)
     {
         LogManager->LogMessage(Log::MessageContent::NORMAL, _message);
@@ -30,6 +29,8 @@ namespace RanakEngine::Log
     {
         LogManager->LogMessage(Log::MessageContent::ERROR, _message);
     }
+
+    void DefineLuaLib();
 
     void Init();
     void Stop();

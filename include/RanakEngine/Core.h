@@ -12,6 +12,7 @@
 
 namespace RanakEngine::Core
 {
+    void DefineLuaLib();
     std::shared_ptr<Core::Manager> Init(bool _isDebug);
     void Stop();
 }

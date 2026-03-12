@@ -29,7 +29,7 @@ namespace RanakEngine::Core
     class Scene;
     class Manager
     {
-        private:
+    private:
         static inline std::weak_ptr<Core::Manager> m_self;
         std::weak_ptr<IO::Manager> m_ioManager;
         std::weak_ptr<Physics::Manager> m_physicsManager;
@@ -43,7 +43,8 @@ namespace RanakEngine::Core
         float m_targetFPS;
 
         Manager(bool _debug);
-        public:
+
+    public:
         ~Manager();
 
         static std::shared_ptr<Core::Manager> Init(bool _debug);
@@ -51,7 +52,7 @@ namespace RanakEngine::Core
 
         void Start();
         void Stop();
-        
+
         void SetScene(std::shared_ptr<Scene> _scene);
         std::weak_ptr<Scene> GetScene();
 

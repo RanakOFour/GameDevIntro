@@ -6,26 +6,24 @@
 namespace RanakEngine::Core
 {
     LuaContext::LuaContext()
-    : m_state()
-    , m_loadedScripts()
+        : m_state(), m_loadedScripts()
     {
         // Opens all basic libraries
         m_state.open_libraries();
-        
+
         m_categoryFactory = std::make_shared<CategoryFactory>();
-        //Category::DefineUsertype(m_state);
-        //Rule::DefineUsertype(m_state);
+        // Category::DefineUsertype(m_state);
+        // Rule::DefineUsertype(m_state);
     }
 
     LuaContext::~LuaContext()
     {
-
     }
 
     std::shared_ptr<LuaContext> LuaContext::Init()
     {
         std::shared_ptr<LuaContext> l_toReturn = std::shared_ptr<LuaContext>();
-        LuaContext* l_wrapper = new LuaContext();
+        LuaContext *l_wrapper = new LuaContext();
         l_toReturn.reset(l_wrapper);
         l_toReturn->m_self = l_toReturn;
 
@@ -34,7 +32,7 @@ namespace RanakEngine::Core
 
     std::weak_ptr<LuaContext> LuaContext::Instance()
     {
-        if(!m_self.lock())
+        if (!m_self.lock())
         {
             Log::Message("LuaContext instance was requested but it doesn't exist! Creating new instance...\n");
             return Init();
@@ -50,7 +48,7 @@ namespace RanakEngine::Core
         std::string l_code = l_file->GetCode();
 
         m_loadedScripts[l_path] = m_state.load_buffer(l_code.data(), l_code.size());
-        if(!m_loadedScripts[l_path].valid())
+        if (!m_loadedScripts[l_path].valid())
         {
             sol::error l_err = m_loadedScripts[l_path];
             Log::Message("Could not load script " + l_path + "!\n" + std::string(l_err.what()));
@@ -75,8 +73,13 @@ namespace RanakEngine::Core
         return m_categoryFactory->GetBySignature(_signature);
     }
 
-    void LuaContext::SetGlobal(std::string _name, sol::object& _obj)
+    void LuaContext::SetGlobal(std::string _name, sol::object &_obj)
     {
         m_state[_name] = _obj;
+    }
+
+    void LuaContext::RemoveGlobal(std::string _name)
+    {
+        m_state[_name] = sol::nil;
     }
 }

@@ -11,7 +11,7 @@ namespace RanakEngine::Core
         static sol::table CoreTable;
     }
 
-    void DefineLuaTypes()
+    void DefineLuaLib()
     {
         auto l_context = LuaContext::Instance().lock();
 
@@ -23,13 +23,12 @@ namespace RanakEngine::Core
     std::shared_ptr<Core::Manager> Init(bool _isDebug)
     {
         CoreManager = Core::Manager::Init(_isDebug);
-        //DefineLuaTypes();
         return CoreManager;
     }
 
     void Stop()
     {
-        CoreManager.reset();
         CoreTable.clear();
+        CoreManager.reset();
     }
 }

@@ -10,6 +10,7 @@
 
 namespace RanakEngine::Asset
 {
+    void DefineLuaLib();
     std::shared_ptr<Asset::Manager> Init();
     void Stop();
 }

@@ -18,6 +18,7 @@ namespace RanakEngine::Core
 
     Core::Manager::~Manager()
     {
+        m_luaContext.reset();
     }
 
     std::shared_ptr<Core::Manager> Core::Manager::Init(bool _debug)

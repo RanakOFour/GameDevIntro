@@ -17,7 +17,7 @@ namespace RanakEngine::Math
 
         MathTable = l_context->CreateTable();
 
-        #pragma region MATHSETUP
+#pragma region MATHSETUP
 
         // Add usertypes for Vector2, Vector3, and Vector4
         MathTable.new_usertype<Vector2>("Vector2",
@@ -29,11 +29,10 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector2::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector2::Normalise,
-                                        "Normalized", &Vector2::Normalised
-                                    );
+                                        "Normalized", &Vector2::Normalised);
 
         MathTable.new_usertype<Vector3>("Vector3",
-        sol::constructors<Vector3(), Vector3(float), Vector3(Vector2, float), Vector3(float, float, float)>(),
+                                        sol::constructors<Vector3(), Vector3(float), Vector3(Vector2, float), Vector3(float, float, float)>(),
                                         "x", &Vector3::x,
                                         "y", &Vector3::y,
                                         "z", &Vector3::z,
@@ -42,13 +41,12 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector3::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector3::Normalise,
-                                        "Normalized", &Vector3::Normalised
-                                    );
+                                        "Normalized", &Vector3::Normalised);
 
         MathTable.new_usertype<Vector4>("Vector4",
-                                        sol::constructors<Vector4(), Vector4(float), Vector4(Vector2, float, float), 
-                                        Vector4(Vector2, Vector2), Vector4(Vector3, float), 
-                                        Vector4(float, float, float, float)>(),
+                                        sol::constructors<Vector4(), Vector4(float), Vector4(Vector2, float, float),
+                                                          Vector4(Vector2, Vector2), Vector4(Vector3, float),
+                                                          Vector4(float, float, float, float)>(),
                                         "x", &Vector4::x,
                                         "y", &Vector4::y,
                                         "z", &Vector4::z,
@@ -58,28 +56,25 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector4::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector4::Normalise,
-                                        "Normalized", &Vector4::Normalised
-                                        );
-        
+                                        "Normalized", &Vector4::Normalised);
+
         // Functions for vector operations
-        MathTable.set_function("DotProduct", [](Vector2& _a, Vector2& _b) { return _a.x * _b.x + _a.y * _b.y; });
-        MathTable.set_function("DotProduct", [](Vector3& _a, Vector3& _b) { return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z; });
-        MathTable.set_function("DotProduct", [](Vector4& _a, Vector4& _b) { return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z + _a.w * _b.w; });
+        MathTable.set_function("DotProduct", [](Vector2 &_a, Vector2 &_b)
+                               { return _a.x * _b.x + _a.y * _b.y; });
+        MathTable.set_function("DotProduct", [](Vector3 &_a, Vector3 &_b)
+                               { return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z; });
+        MathTable.set_function("DotProduct", [](Vector4 &_a, Vector4 &_b)
+                               { return _a.x * _b.x + _a.y * _b.y + _a.z * _b.z + _a.w * _b.w; });
 
+        MathTable.set_function("CrossProduct", [](Vector3 &_a, Vector3 &_b)
+                               { return Vector3(_a.y * _b.z - _a.z * _b.y, _a.z * _b.x - _a.x * _b.z, _a.x * _b.y - _a.y * _b.x); });
 
-        MathTable.set_function("CrossProduct", [](Vector3& _a, Vector3& _b) { return Vector3(_a.y * _b.z - _a.z * _b.y, _a.z * _b.x - _a.x * _b.z, _a.x * _b.y - _a.y * _b.x); });
-
-        #pragma endregion
+#pragma endregion
 
         l_context->SetGlobal("Math", MathTable);
     };
 
-    void Init()
-    {
-        //DefineLuaTypes();
-    }
-
-    void Stop()
+    void ClearTable()
     {
         MathTable.clear();
     }

@@ -9,6 +9,7 @@
 
 namespace RanakEngine::IO
 {
+    void DefineLuaLib();
     std::shared_ptr<IO::Manager> Init(Vector2 _screenSize);
     void Stop();
 }

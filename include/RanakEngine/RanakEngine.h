@@ -31,16 +31,29 @@ namespace RanakEngine
         l_toReturn.core = Core::Init(_debug);
         // l_toReturn.physics = Physics::Init();
 
+        Math::DefineLuaLib();
+        Asset::DefineLuaLib();
+        Core::DefineLuaLib();
+        IO::DefineLuaLib();
+        Log::DefineLuaLib();
+
         return l_toReturn;
     };
 
     void Shutdown(EngineContents &_contents)
     {
         // Physics::Stop();
-        Log::Stop();
-        Asset::Stop();
-        IO::Stop();
+        Log::Message("Stopping core\n");
         Core::Stop();
+
+        Log::Message("Stopping IO\n");
+        IO::Stop();
+
+        Log::Message("Stopping Asset\n");
+        Asset::Stop();
+
+        Log::Message("Stopping Log\n");
+        Log::Stop();
     }
 }
 

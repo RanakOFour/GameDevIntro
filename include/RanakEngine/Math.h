@@ -7,6 +7,8 @@
 
 namespace RanakEngine::Math
 {
+    void DefineLuaLib();
+
     void Init();
     void Stop();
 }

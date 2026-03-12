@@ -11,7 +11,7 @@ namespace RanakEngine::Asset
         static sol::table AssetTable;
     }
 
-    void DefineLuaTypes()
+    void DefineLuaLib()
     {
         auto l_context = Core::LuaContext::Instance().lock();
 
@@ -23,13 +23,13 @@ namespace RanakEngine::Asset
     std::shared_ptr<Asset::Manager> Init()
     {
         AssetManager = Asset::Manager::Init();
-        //DefineLuaTypes();
+        // DefineLuaTypes();
         return AssetManager;
     }
 
     void Stop()
     {
-        AssetManager.reset();
         AssetTable.clear();
+        AssetManager.reset();
     }
 }
