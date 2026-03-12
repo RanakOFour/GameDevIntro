@@ -1,5 +1,6 @@
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Rule.h"
+#include "RanakEngine/Core/Category.h"
 
 #include "RanakEngine/Log.h"
 
@@ -12,8 +13,8 @@ namespace RanakEngine::Core
         m_state.open_libraries();
 
         m_categoryFactory = std::make_shared<CategoryFactory>();
-        // Category::DefineUsertype(m_state);
-        // Rule::DefineUsertype(m_state);
+        Category::DefineUsertype(m_state);
+        Rule::DefineUsertype(m_state);
     }
 
     LuaContext::~LuaContext()
@@ -47,7 +48,7 @@ namespace RanakEngine::Core
         std::string l_path = l_file->GetPath();
         std::string l_code = l_file->GetCode();
 
-        m_loadedScripts[l_path] = m_state.load_buffer(l_code.data(), l_code.size());
+        m_loadedScripts[l_path] = m_state.load_file(l_path);
         if (!m_loadedScripts[l_path].valid())
         {
             sol::error l_err = m_loadedScripts[l_path];
@@ -64,7 +65,8 @@ namespace RanakEngine::Core
     std::weak_ptr<Category> LuaContext::CreateCategory(std::weak_ptr<Asset::LuaFile> _file)
     {
         Log::Message("Creating category from file " + _file.lock()->GetPath() + "...\n");
-        sol::table l_categoryTable = RunScript<sol::table>(_file);
+        Category l_categoryTable = RunScript<Category>(_file);
+        
         return m_categoryFactory->RegisterCategory(l_categoryTable);
     }
 
@@ -73,13 +75,13 @@ namespace RanakEngine::Core
         return m_categoryFactory->GetBySignature(_signature);
     }
 
+    std::weak_ptr<Category> LuaContext::GetCategory(std::string _name)
+    {
+        return m_categoryFactory->GetByName(_name);
+    }
+
     void LuaContext::SetGlobal(std::string _name, sol::object &_obj)
     {
         m_state[_name] = _obj;
-    }
-
-    void LuaContext::RemoveGlobal(std::string _name)
-    {
-        m_state[_name] = sol::nil;
     }
 }

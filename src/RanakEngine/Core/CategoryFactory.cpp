@@ -20,6 +20,27 @@ namespace RanakEngine::Core
 
     }
 
+    std::weak_ptr<Category> CategoryFactory::RegisterCategory(Category _category)
+    {
+        std::string l_categoryName = _category.GetName();
+        sol::table l_baseAttributes = _category.GetBaseData();
+
+        auto l_newCategoryPtr = std::make_shared<Category>(l_categoryName, l_baseAttributes);
+
+        std::bitset<1024> l_newSignature;
+        l_newSignature.set(m_size);
+
+        m_nameToSignature.insert({l_newCategoryPtr->m_name, l_newSignature});
+
+        l_newCategoryPtr->m_signature = l_newSignature;
+
+        m_signatureToCategory.insert({l_newSignature, l_newCategoryPtr});
+
+        m_size++;
+
+        return l_newCategoryPtr;
+    }
+
     std::weak_ptr<Category> CategoryFactory::RegisterCategory(sol::table _definitionTable)
     {
         // Give category default name of Category{0}, where {0} is m_size, or the registered name is not null

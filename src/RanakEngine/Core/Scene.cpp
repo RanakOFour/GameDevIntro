@@ -63,6 +63,7 @@ namespace RanakEngine::Core
 
     void Scene::AddRule(Rule &_rule)
     {
+        _rule.CreateSignature();
         m_rules.push_back(_rule);
     }
 

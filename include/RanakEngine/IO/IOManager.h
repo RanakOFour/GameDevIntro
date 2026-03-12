@@ -19,6 +19,7 @@ namespace RanakEngine::IO
     class Audio;
     class Manager
     {
+        friend Core::Manager;
         private:
         static inline std::weak_ptr<IO::Manager> m_self;
         std::weak_ptr<Core::Manager> m_core;
@@ -26,6 +27,8 @@ namespace RanakEngine::IO
         std::shared_ptr<Audio> m_audio;
         KBInfo m_kbInfo;
         MouseInfo m_mouseInfo;
+
+        void SetCore(std::weak_ptr<Core::Manager> _core);
 
         Manager(Vector2 _screenSize);
         public:

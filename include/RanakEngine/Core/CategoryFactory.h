@@ -25,6 +25,7 @@ namespace Core
         std::unordered_map<std::string, std::bitset<1024>> m_nameToSignature;
 
         std::weak_ptr<Category> RegisterCategory(sol::table _definitionTable);
+        std::weak_ptr<Category> RegisterCategory(Category _category);
         public:
         CategoryFactory();
         ~CategoryFactory();

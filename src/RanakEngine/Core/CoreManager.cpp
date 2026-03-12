@@ -29,6 +29,8 @@ namespace RanakEngine::Core
             Core::Manager *l_manager = new Core::Manager(_debug);
             l_toReturn.reset(l_manager);
 
+            l_toReturn->m_ioManager.lock()->SetCore(l_toReturn);
+
             l_toReturn->m_self = l_toReturn;
 
             return l_toReturn;
@@ -63,13 +65,15 @@ namespace RanakEngine::Core
             // Update IO
             l_IOManager->UpdateInputs();
 
-            if (l_IOManager->WindowFocused())
-            {
-                // Do systems
-                m_currentScene->Update(m_deltaTime);
+            // if (l_IOManager->WindowFocused())
+            // {
+            //     // Do systems
+            //     m_currentScene->Update(m_deltaTime);
 
-                // m_Physics.lock()->Update(m_deltaTime);
-            }
+            //     // m_Physics.lock()->Update(m_deltaTime);
+            // }
+
+            m_currentScene->Update(m_deltaTime);
 
             l_IOManager->Draw(m_currentScene);
 

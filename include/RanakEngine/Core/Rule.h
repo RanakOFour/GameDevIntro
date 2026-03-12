@@ -17,28 +17,37 @@ namespace RanakEngine::Asset
 namespace RanakEngine::Core
 {
     class LuaContext;
-    class Category;
+    class Scene;
     class Rule
     {
+        friend Scene;
         friend LuaContext;
         private:
         std::weak_ptr<LuaContext> m_context;
 
         std::string m_name;
         std::bitset<1024> m_signature;
+        std::vector<std::string> m_categories;
+        sol::function m_updateFunction;
+        sol::function m_drawFunction;
         sol::table m_table;
 
         static void DefineUsertype(sol::state& _state)
         {
-            _state.new_usertype<Rule>("Rule", "name", sol::readonly(&Rule::m_name),
+            _state.new_usertype<Rule>("Rule", sol::constructors<Rule()>(),
+                                              "name", &Rule::m_name,
+                                              "categories", &Rule::m_categories,
+                                              "Update", &Rule::m_updateFunction,
+                                              "Draw", &Rule::m_drawFunction,
+                                              "data", &Rule::m_table,
                                               "getCategories", sol::readonly(&Rule::GetCategories)
                                      );
         }
 
+        void CreateSignature();
+
         public:
         Rule();
-        Rule(sol::table _dataTable);
-
         ~Rule();
 
         /* These will call the stand-in functions inside the m_table,
@@ -47,7 +56,6 @@ namespace RanakEngine::Core
          Rule:Update(_entityData),
          Where _entityData is a table containing a single entities data.
          I should also probably hold the dt value somewhere else, too
-
          */
         void Update(EntityRegistry& _registry);
         void Draw(EntityRegistry& _registry);

@@ -8,11 +8,15 @@
 
 namespace RanakEngine::IO
 {
+    void IO::Manager::SetCore(std::weak_ptr<Core::Manager> _core)
+    {
+        m_core = _core;
+    }
+
     IO::Manager::Manager(Vector2 _screenSize)
     : m_kbInfo()
     , m_mouseInfo()
     {
-        m_core = Core::Manager::Instance();
         m_window = std::make_shared<Window>(_screenSize);
         m_audio = std::make_shared<Audio>();
 

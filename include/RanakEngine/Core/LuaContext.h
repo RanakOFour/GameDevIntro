@@ -36,7 +36,6 @@ namespace RanakEngine::Core
         {
             auto l_file = _file.lock();
             std::string l_path = l_file->GetPath();
-            std::string l_code = l_file->GetCode();
 
             if (m_loadedScripts.find(l_path) == m_loadedScripts.end())
             {
@@ -66,6 +65,7 @@ namespace RanakEngine::Core
 
         std::weak_ptr<Core::Category> CreateCategory(std::weak_ptr<Asset::LuaFile> _file);
         std::weak_ptr<Core::Category> GetCategory(std::bitset<1024> _signature);
+        std::weak_ptr<Core::Category> GetCategory(std::string _name);
 
         template <typename T>
         void AddVariable(std::string _name, T &_var)
@@ -80,7 +80,6 @@ namespace RanakEngine::Core
         }
 
         void SetGlobal(std::string _name, sol::object &_obj);
-        void RemoveGlobal(std::string _name);
 
         sol::state *GetState() { return &m_state; };
     };
