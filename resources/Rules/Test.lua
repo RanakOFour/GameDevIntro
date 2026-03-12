@@ -1,6 +1,6 @@
 NewRule = Rule.new()
-NewRule.name = "My Rule"
-NewRule.categories = {"My Category"}
+NewRule.name = "TestRule"
+NewRule.categories = {"TestCategory"}
 
 function NewRule:Update(_entityData)
     Log.Message("Test message")
@@ -13,7 +13,7 @@ function NewRule:Update(_entityData)
 end
 
 function NewRule:Draw(_entityData)
-
+    
 end
 
 return NewRule

@@ -43,17 +43,19 @@ namespace RanakEngine
     void Shutdown(EngineContents &_contents)
     {
         // Physics::Stop();
-        Log::Message("Stopping core\n");
+        Log::Message("Stopping core");
         Core::Stop();
 
-        Log::Message("Stopping IO\n");
+        Log::Message("Stopping IO");
         IO::Stop();
 
-        Log::Message("Stopping Asset\n");
+        Log::Message("Stopping Asset");
         Asset::Stop();
 
-        Log::Message("Stopping Log\n");
+        Log::Message("Stopping Log");
         Log::Stop();
+
+        Math::Stop();
     }
 }
 
