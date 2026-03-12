@@ -9,7 +9,7 @@ namespace RanakEngine::Log
         static sol::table LogTable;
     };
 
-    void Table(sol::table _table)
+    std::string Table(sol::table _table)
     {
         printf("Printing table data:\n");
         auto l_tablePairs = _table.pairs();
@@ -95,21 +95,24 @@ namespace RanakEngine::Log
 
         LogTable = l_context->CreateTable();
 
-        LogTable.set_function("Message", [](const sol::object& _message)
+        LogTable.set_function("Message", [](std::string _message)
                               {
-                                if(_message.get_type() == sol::type::string)
-                                {
-                                    std::string l_message = _message.as<std::string>();
-                                    printf("Recieved lua Log.Message: %s\n", l_message.c_str());
-                                    LogManager->LogMessage(Log::MessageContent::NORMAL, l_message);
-                                } 
+                                printf("Recieved lua Log.Message: %s\n", _message.c_str());
+                                LogManager->LogMessage(Log::MessageContent::NORMAL, _message);
                               });
+
+
         LogTable.set_function("Debug", [](const std::string& _message)
                               { LogManager->LogMessage(Log::MessageContent::DEBUG, _message); });
         LogTable.set_function("Warning", [](const std::string& _message)
                               { LogManager->LogMessage(Log::MessageContent::WARNING, _message); });
         LogTable.set_function("Error", [](const std::string& _message)
                               { LogManager->LogMessage(Log::MessageContent::ERROR, _message); });
+
+        
+        LogTable.set_function("Table", [](const sol::table _table)
+                              { LogManager->LogMessage(Log::MessageContent::NORMAL, Table(_table)); });
+
 
         l_context->SetGlobal("Log", LogTable);
     }

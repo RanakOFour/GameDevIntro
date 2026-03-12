@@ -29,7 +29,8 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector2::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector2::Normalise,
-                                        "Normalized", &Vector2::Normalised);
+                                        "Normalized", &Vector2::Normalised,
+                                        "ToString", &Vector2::ToString);
 
         l_context->AddUserType<Vector3>("Vector3",
                                         sol::constructors<Vector3(), Vector3(float), Vector3(Vector2, float), Vector3(float, float, float)>(),
@@ -41,7 +42,8 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector3::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector3::Normalise,
-                                        "Normalized", &Vector3::Normalised);
+                                        "Normalized", &Vector3::Normalised,
+                                        "ToString", &Vector3::ToString);
 
         l_context->AddUserType<Vector4>("Vector4",
                                         sol::constructors<Vector4(), Vector4(float), Vector4(Vector2, float, float),
@@ -56,7 +58,8 @@ namespace RanakEngine::Math
                                         "Normalised", &Vector4::Normalised,
                                         // Americanised spellings just because
                                         "Normalize", &Vector4::Normalise,
-                                        "Normalized", &Vector4::Normalised);
+                                        "Normalized", &Vector4::Normalised,
+                                        "ToString", &Vector4::ToString);
 
         // Functions for vector operations
         MathTable.set_function("DotProduct", [](Vector2 &_a, Vector2 &_b)
