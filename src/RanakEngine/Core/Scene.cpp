@@ -63,7 +63,6 @@ namespace RanakEngine::Core
 
     void Scene::AddRule(Rule &_rule)
     {
-        _rule.CreateSignature();
         m_rules.push_back(_rule);
     }
 
@@ -80,11 +79,22 @@ namespace RanakEngine::Core
         }
     }
 
+    void Scene::Init()
+    {
+        auto l_contextPtr = m_luaContext.lock();
+
+        for (Rule& l_rule : m_rules)
+        {
+            l_rule.CreateSignature();
+            l_rule.Init(m_registry);
+        }
+    }
+
     void Scene::Update(float _dt)
     {
         auto l_contextPtr = m_luaContext.lock();
 
-        for (Rule &l_rule : m_rules)
+        for (Rule& l_rule : m_rules)
         {
             l_rule.Update(m_registry);
         }
@@ -94,9 +104,14 @@ namespace RanakEngine::Core
     {
         auto l_contextPtr = m_luaContext.lock();
 
-        for (Rule &l_rule : m_rules)
+        for(Rule& l_rule : m_rules)
         {
             l_rule.Draw(m_registry);
         }
+    }
+
+    EntityRegistry* Scene::GetRegistry()
+    {
+        return &m_registry;
     }
 }

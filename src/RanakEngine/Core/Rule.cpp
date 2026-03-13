@@ -20,7 +20,7 @@ namespace RanakEngine::Core
 
     Rule::Rule()
     : m_updateFunction()
-    , m_drawFunction()
+    , m_initFunction()
     {
         m_table = LuaContext::Instance().lock()->CreateTable();
         m_context = LuaContext::Instance();
@@ -43,6 +43,27 @@ namespace RanakEngine::Core
     Rule::~Rule()
     {
 
+    }
+
+    void Rule::Init(EntityRegistry& _registry)
+    {
+        if(!m_initFunction.valid())
+        {
+            return;
+        }
+
+        // Get entities that match signature
+        std::vector<int> l_entities = _registry.GetEntitiesWith(m_signature);
+
+        // Call update function passing in each entity's data
+        if(l_entities.size() > 0)
+        {
+            for(int l_entity: l_entities)
+            {
+                sol::table l_entityData = _registry.GetEntityAttributes(l_entity);
+                m_initFunction(this, l_entityData);
+            }
+        }
     }
 
     void Rule::Update(EntityRegistry& _registry)

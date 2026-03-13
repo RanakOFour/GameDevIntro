@@ -1,9 +1,8 @@
-local Transform = Category.new()
-Transform.name = "Transform"
-Transform.baseAttributes = {
-    position = Vector2.new(),
-    rotation = 0
-    scale = Vector2.new(1)
+local categoryName = "Transform"
+local baseAttributes = {
+    position = Vector3.new(0.0),
+    rotation = 0,
+    scale = Vector3.new(1.0)
 }
 
-return Transform
+return Category.new(categoryName, baseAttributes)

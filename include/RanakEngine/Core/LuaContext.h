@@ -63,6 +63,7 @@ namespace RanakEngine::Core
 
         sol::table CreateTable();
 
+        void AddCategory(std::shared_ptr<Category> _cat);
         std::weak_ptr<Core::Category> CreateCategory(std::weak_ptr<Asset::LuaFile> _file);
         std::weak_ptr<Core::Category> GetCategory(std::bitset<1024> _signature);
         std::weak_ptr<Core::Category> GetCategory(std::string _name);

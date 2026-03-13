@@ -17,6 +17,9 @@ namespace RanakEngine::Core
 
         CoreTable = l_context->CreateTable();
 
+        CoreTable.set_function("Draw", [](sol::table _t, sol::table _d){CoreManager->GetCamera()->Draw(_t, _d);});
+        CoreTable.set_function("DeltaTime", [](){return CoreManager->DeltaTime();});
+
         l_context->SetGlobal("Core", CoreTable);
     }
 

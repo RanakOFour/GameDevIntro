@@ -54,6 +54,8 @@ namespace RanakEngine::Core
         Uint64 l_startCounters = SDL_GetPerformanceCounter();
         Uint64 l_currentCounters = 0.0f;
 
+        m_currentScene->Init();
+
         while (m_running)
         {
             l_startCounters = l_currentCounters;
@@ -101,8 +103,18 @@ namespace RanakEngine::Core
         return m_currentScene;
     }
 
+    float Core::Manager::DeltaTime()
+    {
+        return m_deltaTime;
+    }
+
     bool Core::Manager::IsDebug()
     {
         return m_debug;
+    }
+
+    Camera* Core::Manager::GetCamera()
+    {
+        return m_mainCamera.get();
     }
 }

@@ -2,7 +2,7 @@
 #define ASSETMANAGER_H
 
 #include <memory>
-#include <map>
+#include <unordered_map>
 #include <filesystem>
 
 #include "RanakEngine/Log.h"
@@ -14,7 +14,7 @@ namespace RanakEngine::Asset
     {
         private:
         static inline std::weak_ptr<Asset::Manager> m_self;
-        std::map<std::string, std::shared_ptr<AssetFile>> m_resourceMap;
+        std::unordered_map<std::string, std::shared_ptr<AssetFile>> m_resourceMap;
 
         Manager();
         public:
@@ -25,14 +25,37 @@ namespace RanakEngine::Asset
         template<typename T>
         std::weak_ptr<T> Load(std::string _path)
         {
-            std::filesystem::path l_fsPath(_path);
-            if(!std::filesystem::exists(l_fsPath))
+            if(_path.find_first_of(';') == _path.npos)
             {
-                Log::Error("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
-                return std::weak_ptr<T>();
+                std::filesystem::path l_fsPath(_path);
+                if(!std::filesystem::exists(l_fsPath))
+                {
+                    Log::Error("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
+                    return std::weak_ptr<T>();
+                }
             }
+            else
+            {
+                int l_splitPos = _path.find_first_of(';');
 
-            if(m_resourceMap[_path] == nullptr)
+                std::string l_path1 = _path.substr(0, l_splitPos);
+                std::string l_path2 = _path.substr(l_splitPos + 1, _path.size() - l_splitPos);
+
+                if(!std::filesystem::exists(l_path1))
+                {
+                    Log::Error("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
+                    return std::weak_ptr<T>();
+                }
+
+                if(!std::filesystem::exists(l_path2))
+                {
+                    Log::Error("Asset::Load<" + std::string(typeid(T).name()) + ">, File does not exist: " + _path);
+                    return std::weak_ptr<T>();
+                }
+            }
+            
+
+            if(m_resourceMap.find(_path) == m_resourceMap.end())
             {
                 std::shared_ptr<T> l_newAsset;
                 

@@ -29,9 +29,9 @@ namespace RanakEngine::Core
 
         static void DefineUsertype(sol::state& _state)
         {
-            _state.new_usertype<Category>("Category", sol::constructors<Category()>(),
-                                            "name", &Category::m_name,
-                                            "baseAttributes", &Category::m_baseAttributeTable,
+            _state.new_usertype<Category>("Category", sol::constructors<Category(), Category(std::string, sol::table)>(),
+                                            "name", sol::readonly(&Category::m_name),
+                                            "baseAttributes", sol::readonly(&Category::m_baseAttributeTable),
                                             "getMembers", sol::readonly(&Category::GetMembers),
                                             "getAttributesFor", sol::readonly(&Category::GetAttributesFor),
                                             "getSize", sol::readonly(&Category::GetSize)

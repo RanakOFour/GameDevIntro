@@ -28,6 +28,7 @@ namespace RanakEngine::Core
         std::string m_name;
         std::bitset<1024> m_signature;
         std::vector<std::string> m_categories;
+        sol::function m_initFunction;
         sol::function m_updateFunction;
         sol::function m_drawFunction;
         sol::table m_table;
@@ -37,6 +38,7 @@ namespace RanakEngine::Core
             _state.new_usertype<Rule>("Rule", sol::constructors<Rule()>(),
                                               "name", &Rule::m_name,
                                               "categories", &Rule::m_categories,
+                                              "Init", &Rule::m_initFunction,
                                               "Update", &Rule::m_updateFunction,
                                               "Draw", &Rule::m_drawFunction,
                                               "data", &Rule::m_table,
@@ -57,6 +59,7 @@ namespace RanakEngine::Core
          Where _entityData is a table containing a single entities data.
          I should also probably hold the dt value somewhere else, too
          */
+        void Init(EntityRegistry& _registry);
         void Update(EntityRegistry& _registry);
         void Draw(EntityRegistry& _registry);
 

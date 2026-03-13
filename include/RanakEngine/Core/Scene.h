@@ -17,6 +17,7 @@ namespace RanakEngine
 
 namespace Core
 {
+    class Camera;
     class Scene
     {
         private:
@@ -24,12 +25,13 @@ namespace Core
 
         std::string m_name;
         sol::table m_sceneTable;
+
+        std::weak_ptr<Camera> m_camera;
         
         EntityRegistry m_registry;
 
         std::vector<Rule> m_rules;
 
-        void DeserializeFromLua(sol::table _tableData);
         void ConfigLuaLibrary();
 
         public:
@@ -47,9 +49,11 @@ namespace Core
         void AddRule(Rule& _rule);
         void RemoveRule(Rule& _rule);
 
+        void Init();
         void Update(float _deltaTime);
         void Draw();
 
+        EntityRegistry* GetRegistry();
     };
 };
 };

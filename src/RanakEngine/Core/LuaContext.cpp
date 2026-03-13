@@ -1,6 +1,7 @@
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Rule.h"
 #include "RanakEngine/Core/Category.h"
+#include "RanakEngine/Core/Camera.h"
 
 #include "RanakEngine/Log.h"
 
@@ -15,6 +16,7 @@ namespace RanakEngine::Core
         m_categoryFactory = std::make_shared<CategoryFactory>();
         Category::DefineUsertype(m_state);
         Rule::DefineUsertype(m_state);
+        Camera::DefineUsertype(m_state);
     }
 
     LuaContext::~LuaContext()

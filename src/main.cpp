@@ -15,19 +15,28 @@ int main()
     RE::Log::Message("Test entity created. Creating test category");
 
     // Load category
-    auto l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Test.lua");
+    auto l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Transform.lua");
     auto l_context = RE::Core::LuaContext::Instance().lock();
     auto l_category = l_context->CreateCategory(l_categoryFile);
+
+    l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
+
+    l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Drawable.lua");
+    l_context = RE::Core::LuaContext::Instance().lock();
+    l_category = l_context->CreateCategory(l_categoryFile);
 
     RE::Log::Message("Adding entity to category");
 
     // Add new entity to category
     l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
 
+    sol::table l_entityData = l_scene->GetRegistry()->GetEntityAttributes(l_testEntity);
+    l_entityData.raw_get<sol::table>("Drawable").raw_set("texturePath", "./resources/textures/triangle.png");
+
     // Load new rule
     RE::Log::Message("Creating new rule");
 
-    auto l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/Test.lua");
+    auto l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/Rendering.lua");
     RE::Core::Rule l_newRule = l_context->RunScript<RE::Core::Rule>(l_ruleFile);
 
     // Add rule to scene

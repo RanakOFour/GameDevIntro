@@ -1,6 +1,7 @@
 #ifndef RANAKCORE_H
 #define RANAKCORE_H
 
+#include "RanakEngine/Core/Camera.h"
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/CoreManager.h"
 #include "RanakEngine/Core/CategoryFactory.h"

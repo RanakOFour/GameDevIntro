@@ -27,6 +27,7 @@ namespace RanakEngine::Core
     class Category;
     class CategoryFactory;
     class Scene;
+    class Camera;
     class Manager
     {
     private:
@@ -35,6 +36,7 @@ namespace RanakEngine::Core
         std::weak_ptr<Physics::Manager> m_physicsManager;
 
         std::shared_ptr<LuaContext> m_luaContext;
+        std::shared_ptr<Camera> m_mainCamera;
 
         std::shared_ptr<Scene> m_currentScene;
         bool m_running;
@@ -56,7 +58,11 @@ namespace RanakEngine::Core
         void SetScene(std::shared_ptr<Scene> _scene);
         std::weak_ptr<Scene> GetScene();
 
+        float DeltaTime();
+
         bool IsDebug();
+
+        Camera* GetCamera();
     };
 }
 

@@ -21,7 +21,7 @@ namespace RanakEngine::Asset
             std::string l_vertPath = _path.substr(0, l_splitPos);
             std::string l_fragPath = _path.substr(l_splitPos + 1, _path.size() - l_splitPos);
 
-            int l_fileExtensionIndex = l_vertPath.find_first_of('.') + 1;
+            int l_fileExtensionIndex = l_vertPath.find_last_of('.') + 1;
             std::string l_vertFileType = l_vertPath.substr(l_fileExtensionIndex, l_vertPath.size() - l_fileExtensionIndex);
 
             // Swap paths around if frag path is first

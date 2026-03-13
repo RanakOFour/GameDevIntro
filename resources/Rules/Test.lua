@@ -1,4 +1,4 @@
-NewRule = Rule.new()
+local NewRule = Rule.new()
 NewRule.name = "TestRule"
 NewRule.categories = {"TestCategory"}
 
@@ -21,10 +21,6 @@ function NewRule:Update(_entityData)
 
     local message = "Data: " .. catData.position:ToString()
     Log.Message(message)
-end
-
-function NewRule:Draw(_entityData)
-    
 end
 
 return NewRule
