@@ -1,7 +1,9 @@
 #include "RanakEngine/Core/Camera.h"
 #include "RanakEngine/Assets.h"
-#include "GL/glew.h"
 #include "RanakEngine/Math.h"
+
+#include "sol/sol.hpp"
+#include "GL/glew.h"
 #include "GLM/ext.hpp"
 
 namespace RanakEngine::Core
@@ -13,8 +15,9 @@ namespace RanakEngine::Core
     , m_position(0.0f, 0.0f, 3.0f)
     , m_rotation(0.0f)
     , m_fov(45.0f)
-    , m_projectionType(ProjectionType::Perspective)
+    , m_projectionType(ProjectionType::Orthographic)
     {
+        //m_projection = glm::ortho(-5.0f, 5.0f, -5.0f, 5.0f, 0.1f, 100.0f);
         m_projection = glm::perspective(m_fov, 1920.0f/1080.0f, 0.1f, 100.0f);
     }
 
@@ -39,41 +42,73 @@ namespace RanakEngine::Core
         _shader->SetUniform("u_Projection", m_projection);
     }
 
-    void Camera::Draw(sol::table _transform, sol::table _drawable)
+    glm::mat4 CalculateModelMatrix(Vector3 _pos, Vector3 _euler)
     {
-        Vector3& l_pos = _transform.raw_get<Vector3>("position");
-        Vector3& l_euler = _transform.raw_get<Vector3>("rotation");
-
-        glm::vec3 l_glPos = glm::vec3(l_pos.x, l_pos.y, l_pos.z);
-        glm::quat l_glQuat = (glm::quat)Quaternion(l_euler.x, l_euler.y, l_euler.z);
+        glm::vec3 l_glPos = glm::vec3(_pos.x, _pos.y, _pos.z);
+        glm::quat l_glQuat = (glm::quat)Quaternion(glm::radians(_euler.x), glm::radians(_euler.y), glm::radians(_euler.z));
 
         glm::mat4 translation = glm::translate(glm::mat4(1.0f), l_glPos);
         glm::mat4 rotation = glm::mat4(l_glQuat);
         glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.0f));
         
-        glm::mat4 l_modelMat = translation * rotation * scale;
+        return translation * rotation * scale;
+    }
 
-        std::string l_modelPath = _drawable.raw_get<std::string>("modelPath");
-        if(l_modelPath == "")
+    void Camera::Draw(sol::table _transform, sol::table _drawable)
+    {
+        // Get model, texture, and shader from drawable, loading them if they haven't been already
+        auto l_assetManager = Asset::Manager::Instance().lock();
+
+        sol::optional<std::weak_ptr<Asset::Model>> l_modelPtr = _drawable.raw_get<sol::optional<std::weak_ptr<Asset::Model>>>("model");
+
+        if(!l_modelPtr.has_value())
         {
-            l_modelPath = "./resources/models/FlatTexture.obj";
+            // Try to load model from path in drawable, otherwise load default model
+            std::string l_modelPath = _drawable.raw_get<std::string>("modelPath");
+            if(l_modelPath == "")
+            {
+                l_modelPath = "./resources/models/FlatTexture.obj";
+            }
+
+            _drawable.raw_set("model", l_assetManager->Load<Asset::Model>(l_modelPath));
+            l_modelPtr = _drawable.raw_get<std::weak_ptr<Asset::Model>>("model");
         }
 
-        std::string l_texturePath = _drawable.raw_get<std::string>("texturePath");
-        if(l_texturePath == "")
+        auto l_model = l_modelPtr.value().lock();
+
+        sol::optional<std::weak_ptr<Asset::Texture>> l_texturePtr = _drawable.raw_get<sol::optional<std::weak_ptr<Asset::Texture>>>("texture");
+
+        if(!l_texturePtr.has_value())
         {
-            l_texturePath = "./resources/textures/triangle.png";
+            // Try to load texture from path in drawable, otherwise load default texture
+            std::string l_texturePath = _drawable.raw_get<std::string>("texturePath");
+            if(l_texturePath == "")
+            {
+                l_texturePath = "./resources/textures/triangle.png";
+            }
+
+            _drawable.raw_set("texture", l_assetManager->Load<Asset::Texture>(l_texturePath));
+            l_texturePtr = _drawable.raw_get<std::weak_ptr<Asset::Texture>>("texture");
         }
 
-        std::string l_shaderPath = _drawable.raw_get<std::string>("shaderPath");
-        if(l_shaderPath == "")
+        auto l_texture = l_texturePtr.value().lock();
+
+        sol::optional<std::weak_ptr<Asset::Shader>> l_shaderPtr = _drawable.raw_get<sol::optional<std::weak_ptr<Asset::Shader>>>("shader");
+
+        if(!l_shaderPtr.has_value())
         {
-            l_shaderPath = "./resources/shaders/default/frag.fs;./resources/shaders/default/vert.vs";
+            // Try to load shader from path in drawable, otherwise load default shader
+            std::string l_shaderPath = _drawable.raw_get<std::string>("shaderPath");
+            if(l_shaderPath == "")
+            {
+                l_shaderPath = "./resources/shaders/default/frag.fs;./resources/shaders/default/vert.vs";
+            }
+
+            _drawable.raw_set("shader", l_assetManager->Load<Asset::Shader>(l_shaderPath));
+            l_shaderPtr = _drawable.raw_get<std::weak_ptr<Asset::Shader>>("shader");
         }
 
-        auto l_model = Asset::Manager::Instance().lock()->Load<Asset::Model>(l_modelPath).lock();
-        auto l_texture = Asset::Manager::Instance().lock()->Load<Asset::Texture>(l_texturePath).lock();
-        auto l_shader = Asset::Manager::Instance().lock()->Load<Asset::Shader>(l_shaderPath).lock();
+        auto l_shader = l_shaderPtr.value().lock();
         
         l_shader->Use();
         
@@ -81,8 +116,14 @@ namespace RanakEngine::Core
 
         glBindTexture(GL_TEXTURE_2D, l_texture->GetID());
 
+        glm::mat4 l_modelMat = CalculateModelMatrix(_transform.raw_get<Vector3>("position"), _transform.raw_get<Vector3>("rotation"));
+
         l_shader->SetUniform("u_Model", l_modelMat);
-        Use(l_shader);
+        
+        l_modelMat = CalculateModelMatrix(m_position, Vector3(0.0f, m_rotation, 0.0f));
+
+        l_shader->SetUniform("u_View", glm::inverse(l_modelMat));
+        l_shader->SetUniform("u_Projection", m_projection);
 
         glDrawArrays(GL_TRIANGLES, 0, l_model->GetVertexCount());
                 

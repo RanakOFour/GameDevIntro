@@ -10,22 +10,22 @@ function NewRule:Update(_entityData)
     local position = self.data.position
 
     if(IO.GetKeyDown('w')) then
-        position.x = position.x + 0.05
+        position.z = position.z - 0.05
         Log.Message("Moved forward")
     end
 
     if(IO.GetKeyDown('s')) then
-        position.x = position.x - 0.05
+        position.z = position.z + 0.05
         Log.Message("Moved back")
     end
 
     if(IO.GetKeyDown('a')) then
-        position.z = position.z + 0.05
+        position.x = position.x - 0.05
         Log.Message("Moved left")
     end
 
     if(IO.GetKeyDown('d')) then
-        position.z = position.z - 0.05
+        position.x = position.x + 0.05
         Log.Message("Moved right")
     end
 

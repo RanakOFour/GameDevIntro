@@ -16,7 +16,7 @@ namespace RanakEngine::Asset
 	, m_size(0, 0)
 	, m_id(0)
 	{
-		stbi_set_flip_vertically_on_load(true);
+		//stbi_set_flip_vertically_on_load(true);
 
 		unsigned char* data = stbi_load(_path.c_str(), &m_size.x, &m_size.y, NULL, 4);
 
@@ -48,6 +48,9 @@ namespace RanakEngine::Asset
 			}
 
 			glBindTexture(GL_TEXTURE_2D, m_id);
+
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 			// Upload the image data to the bound texture unit in the GPU
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_size.x, m_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_contents.data());
