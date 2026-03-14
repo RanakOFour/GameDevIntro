@@ -1,0 +1,55 @@
+#ifndef EDITOR_H
+#define EDITOR_H
+
+#include "RanakEngine/RanakEngine.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_sdl3.h"
+#include "imgui/imgui_impl_opengl3.h"
+#include <memory>
+#include <vector>
+#include <string>
+
+class EntityPanel;
+class CategoryPanel;
+class RulesPanel;
+class PropertiesPanel;
+
+class Editor
+{
+    private:
+    std::shared_ptr<RE::IO::Window> m_window;
+    std::shared_ptr<RE::Core::Scene> m_scene;
+    RE::EngineContents m_engineContents;
+
+    // UI Panels
+    std::unique_ptr<EntityPanel> m_entityPanel;
+    std::unique_ptr<CategoryPanel> m_categoryPanel;
+    std::unique_ptr<RulesPanel> m_rulesPanel;
+    std::unique_ptr<PropertiesPanel> m_propertiesPanel;
+
+    int m_selectedEntityId;
+    bool m_isRunning;
+
+    void InitImGui();
+    void CleanupImGui();
+    void RenderMenuBar();
+    void RenderDockspace();
+    void RenderEditorUI();
+    void HandleInput();
+
+    public:
+    Editor();
+    ~Editor();
+
+    void Run();
+    void Update(float _deltaTime);
+    void Render();
+    
+    // Accessors
+    std::shared_ptr<RE::Core::Scene> GetScene() { return m_scene; }
+    RE::EngineContents& GetEngineContents() { return m_engineContents; }
+    int GetSelectedEntityId() const { return m_selectedEntityId; }
+    void SetSelectedEntityId(int _id) { m_selectedEntityId = _id; }
+};
+
+#endif

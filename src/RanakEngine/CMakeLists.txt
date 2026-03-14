@@ -1,9 +1,24 @@
-add_subdirectory(Core)
-add_subdirectory(Math)
-add_subdirectory(IO)
-add_subdirectory(Log)
-add_subdirectory(Asset)
+# RanakEngine Library
+file(GLOB RANAKENGINE_SOURCES 
+    "*.cpp"
+    "Core/*.cpp"
+    "Math/*.cpp"
+    "IO/*.cpp"
+    "Log/*.cpp"
+    "Asset/*.cpp"
+)
 
-file(GLOB MAIN_SOURCES "*.cpp")
+add_library(RanakEngine STATIC ${RANAKENGINE_SOURCES})
 
-target_sources(GameDevIntro PUBLIC ${MAIN_SOURCES})
+# Include directories for RanakEngine
+target_include_directories(RanakEngine PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../extern
+    ${LUA_INCLUDE_DIR}
+)
+
+# Link dependencies
+if(UNIX)
+    target_link_directories(RanakEngine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/unix)
+    target_link_libraries(RanakEngine PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+endif()

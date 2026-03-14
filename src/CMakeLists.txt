@@ -1,1 +1,2 @@
 add_subdirectory(RanakEngine)
+add_subdirectory(Editor)

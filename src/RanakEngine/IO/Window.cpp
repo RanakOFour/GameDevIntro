@@ -39,7 +39,7 @@ bool InitGL()
 
 namespace RanakEngine::IO
 {
-    Window::Window(Vector2 _screenSize)
+    Window::Window(Vector2 _screenSize, std::string _title)
     : m_clearColour(0.0f, 0.0f, 0.2f, 1.0f)
     , m_screenSize(_screenSize)
     , m_aspectRatio(_screenSize.x / m_screenSize.y)
@@ -57,7 +57,7 @@ namespace RanakEngine::IO
         int l_winHeight = _screenSize.y;
 
         m_sdlWindow = std::shared_ptr<SDL_Window>(
-            SDL_CreateWindow("RanakEngine",
+            SDL_CreateWindow(_title.c_str(),
                             l_winWidth, l_winHeight,
                             SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL),
             SDL_DestroyWindow);
@@ -68,13 +68,6 @@ namespace RanakEngine::IO
         {
             Log::Error("Could not initialise GL");
         }
-
-        /*
-        m_imguiContext = ImGui::CreateContext();
-
-        ImGui_ImplSDL3_InitForOpenGL(m_window, m_context);
-        ImGui_ImplOpenGL3_Init();
-        */
     }
 
     Window::~Window()

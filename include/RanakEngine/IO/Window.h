@@ -22,7 +22,7 @@ namespace RanakEngine::IO
         float m_aspectRatio;
 
         public:
-        Window(Vector2 _screenSize);
+        Window(Vector2 _screenSize, std::string _title = "RanakEngine");
         ~Window();
 
         void Swap();
@@ -36,6 +36,10 @@ namespace RanakEngine::IO
 
         void SetClearColour(Vector4 _colour);
         Vector4 GetClearColour();
+
+        SDL_Window* GetSDLWindow() const { return m_sdlWindow.get(); }
+        SDL_GLContext GetGLContext() const { return m_sdlglContext; }
+        SDL_AudioStream* GetAudioStream() const { return m_audioStream.get(); }
     };
 }
 
