@@ -23,15 +23,18 @@ void RulesPanel::RefreshRuleList()
     m_activeRules.clear();
     m_availableRuleFiles.clear();
     
-    auto editor = m_editor.lock();
-    if (editor)
+    auto l_scene = m_editor.lock()->GetScene();
+
+    // Get active rules from the scene
+    sol::table l_sceneTable = l_scene->GetSceneTable();
+    sol::table l_rulesTable = l_sceneTable["Rules"];
+    auto l_rulesPairs = l_rulesTable.pairs();
+
+    for(auto& pair : l_rulesPairs)
     {
-        auto scene = editor->GetScene();
-        if (scene)
-        {
-            auto registry = scene->GetRegistry();
-            // TODO: Get all active rules from scene
-        }
+        std::string ruleName = pair.first.as<std::string>();
+        m_activeRules.push_back(ruleName);
+        m_availableRuleFiles.push_back("./resources/Rules/" + ruleName + ".lua");
     }
 }
 

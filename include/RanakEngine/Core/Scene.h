@@ -64,6 +64,7 @@ namespace Core
         void Draw();
 
         EntityRegistry* GetRegistry();
+        sol::table GetSceneTable();
     };
 };
 };

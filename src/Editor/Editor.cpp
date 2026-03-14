@@ -28,24 +28,28 @@ Editor::Editor()
 
     // Get the scene
     m_scene = m_engineContents.core->GetScene().lock();
-    if (!m_scene)
-    {
-        RE::Log::Error("Failed to get scene from engine core");
-    }
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
 
-    // Create UI panels - Using shared_ptr to Editor with manual management
-    // to avoid circular references
-    std::shared_ptr<Editor> editorPtr(this, [](void*){});  // No-op deleter
+    RE::Log::Message("Editor constructed");
+}
+
+std::shared_ptr<Editor> Editor::Create()
+{
+    auto editor = std::make_shared<Editor>();
     
-    m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
-    m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
-    m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
-    m_propertiesPanel = std::make_unique<PropertiesPanel>(editorPtr);
+    // Now that editor is in a shared_ptr, we can initialize panels
+    auto editorPtr = editor->shared_from_this();
+    
+    editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
+    editor->m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
+    editor->m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
+    editor->m_propertiesPanel = std::make_unique<PropertiesPanel>(editorPtr);
 
     RE::Log::Message("Editor initialized with UI panels");
+    
+    return editor;
 }
 
 Editor::~Editor()
@@ -106,10 +110,7 @@ void Editor::Run()
 
 void Editor::Update(float _deltaTime)
 {
-    if (m_scene)
-    {
-        m_scene->Update(_deltaTime);
-    }
+    m_scene->Update(_deltaTime);
 }
 
 void Editor::Render()

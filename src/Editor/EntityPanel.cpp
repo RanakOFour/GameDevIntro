@@ -17,9 +17,7 @@ EntityPanel::~EntityPanel()
 void EntityPanel::RefreshEntityList()
 {
     m_cachedEntities.clear();
-    auto l_editor = m_editor.lock();
-    auto l_scene = l_editor->GetScene();
-    auto l_registry = l_scene->GetRegistry();
+    auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
 
     sol::table l_entityTable = l_registry->GetEntityTable();
 
@@ -74,7 +72,8 @@ void EntityPanel::Draw()
 
 void EntityPanel::AddEntity()
 {
-    auto l_scene = m_editor.lock()->GetScene();
+    auto l_editorPtr = m_editor.lock();
+    auto l_scene = l_editorPtr->GetScene();
 
     int newId = l_scene->AddEntity();
     m_cachedEntities.push_back(newId);

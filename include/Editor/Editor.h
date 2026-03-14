@@ -14,7 +14,7 @@ class CategoryPanel;
 class RulesPanel;
 class PropertiesPanel;
 
-class Editor
+class Editor : public std::enable_shared_from_this<Editor>
 {
     private:
     std::shared_ptr<RE::IO::Window> m_window;
@@ -40,6 +40,9 @@ class Editor
     public:
     Editor();
     ~Editor();
+
+    // Factory method to create Editor as shared_ptr
+    static std::shared_ptr<Editor> Create();
 
     void Run();
     void Update(float _deltaTime);

@@ -14,6 +14,7 @@ namespace RanakEngine::Core
         m_sceneTable = l_luaContext->CreateTable();
         m_sceneTable.set("Entities", m_registry.GetEntityTable());
         m_sceneTable.set("Categories", m_registry.GetCategoryTable());
+        m_sceneTable.set("Rules", l_luaContext->CreateTable());
     }
 
     Scene::Scene(sol::table _tableData)
@@ -63,6 +64,7 @@ namespace RanakEngine::Core
     void Scene::AddRule(Rule &_rule)
     {
         m_rules.push_back(_rule);
+        m_sceneTable.raw_get<sol::table>("Rules").raw_set(_rule.GetName(), _rule);
     }
 
     void Scene::RemoveRule(Rule &_rule)
@@ -76,6 +78,8 @@ namespace RanakEngine::Core
                 break;
             }
         }
+
+        m_sceneTable.raw_get<sol::table>("Rules").raw_set(_rule.GetName(), sol::lua_nil);
     }
 
     void Scene::Init()
@@ -112,5 +116,10 @@ namespace RanakEngine::Core
     EntityRegistry* Scene::GetRegistry()
     {
         return &m_registry;
+    }
+
+    sol::table Scene::GetSceneTable()
+    {
+        return m_sceneTable;
     }
 }

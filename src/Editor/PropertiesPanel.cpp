@@ -45,7 +45,6 @@ void PropertiesPanel::Draw()
 void PropertiesPanel::DrawEntityProperties(int _entityId)
 {
     auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
-    if (!l_registry) return;
 
     try
     {

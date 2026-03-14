@@ -4,12 +4,12 @@ int main()
 {
     try
     {
-        Editor editor;
-        editor.Run();
+        auto l_editor = Editor::Create();
+        l_editor->Run();
     }
-    catch (const std::exception& e)
+    catch (std::exception e)
     {
-        RE::Log::Error("Editor failed to run: " + std::string(e.what()));
+        printf("Editor failed to run: %s", std::string(e.what()).c_str());
         return 1;
     }
 

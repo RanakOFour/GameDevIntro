@@ -17,7 +17,7 @@ class CategoryPanel
     
     std::string m_newCategoryName;
     std::string m_selectedCategoryFilter;
-
+    
     bool m_showCreateDialog;
     bool m_showLoadDialog;
 
