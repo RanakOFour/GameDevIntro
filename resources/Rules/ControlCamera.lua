@@ -1,13 +1,9 @@
 local NewRule = Rule.new()
 NewRule.name = "ControlCamera"
 NewRule.categories = {"Transform"}
-NewRule.data = {
-    position = Vector3.new(0, 0, 3),
-    rotation = 0
-}
 
 function NewRule:Update(_entityData)
-    local position = self.data.position
+    local position = Core.Camera.position
 
     if(IO.GetKeyDown('w')) then
         position.z = position.z - 0.05
@@ -38,10 +34,8 @@ function NewRule:Update(_entityData)
         position.y = position.y - 0.05
         Log.Message("Moved down")
     end
-    
-    Core.MoveCamera(position)
 
-    local message = "CamPos: " .. position.ToString()
+    local message = "CamPos: " .. position:ToString()
 
     Log.Message(message)
 end

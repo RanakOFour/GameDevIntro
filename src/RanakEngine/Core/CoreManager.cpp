@@ -118,8 +118,8 @@ namespace RanakEngine::Core
         return m_debug;
     }
 
-    Camera* Core::Manager::GetCamera()
+    std::weak_ptr<Camera> Core::Manager::GetCamera()
     {
-        return m_mainCamera.get();
+        return m_mainCamera;
     }
 }

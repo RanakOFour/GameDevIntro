@@ -74,8 +74,8 @@ namespace RanakEngine::Core
             m_state[_name] = &_var;
         };
 
-        template <typename T, typename... Args>
-        void AddUserType(Args &&..._args)
+        template<typename T, typename... Args>
+        void AddUserType(Args&&... _args)
         {
             m_state.new_usertype<T>(std::forward<Args>(_args)...);
         }

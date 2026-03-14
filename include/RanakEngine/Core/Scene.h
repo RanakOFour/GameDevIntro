@@ -9,6 +9,7 @@
 #include "RanakEngine/Core/CategoryFactory.h"
 #include "RanakEngine/Core/Rule.h"
 #include "RanakEngine/Asset/LuaFile.h"
+#include "RanakEngine/Core/LuaContext.h"
 #include "sol/sol.hpp"
 
 namespace RanakEngine
@@ -32,7 +33,16 @@ namespace Core
 
         std::vector<Rule> m_rules;
 
-        void ConfigLuaLibrary();
+        static void DefineUsertype()
+        {
+            auto l_context = LuaContext::Instance().lock();
+            l_context->AddUserType<Scene>("Scene", sol::constructors<Scene(), Scene(sol::table)>(),
+                                          "name", sol::readonly(&Scene::m_name),
+                                          "camera", &Scene::m_camera,
+                                          "registry", sol::readonly(&Scene::m_sceneTable),
+                                          "rules", sol::readonly(&Scene::m_rules)
+                                         );
+        };
 
         public:
         Scene();

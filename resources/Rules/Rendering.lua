@@ -1,19 +1,14 @@
 Rendering = Rule.new()
 Rendering.name = "Rendering"
 Rendering.categories = {"Transform", "Drawable"}
-Rendering.data = {
-    Camera = nil
-}
-
-function Rendering:Init(_entityData)
-    Camera = Core.GetCamera()
-end
 
 function Rendering:Update(_entityData)
-    local message = "" + Core.DeltaTime()
+    local message = "Deltatime: " .. Core.DeltaTime()
 
     if(Core.DeltaTime() == nil) then
         Log.Message("Core.DeltaTime is nil")
+    else
+        Log.Message("Core.DeltaTime is not nil")
     end
 
     Log.Message(message)
@@ -23,11 +18,11 @@ function Rendering:Draw(_entityData)
     local transform = _entityData["Transform"]
     local drawable = _entityData["Drawable"]
 
-    if(Camera == nil) then
+    if(Core.Camera == nil) then
         Log.Message("Camera is nil")
     end
 
-    Core.Draw(transform, drawable)
+    Core.Camera:Draw(transform, drawable)
     
     Log.Message("Entity drawn")
 end

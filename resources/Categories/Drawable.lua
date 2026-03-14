@@ -1,6 +1,6 @@
 local categoryName = "Drawable"
 local baseAttributes = {
-    shaderPath = "./resources/shaders/default/vert.vs;./resources/shaders/default/frag.fs",
+    shaderPath = "",
     shader = nil,
     texturePath = "",
     texture = nil,

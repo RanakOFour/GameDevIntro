@@ -12,7 +12,6 @@ namespace RanakEngine::Core
     {
         auto l_luaContext = LuaContext::Instance().lock();
         m_sceneTable = l_luaContext->CreateTable();
-        l_luaContext->AddVariable<sol::table>("Scene", m_sceneTable);
         m_sceneTable.set("Entities", m_registry.GetEntityTable());
         m_sceneTable.set("Categories", m_registry.GetCategoryTable());
     }

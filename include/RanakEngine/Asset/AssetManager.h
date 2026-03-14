@@ -2,7 +2,7 @@
 #define ASSETMANAGER_H
 
 #include <memory>
-#include <unordered_map>
+#include <map>
 #include <filesystem>
 
 #include "RanakEngine/Log.h"
@@ -14,7 +14,7 @@ namespace RanakEngine::Asset
     {
         private:
         static inline std::weak_ptr<Asset::Manager> m_self;
-        std::unordered_map<std::string, std::shared_ptr<AssetFile>> m_resourceMap;
+        std::map<std::string, std::shared_ptr<AssetFile>> m_resourceMap;
 
         Manager();
         public:

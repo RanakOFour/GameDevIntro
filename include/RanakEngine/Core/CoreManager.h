@@ -62,7 +62,7 @@ namespace RanakEngine::Core
 
         bool IsDebug();
 
-        Camera* GetCamera();
+        std::weak_ptr<Camera> GetCamera();
     };
 }
 

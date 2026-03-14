@@ -26,20 +26,6 @@ namespace RanakEngine::Core
         m_context = LuaContext::Instance();
     }
 
-    // Rule::Rule(sol::table _dataTable)
-    // : m_signature()
-    // {
-    //     m_context = LuaContext::Instance();
-    //     auto l_context = m_context.lock();
-
-    //     // Create signature
-    //     auto l_categoryNames = m_table.raw_get<sol::table>("categories").pairs();
-
-    //     for(auto l_namePair : l_categoryNames)
-    //     {
-    //     }
-    // }
-
     Rule::~Rule()
     {
 
