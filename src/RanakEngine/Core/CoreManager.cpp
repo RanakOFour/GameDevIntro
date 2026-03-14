@@ -1,6 +1,7 @@
 #include "RanakEngine/Core/CoreManager.h"
 #include "RanakEngine/Core/LuaContext.h"
 #include "RanakEngine/Core/Scene.h"
+#include "RanakEngine/Core/Camera.h"
 #include "RanakEngine/IO/IOManager.h"
 #include "RanakEngine/Log.h"
 
@@ -9,11 +10,15 @@
 namespace RanakEngine::Core
 {
     Core::Manager::Manager(bool _debug)
-        : m_running(false), m_debug(_debug), m_deltaTime(0.0f), m_targetFPS(60.0f)
+    : m_running(false)
+    , m_debug(_debug)
+    , m_deltaTime(0.0f)
+    , m_targetFPS(60.0f)
     {
         m_ioManager = IO::Manager::Instance();
         m_luaContext = LuaContext::Init();
         m_currentScene = std::make_shared<Scene>();
+        m_mainCamera = std::make_shared<Camera>();
     };
 
     Core::Manager::~Manager()

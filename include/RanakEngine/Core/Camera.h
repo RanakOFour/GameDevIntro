@@ -57,6 +57,8 @@ namespace RanakEngine::Core
 
         void Draw(sol::table _transform, sol::table _drawable);
 
+        void SetPosition(Vector3 _pos);
+
         void SetLookAtTarget(int _id);
         int GetLookAtTarget();
 

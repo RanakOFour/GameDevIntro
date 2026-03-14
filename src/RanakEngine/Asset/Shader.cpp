@@ -50,6 +50,8 @@ namespace RanakEngine::Asset
             GLuint l_vertexShader = glCreateShader(GL_VERTEX_SHADER);
             glShaderSource(l_vertexShader, 1, &l_code, NULL);
 
+            glCompileShader(l_vertexShader);
+
             GLint success = 0;
             glGetShaderiv(l_vertexShader, GL_COMPILE_STATUS, &success);
             if (success != GL_TRUE)
@@ -70,11 +72,16 @@ namespace RanakEngine::Asset
             }
             
             l_stream.open(l_fragPath);
+
             l_fileContents = std::stringstream();
             l_fileContents << l_stream.rdbuf();
             l_stream.close();
+            
             l_shaderCode = l_fileContents.str();
             l_code = (char*)l_shaderCode.c_str();
+
+            l_debug = "Fragment shader code: " + l_shaderCode;
+            Log::Debug(l_debug);
 
             // Create a new fragment shader
             GLuint l_fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -100,6 +107,7 @@ namespace RanakEngine::Asset
                     glDeleteFragmentShaderATI(l_fragmentShader);
                 }
             }
+
             printf("Vertex frag created\n");
 
             // Create new shader program and attach shader objects

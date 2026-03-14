@@ -16,7 +16,7 @@ namespace RanakEngine::Asset
 	, m_size(0, 0)
 	, m_id(0)
 	{
-		//stbi_set_flip_vertically_on_load(true);
+		stbi_set_flip_vertically_on_load(true);
 
 		unsigned char* data = stbi_load(_path.c_str(), &m_size.x, &m_size.y, NULL, 4);
 

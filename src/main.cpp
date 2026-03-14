@@ -44,6 +44,22 @@ int main()
 
     l_scene->AddRule(l_newRule);
 
+    l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/RotateGuy.lua");
+    RE::Core::Rule l_rule2 = l_context->RunScript<RE::Core::Rule>(l_ruleFile);
+    
+    // Add rule to scene
+    RE::Log::Message("Adding rule to scene");
+
+    l_scene->AddRule(l_rule2);
+
+    l_ruleFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/ControlCamera.lua");
+    RE::Core::Rule l_camRule = l_context->RunScript<RE::Core::Rule>(l_ruleFile);
+    
+    // Add rule to scene
+    RE::Log::Message("Adding rule to scene");
+
+    l_scene->AddRule(l_camRule);
+
     // Run scene
     RE::Log::Message("Starting core");
     l_contents.core->Start();
