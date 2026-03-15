@@ -195,9 +195,9 @@ void Editor::RenderMenuBar()
 
 void Editor::RenderDockspace()
 {
-    static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+    ImGuiDockNodeFlags l_dockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+    ImGuiWindowFlags l_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);
@@ -205,11 +205,11 @@ void Editor::RenderDockspace()
     ImGui::SetNextWindowViewport(viewport->ID);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+    l_windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+    l_windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace", nullptr, window_flags);
+    ImGui::Begin("DockSpace", nullptr, l_windowFlags);
     ImGui::PopStyleVar();
 
     ImGui::PopStyleVar(2);
@@ -218,8 +218,8 @@ void Editor::RenderDockspace()
     ImGuiIO& io = ImGui::GetIO();
     if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
     {
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+        ImGuiID l_dockID = ImGui::GetID("MyDockSpace");
+        ImGui::DockSpace(l_dockID, ImVec2(0.0f, 0.0f), l_dockFlags);
     }
 
     ImGui::End();
