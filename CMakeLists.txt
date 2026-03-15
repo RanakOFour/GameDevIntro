@@ -12,10 +12,9 @@ find_package(Lua REQUIRED)
 
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp")
-list(APPEND IMGUI_SOURCES "extern/imgui/backends/imgui_impl_sdl3.cpp" "extern/imgui/backends/imgui_impl_opengl3.cpp")
 
 # Create game executable
-add_executable(GameDevIntro "src/main.cpp" ${IMGUI_SOURCES})
+add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})
 
 # Create editor executable
 add_executable(GameEditor "src/editor_main.cpp" ${IMGUI_SOURCES})
@@ -23,13 +22,13 @@ add_executable(GameEditor "src/editor_main.cpp" ${IMGUI_SOURCES})
 # Add subdirectories (this will create RanakEngine library and add Editor sources)
 add_subdirectory(src)
 
-# Set up GameDevIntro target
-target_include_directories(GameDevIntro PUBLIC include extern extern/imgui extern/imgui/backends extern/pugixml ${LUA_INCLUDE_DIR})
-target_link_libraries(GameDevIntro PUBLIC RanakEngine)
+# Set up TestRun target
+target_include_directories(TestRun PUBLIC include extern extern/imgui extern/imgui/backends extern/pugixml ${LUA_INCLUDE_DIR})
+target_link_libraries(TestRun PUBLIC RanakEngine)
 
 if(UNIX)
-    target_link_directories(GameDevIntro PUBLIC lib/unix)
-    target_link_libraries(GameDevIntro PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+    target_link_directories(TestRun PUBLIC lib/unix)
+    target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
 endif()
 
 # Set up GameEditor target (links against RanakEngine library)
