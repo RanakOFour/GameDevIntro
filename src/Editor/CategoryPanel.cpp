@@ -5,8 +5,7 @@
 #include <algorithm>
 
 CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
-: m_editor(_editor)
-, m_showPanel(true)
+: Panel(_editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newCategoryName("")
@@ -24,6 +23,13 @@ void CategoryPanel::RefreshCategoryList()
     m_availableCategories.clear();
     // TODO: Get all available categories from the core manager
     // This depends on the API to access all loaded categories
+    auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
+    sol::table categories = l_registry->GetCategoryTable();
+    for (auto& pair : categories)
+    {
+        std::string categoryName = pair.first.as<std::string>();
+        m_availableCategories.push_back(categoryName);
+    }
 }
 
 void CategoryPanel::Draw()
@@ -179,7 +185,7 @@ void CategoryPanel::LoadCategoryFromFile(const std::string& _path)
             auto categoryFile = engineContents.resources->Load<RE::Asset::LuaFile>(_path);
             auto category = luaContext->CreateCategory(categoryFile);
             
-            m_availableCategories.push_back(_path);
+            m_availableCategories.push_back(category.lock()->GetName());
             RE::Log::Message("Category loaded from: " + _path);
         }
         catch (const std::exception& e)

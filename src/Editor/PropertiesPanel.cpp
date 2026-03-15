@@ -3,8 +3,7 @@
 #include "imgui/imgui.h"
 
 PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
-: m_editor(_editor)
-, m_showPanel(true)
+: Panel(_editor)
 , m_displayedEntityId(-1)
 {
 }
@@ -29,6 +28,27 @@ void PropertiesPanel::Draw()
             {
                 ImGui::Text("Entity ID: %d", selectedEntity);
                 ImGui::Separator();
+
+                static bool l_showAddToCategoryMenu = false;
+                if(ImGui::Button("Add to Category", ImVec2(-1, 0)))
+                {
+                    l_showAddToCategoryMenu = true;
+                }
+
+                if (l_showAddToCategoryMenu)
+                {
+                    auto registry = editor->GetScene()->GetRegistry();
+                    sol::table categories = registry->GetCategoryTable();
+                    for (auto& pair : categories)
+                    {
+                        std::string categoryName = pair.first.as<std::string>();
+                        if (ImGui::MenuItem(categoryName.c_str()))
+                        {
+                            registry->AddToCategory(selectedEntity, pair.second.as<std::bitset<1024>>());
+                            l_showAddToCategoryMenu = false;
+                        }
+                    }
+                }
 
                 DrawEntityProperties(selectedEntity);
             }

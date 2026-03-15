@@ -8,7 +8,8 @@
 namespace RanakEngine::Core
 {
     LuaContext::LuaContext()
-        : m_state(), m_loadedScripts()
+    : m_state()
+    , m_loadedScripts()
     {
         // Opens all basic libraries
         m_state.open_libraries();

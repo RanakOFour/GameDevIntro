@@ -3,9 +3,8 @@
 #include "imgui/imgui.h"
 
 EntityPanel::EntityPanel(std::weak_ptr<Editor> _editor)
-: m_editor(_editor)
+: Panel(_editor)
 , m_selectedEntity(-1)
-, m_showPanel(true)
 {
     RefreshEntityList();
 }

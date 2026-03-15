@@ -5,13 +5,8 @@ project(GameDevIntro)
 
 find_package(Lua REQUIRED)
 
-#set(TESTS true)
-#add_subdirectory(tests)
-
-#if(NOT TESTS)
-
 # Collect ImGui source files
-file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp")
+file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp" "extern/imgui/backends/imgui_impl_sdl3.cpp" "extern/imgui/backends/imgui_impl_opengl3.cpp")
 
 # Create game executable
 add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})

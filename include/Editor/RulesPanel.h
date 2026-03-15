@@ -2,17 +2,17 @@
 #define RULES_PANEL_H
 
 #include "RanakEngine/RanakEngine.h"
+#include "Editor/Panel.h"
 #include <vector>
 #include <string>
 #include <memory>
 
 class Editor;
 
-class RulesPanel
+class RulesPanel : public Panel
 {
     private:
-    std::weak_ptr<Editor> m_editor;
-    bool m_showPanel;
+
     std::vector<std::string> m_activeRules;
     std::vector<std::string> m_availableRuleFiles;
     

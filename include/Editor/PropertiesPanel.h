@@ -2,16 +2,17 @@
 #define PROPERTIES_PANEL_H
 
 #include "RanakEngine/RanakEngine.h"
+#include "Editor/Panel.h"
+
 #include <memory>
 #include <string>
 
 class Editor;
 
-class PropertiesPanel
+class PropertiesPanel : public Panel
 {
     private:
-    std::weak_ptr<Editor> m_editor;
-    bool m_showPanel;
+
     int m_displayedEntityId;
 
     void DrawEntityProperties(int _entityId);

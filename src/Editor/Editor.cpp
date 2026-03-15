@@ -103,7 +103,7 @@ void Editor::Run()
     while (m_isRunning)
     {
         HandleInput();
-        Update(1.0f / 60.0f); // Assume 60 FPS
+        //Update(1.0f / 60.0f); // Assume 60 FPS
         Render();
     }
 }
@@ -228,10 +228,21 @@ void Editor::RenderDockspace()
 void Editor::RenderEditorUI()
 {
     // Render all panels
-    if (m_entityPanel) m_entityPanel->Draw();
-    if (m_categoryPanel) m_categoryPanel->Draw();
-    if (m_rulesPanel) m_rulesPanel->Draw();
-    if (m_propertiesPanel) m_propertiesPanel->Draw();
+    m_entityPanel->Draw();
+
+    if(m_entityPanel->IsShown() && m_entityPanel->GetSelectedEntity() != -1)
+    {
+        m_propertiesPanel->SetDisplayedEntity(m_entityPanel->GetSelectedEntity());
+        m_propertiesPanel->SetShown(true);
+    }
+    else
+    {
+        m_propertiesPanel->SetShown(false);
+    }
+    
+    m_categoryPanel->Draw();
+    m_rulesPanel->Draw();
+    m_propertiesPanel->Draw();
 }
 
 void Editor::HandleInput()
@@ -253,6 +264,33 @@ void Editor::HandleInput()
                 m_isRunning = false;
             }
             break;
+
+            case SDL_EVENT_KEY_DOWN:
+            if (l_event.key.key == SDLK_ESCAPE)
+            {
+                m_rulesPanel->SetShown(false);
+                m_entityPanel->SetShown(false);
+                m_categoryPanel->SetShown(false);
+                m_propertiesPanel->SetShown(false);
+            }
+            else if(l_event.key.key == SDLK_C)
+            {
+                m_categoryPanel->SetShown(true);
+            }
+            else if(l_event.key.key == SDLK_E)
+            {
+                m_entityPanel->SetShown(true);
+            }
+            else if(l_event.key.key == SDLK_R)
+            {
+                m_rulesPanel->SetShown(true);
+            }
+
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            if (l_event.button.button == SDL_BUTTON_RIGHT)
+            {
+                m_entityPanel->SetShown(true);
+            }
         }
     }
 }

@@ -18,18 +18,17 @@ namespace RanakEngine::Asset
 	{
 		//stbi_set_flip_vertically_on_load(true);
 
-		unsigned char* data = stbi_load(_path.c_str(), &m_size.x, &m_size.y, NULL, 4);
+		unsigned char* l_udata = stbi_load(_path.c_str(), &m_size.x, &m_size.y, NULL, 4);
 
-		if (!data || data == NULL)
+		if (!l_udata || l_udata == NULL)
 		{
 			printf("Failed to load texture\n");
 			throw std::exception();
 		}
 
-		m_contents.assign(data, data + m_size.x * m_size.y * 4);
+		char* l_sdata = (char*)l_udata;
 
-		// Free the loaded data because we now have a copy on the GPU
-		free(data);
+		m_contents.assign(l_sdata, l_sdata + m_size.x * m_size.y * 4);
 	}
 
 	Texture::~Texture()

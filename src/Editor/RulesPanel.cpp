@@ -4,8 +4,7 @@
 #include <algorithm>
 
 RulesPanel::RulesPanel(std::weak_ptr<Editor> _editor)
-: m_editor(_editor)
-, m_showPanel(true)
+: Panel(_editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newRuleName("")

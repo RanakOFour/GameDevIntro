@@ -2,17 +2,17 @@
 #define ENTITY_PANEL_H
 
 #include "RanakEngine/RanakEngine.h"
+#include "Editor/Panel.h"
 #include <vector>
 #include <memory>
 
 class Editor;
 
-class EntityPanel
+class EntityPanel : public Panel
 {
     private:
-    std::weak_ptr<Editor> m_editor;
+
     int m_selectedEntity;
-    bool m_showPanel;
     std::vector<int> m_cachedEntities;
 
     void RefreshEntityList();
