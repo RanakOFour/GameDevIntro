@@ -8,7 +8,7 @@ find_package(Lua REQUIRED)
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp" "extern/imgui/backends/imgui_impl_sdl3.cpp" "extern/imgui/backends/imgui_impl_opengl3.cpp")
 
-add_subdirectory(RanakEngine2)
+add_subdirectory(extern/RanakEngine2)
 
 # Create game executable
 add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})
