@@ -10,11 +10,19 @@
 
 Editor::Editor()
 : m_selectedEntityId(-1)
-, m_isRunning(true)
+, m_isEditorRunning(true)
+, m_showContext(false)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
     RE::Log::Message("Engine Initialised for Editor");
+
+    auto l_transformFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Transform.lua");
+    auto l_context = RE::Core::LuaContext::Instance().lock();
+    l_context->CreateCategory(l_transformFile);
+
+    auto l_drawableFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Drawable.lua");
+    l_context->CreateCategory(l_drawableFile);
 
     // Get the window from the IO Manager
     auto ioManager = m_engineContents.io;
@@ -22,7 +30,7 @@ Editor::Editor()
     if (!m_window)
     {
         RE::Log::Error("Failed to get window from IO Manager");
-        m_isRunning = false;
+        m_isEditorRunning = false;
         return;
     }
 
@@ -100,11 +108,18 @@ void Editor::CleanupImGui()
 
 void Editor::Run()
 {
-    while (m_isRunning)
+    float l_oneSixtieth = 1.0f / 60.0f;
+    while (m_isEditorRunning)
     {
-        HandleInput();
-        //Update(1.0f / 60.0f); // Assume 60 FPS
-        Render();
+        if(m_isGameRunning)
+        {
+            Update(l_oneSixtieth);
+        }
+        else
+        {
+            HandleInput();
+            Render();
+        }
     }
 }
 
@@ -164,7 +179,7 @@ void Editor::RenderMenuBar()
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Ctrl+Q"))
             {
-                m_isRunning = false;
+                m_isEditorRunning = false;
             }
             ImGui::EndMenu();
         }
@@ -227,6 +242,64 @@ void Editor::RenderDockspace()
 
 void Editor::RenderEditorUI()
 {
+    if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
+    {
+        if(ImGui::Button("Create Entity", ImVec2(140, 20)))
+        {
+            Vector3 l_entityPos = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
+            l_entityPos.z = 0.0f;
+
+            m_entityPanel->SetShown(true);
+            m_entityPanel->AddEntity();
+
+            m_categoryPanel->AssignCategoryToEntity(m_selectedEntityId, "Transform");
+            sol::table l_entityTable = m_scene->GetRegistry()->GetEntityAttributes(m_selectedEntityId);
+            l_entityTable.raw_get<sol::table>("Transform").raw_set("position", l_entityPos);
+            
+            m_showContext = false;
+        }
+
+        if(m_selectedEntityId > -1)
+        {
+            if(ImGui::Button("Delete Entity", ImVec2(140, 20)))
+            {
+                m_scene->RemoveEntity(m_selectedEntityId);
+                m_selectedEntityId = -1;
+                m_showContext = false;
+            }
+        }
+
+
+        if(!m_entityPanel->IsShown())
+        {
+            if(ImGui::Button("Show Entity List", ImVec2(140, 20)))
+            {
+                m_entityPanel->SetShown(true);
+                m_showContext = false;
+            }
+        }
+
+        if(!m_categoryPanel->IsShown())
+        {
+            if(ImGui::Button("Show Category List", ImVec2(140, 20)))
+            {
+                m_categoryPanel->SetShown(true);
+                m_showContext = false;
+            }
+        }
+
+        if(!m_rulesPanel->IsShown())
+        {
+            if(ImGui::Button("Show Rules List", ImVec2(140, 20)))
+            {
+                m_rulesPanel->SetShown(true);
+                m_showContext = false;
+            }
+        }
+
+        ImGui::EndPopup();
+    }
+
     // Render all panels
     m_entityPanel->Draw();
 
@@ -248,6 +321,11 @@ void Editor::RenderEditorUI()
 void Editor::HandleInput()
 {
     SDL_Event l_event;
+
+    m_mouseInfo.deltaPosition.x = 0.0f;
+    m_mouseInfo.deltaPosition.y = 0.0f;
+    m_mouseInfo.deltaScroll = 0.0f;
+
     while (SDL_PollEvent(&l_event))
     {
         ImGui_ImplSDL3_ProcessEvent(&l_event);
@@ -255,42 +333,74 @@ void Editor::HandleInput()
         switch(l_event.type)
         {
             case SDL_EVENT_QUIT:
-            m_isRunning = false;
+                m_isEditorRunning = false;
             break;
             
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            if (l_event.window.windowID == SDL_GetWindowID(m_window->GetSDLWindow()))
-            {
-                m_isRunning = false;
-            }
+                if (l_event.window.windowID == SDL_GetWindowID(m_window->GetSDLWindow()))
+                {
+                    m_isEditorRunning = false;
+                }
             break;
 
             case SDL_EVENT_KEY_DOWN:
-            if (l_event.key.key == SDLK_ESCAPE)
-            {
-                m_rulesPanel->SetShown(false);
-                m_entityPanel->SetShown(false);
-                m_categoryPanel->SetShown(false);
-                m_propertiesPanel->SetShown(false);
-            }
-            else if(l_event.key.key == SDLK_C)
-            {
-                m_categoryPanel->SetShown(true);
-            }
-            else if(l_event.key.key == SDLK_E)
-            {
-                m_entityPanel->SetShown(true);
-            }
-            else if(l_event.key.key == SDLK_R)
-            {
-                m_rulesPanel->SetShown(true);
-            }
+                if (l_event.key.key == SDLK_ESCAPE)
+                {
+                    m_rulesPanel->SetShown(false);
+                    m_entityPanel->SetShown(false);
+                    m_categoryPanel->SetShown(false);
+                    m_propertiesPanel->SetShown(false);
+                    m_showContext = false;
+                }
+                else if(l_event.key.key == SDLK_C)
+                {
+                    m_categoryPanel->SetShown(true);
+                }
+                else if(l_event.key.key == SDLK_E)
+                {
+                    m_entityPanel->SetShown(true);
+                }
+                else if(l_event.key.key == SDLK_R)
+                {
+                    m_rulesPanel->SetShown(true);
+                }
+            break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            if (l_event.button.button == SDL_BUTTON_RIGHT)
-            {
-                m_entityPanel->SetShown(true);
-            }
+                if (l_event.button.button == SDL_BUTTON_LEFT)
+                {
+                    m_mouseInfo.LMBDown = true;
+                }
+                else
+                {
+                    m_mouseInfo.RMBDown = true;
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                if (l_event.button.button == SDL_BUTTON_LEFT)
+                {
+                    m_mouseInfo.LMBDown = false;
+                }
+                else
+                {
+                    m_mouseInfo.RMBDown = false;
+                }
+                break;
+
+            case SDL_EVENT_MOUSE_WHEEL:
+                m_mouseInfo.deltaScroll = -l_event.wheel.y;
+                break;
+
+            case SDL_EVENT_MOUSE_MOTION:
+                m_mouseInfo.deltaPosition.x = l_event.motion.xrel;
+                m_mouseInfo.deltaPosition.y = l_event.motion.yrel;
+                break;
         }
     }
+
+    SDL_GetMouseState(&m_mouseInfo.position.x, &m_mouseInfo.position.y);
+
+    // Flip Y position so 0,0 is bottom left
+    m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
 }

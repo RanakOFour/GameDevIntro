@@ -22,7 +22,6 @@ int main()
     l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
 
     l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Drawable.lua");
-    l_context = RE::Core::LuaContext::Instance().lock();
     l_category = l_context->CreateCategory(l_categoryFile);
 
     RE::Log::Message("Adding entity to category");

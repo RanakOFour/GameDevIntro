@@ -1,62 +1,59 @@
 local NewRule = Rule.new()
-NewRule.name = "RotateGuy"
+NewRule.name = "CameraSchenanigans"
 NewRule.categories = {"Transform", "Drawable"}
 NewRule.data = {
-    rotate = false,
-    audio = Asset.Audio("./resources/Audio/collect.wav")
+    audio = Asset.Audio("./resources/Audio/collect.wav"),
+    orthoSize = Vector2.new(5.0, 5.0)
 }
 
 function NewRule:Init(_entityData)
-    Log.Message("Started rotating guy")
-
+    Log.Message("Started camera schenanigans")
 end
 
 function NewRule:Update(_entityData)
     local rotation = _entityData["Transform"].rotation
+    local orthoSize = self.data.orthoSize
+    local guyScale = _entityData["Transform"].scale
 
     if(IO.GetKeyDown('p')) then
         IO.PlayAudio(self.data.audio, false)
     end
 
-    --if(IO.GetKeyDown('r'))then
-      --  self.data.rotate = not self.data.rotate
-    --end
-
-    if(self.data.rotate == false) then
-        return
+    if(IO.GetKeyDown('o')) then
+        Core.Camera:setCameraSize(Vector2.new(1920.0, 1080.0))
+        Core.Camera:setPerspective()
     end
 
-    if(IO.GetKeyDown('w')) then
-        rotation.z = rotation.z - 0.05
-        Log.Message("Moved forward")
+    if(IO.GetKeyDown('k')) then
+        orthoSize.x = orthoSize.x + 0.1
+        orthoSize.y = orthoSize.y + 0.1
+        Core.Camera:setCameraSize(orthoSize)
+        Log.Message("Changed ortho size to: " .. orthoSize:ToString())
     end
 
-    if(IO.GetKeyDown('s')) then
-        rotation.z = rotation.z + 0.05
-        Log.Message("Moved back")
+    if(IO.GetKeyDown('l')) then
+        orthoSize.x = orthoSize.x - 0.1
+        orthoSize.y = orthoSize.y - 0.1
+        Core.Camera:setCameraSize(orthoSize)
+        Log.Message("Changed ortho size to: " .. orthoSize:ToString())
     end
 
-    if(IO.GetKeyDown('a')) then
-        rotation.x = rotation.x - 0.05
-        Log.Message("Moved left")
+    if(IO.GetKeyDown('h')) then
+        guyScale.x = guyScale.x + 0.1
+        guyScale.y = guyScale.y + 0.1
+        Log.Message("Changed guy size to: " .. guyScale:ToString())
     end
 
-    if(IO.GetKeyDown('d')) then
-        rotation.x = rotation.x + 0.05
-        Log.Message("Moved right")
+    if(IO.GetKeyDown('j')) then
+        guyScale.x = guyScale.x - 0.1
+        guyScale.y = guyScale.y - 0.1
+        Log.Message("Changed guy size to: " .. guyScale:ToString())
     end
 
-    if(IO.GetKeyDown('q')) then
-        rotation.y = rotation.y + 0.05
-        Log.Message("Moved up")
+    if(IO.GetKeyDown('i')) then
+        Core.Camera:setCameraSize(self.data.orthoSize)
+        Core.Camera:setOrthographic()
     end
-
-    if(IO.GetKeyDown('e')) then
-        rotation.y = rotation.y - 0.05
-        Log.Message("Moved down")
-    end
-
-    Log.Message("Rotated guy")
 end
 
 return NewRule

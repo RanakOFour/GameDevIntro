@@ -27,8 +27,14 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<RulesPanel> m_rulesPanel;
     std::unique_ptr<PropertiesPanel> m_propertiesPanel;
 
+    RE::IO::MouseInfo m_mouseInfo;
+
     int m_selectedEntityId;
-    bool m_isRunning;
+    
+    bool m_isEditorRunning;
+    bool m_isGameRunning;
+
+    bool m_showContext;
 
     void InitImGui();
     void CleanupImGui();
