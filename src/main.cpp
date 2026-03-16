@@ -31,7 +31,6 @@ int main()
     l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
 
     sol::table l_entityData = l_scene->GetRegistry()->GetEntityAttributes(l_testEntity);
-    l_entityData.raw_get<sol::table>("Drawable").raw_set("texturePath", "./resources/textures/triangle.png");
 
     // Load new rule
     RE::Log::Message("Creating new rule");

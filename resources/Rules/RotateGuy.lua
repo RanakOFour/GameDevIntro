@@ -2,11 +2,21 @@ local NewRule = Rule.new()
 NewRule.name = "RotateGuy"
 NewRule.categories = {"Transform", "Drawable"}
 NewRule.data = {
-    rotate = false
+    rotate = false,
+    audio = Asset.Audio("./resources/Audio/collect.wav")
 }
+
+function NewRule:Init(_entityData)
+    Log.Message("Started rotating guy")
+
+end
 
 function NewRule:Update(_entityData)
     local rotation = _entityData["Transform"].rotation
+
+    if(IO.GetKeyDown('p')) then
+        IO.PlayAudio(self.data.audio, false)
+    end
 
     --if(IO.GetKeyDown('r'))then
       --  self.data.rotate = not self.data.rotate
