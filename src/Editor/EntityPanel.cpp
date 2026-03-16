@@ -33,7 +33,7 @@ void EntityPanel::Draw()
     if (!m_showPanel) return;
 
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Entities##panel", &m_showPanel))
+    if (ImGui::Begin("Entities", &m_showPanel))
     {
         // Add button
         if (ImGui::Button("+ Add Entity", ImVec2(-1, 0)))

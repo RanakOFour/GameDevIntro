@@ -17,7 +17,7 @@ void PropertiesPanel::Draw()
     if (!m_showPanel) return;
 
     ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Properties##panel", &m_showPanel))
+    if (ImGui::Begin("Properties", &m_showPanel))
     {
         auto editor = m_editor.lock();
         if (editor)
@@ -28,6 +28,8 @@ void PropertiesPanel::Draw()
             {
                 ImGui::Text("Entity ID: %d", selectedEntity);
                 ImGui::Separator();
+
+                DrawEntityProperties(selectedEntity);
 
                 static bool l_showAddToCategoryMenu = false;
                 if(ImGui::Button("Add to Category", ImVec2(-1, 0)))
@@ -49,8 +51,6 @@ void PropertiesPanel::Draw()
                         }
                     }
                 }
-
-                DrawEntityProperties(selectedEntity);
             }
             else
             {
@@ -94,78 +94,86 @@ void PropertiesPanel::DrawCategoryAttributes(const std::string& _categoryName, s
 {
     float columnWidth = ImGui::GetColumnWidth() - 30;
 
-    for (auto& pair : _attributes)
+    std::vector<std::string> l_properties;
+
+    for(auto& l_pair : _attributes)
     {
-        std::string key = pair.first.as<std::string>();
-        
+        l_properties.push_back(l_pair.first.as<std::string>());
+    }
+
+    // Sort property names lexographically
+    std::sort(l_properties.begin(), l_properties.end());
+
+    for (auto& l_property : l_properties)
+    {
         // Create a unique ID for this property
-        ImGui::PushID((_categoryName + "::" + key).c_str());
+        ImGui::PushID((_categoryName + "::" + l_property).c_str());
 
         // Determine the type and display accordingly
-        sol::object value = pair.second;
+        sol::object l_value = _attributes.raw_get<sol::object>(l_property.c_str());
 
-        switch(value.get_type())
+        switch(l_value.get_type())
         {
             case sol::type::number:
-                if (value.is<int>())
+                if (l_value.is<int>())
                 {
-                    int intVal = value.as<int>();
-                    if (ImGui::InputInt(key.c_str(), &intVal))
+                    int intVal = l_value.as<int>();
+                    if (ImGui::InputInt(l_property.c_str(), &intVal))
                     {
-                        _attributes[key] = intVal;
+                        _attributes[l_property] = intVal;
                     }
                 }
-                else if (value.is<float>())
+                else if (l_value.is<float>())
                 {
-                    float floatVal = value.as<float>();
-                    if (ImGui::InputFloat(key.c_str(), &floatVal))
+                    float floatVal = l_value.as<float>();
+                    if (ImGui::InputFloat(l_property.c_str(), &floatVal))
                     {
-                        _attributes[key] = floatVal;
+                        _attributes[l_property] = floatVal;
                     }
                 }
                 break;
             case sol::type::boolean:
                 {
-                    bool boolVal = value.as<bool>();
-                    if (ImGui::Checkbox(key.c_str(), &boolVal))
+                    bool boolVal = l_value.as<bool>();
+                    if (ImGui::Checkbox(l_property.c_str(), &boolVal))
                     {
-                        _attributes[key] = boolVal;
+                        _attributes[l_property] = boolVal;
                     }
                 }
                 break;
             case sol::type::string:
                 {
                     static std::map<std::string, std::string> stringBuffers;
-                    std::string stringVal = value.as<std::string>();
+                    std::string stringVal = l_value.as<std::string>();
                     
-                    stringBuffers[key] = stringVal;
-                    if (ImGui::InputText(key.c_str(), &stringBuffers[key][0], ImGuiInputTextFlags_EnterReturnsTrue))
+                    stringBuffers[l_property] = stringVal;
+                    if (ImGui::InputText(l_property.c_str(), &stringBuffers[l_property][0], ImGuiInputTextFlags_EnterReturnsTrue))
                     {
-                        _attributes[key] = stringBuffers[key];
+                        _attributes[l_property] = stringBuffers[l_property];
                     }
                 }
                 break;
             case sol::type::userdata:
                 // Assuming Vector2 is exposed as userdata
-                if (value.is<Vector2>())
+                if (l_value.is<Vector2>())
                 {
-                    Vector2 vec = value.as<Vector2>();
-                    if (ImGui::InputFloat2(key.c_str(), &vec.x))
+                    Vector2 vec = l_value.as<Vector2>();
+                    if (ImGui::InputFloat2(l_property.c_str(), &vec.x))
                     {
-                        _attributes[key] = vec;
+                        _attributes[l_property] = vec;
                     }
                 }
-                else if(value.is<Vector3>())
+                else if(l_value.is<Vector3>())
                 {
-                    Vector3 vec = value.as<Vector3>();
-                    if (ImGui::InputFloat3(key.c_str(), &vec.x))
+                    Vector3 vec = l_value.as<Vector3>();
+                    if (ImGui::InputFloat3(l_property.c_str(), &vec.x))
                     {
-                        _attributes[key] = vec;
+                        _attributes[l_property] = vec;
                     }
                 }
                 break;
             default:
-                ImGui::TextDisabled("%s: Unsupported type", key.c_str());
+                ImGui::TextDisabled("%s: Unsupported type", l_property.c_str());
         }
 
         ImGui::PopID();

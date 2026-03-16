@@ -37,7 +37,7 @@ void CategoryPanel::Draw()
     if (!m_showPanel) return;
 
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Categories##panel", &m_showPanel))
+    if (ImGui::Begin("Categories", &m_showPanel))
     {
         // Create and Load buttons
         if (ImGui::Button("+ Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))

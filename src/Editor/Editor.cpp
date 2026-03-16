@@ -11,7 +11,6 @@
 Editor::Editor()
 : m_selectedEntityId(-1)
 , m_isEditorRunning(true)
-, m_showContext(false)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
@@ -255,8 +254,6 @@ void Editor::RenderEditorUI()
             m_categoryPanel->AssignCategoryToEntity(m_selectedEntityId, "Transform");
             sol::table l_entityTable = m_scene->GetRegistry()->GetEntityAttributes(m_selectedEntityId);
             l_entityTable.raw_get<sol::table>("Transform").raw_set("position", l_entityPos);
-            
-            m_showContext = false;
         }
 
         if(m_selectedEntityId > -1)
@@ -265,7 +262,6 @@ void Editor::RenderEditorUI()
             {
                 m_scene->RemoveEntity(m_selectedEntityId);
                 m_selectedEntityId = -1;
-                m_showContext = false;
             }
         }
 
@@ -275,7 +271,6 @@ void Editor::RenderEditorUI()
             if(ImGui::Button("Show Entity List", ImVec2(140, 20)))
             {
                 m_entityPanel->SetShown(true);
-                m_showContext = false;
             }
         }
 
@@ -284,7 +279,6 @@ void Editor::RenderEditorUI()
             if(ImGui::Button("Show Category List", ImVec2(140, 20)))
             {
                 m_categoryPanel->SetShown(true);
-                m_showContext = false;
             }
         }
 
@@ -293,7 +287,6 @@ void Editor::RenderEditorUI()
             if(ImGui::Button("Show Rules List", ImVec2(140, 20)))
             {
                 m_rulesPanel->SetShown(true);
-                m_showContext = false;
             }
         }
 
@@ -350,7 +343,6 @@ void Editor::HandleInput()
                     m_entityPanel->SetShown(false);
                     m_categoryPanel->SetShown(false);
                     m_propertiesPanel->SetShown(false);
-                    m_showContext = false;
                 }
                 else if(l_event.key.key == SDLK_C)
                 {

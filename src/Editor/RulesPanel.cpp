@@ -42,7 +42,7 @@ void RulesPanel::Draw()
     if (!m_showPanel) return;
 
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Rules##panel", &m_showPanel))
+    if (ImGui::Begin("Rules", &m_showPanel))
     {
         ImGui::Text("Active Rules:");
         ImGui::Separator();
