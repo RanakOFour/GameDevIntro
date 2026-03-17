@@ -16,6 +16,12 @@ Editor::Editor()
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
     RE::Log::Message("Engine Initialised for Editor");
 
+    // Get the scene
+    m_scene = m_engineContents.core->GetScene().lock();
+    m_camera = m_engineContents.core->GetCamera().lock();
+
+    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinitegrid/frag.fs;./resources/Shaders/infinitegrid/vert.vs").lock();
+
     auto l_transformFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Transform.lua");
     auto l_context = RE::Core::LuaContext::Instance().lock();
     l_context->CreateCategory(l_transformFile);
@@ -32,9 +38,6 @@ Editor::Editor()
         m_isEditorRunning = false;
         return;
     }
-
-    // Get the scene
-    m_scene = m_engineContents.core->GetScene().lock();
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
@@ -130,15 +133,46 @@ void Editor::Update(float _deltaTime)
 void Editor::Render()
 {
     // Clear the screen
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Start ImGui frame
+    // Render the infinite grid first (before ImGui)
+    if (m_gridShader)
+    {
+        GLuint emptyVAO = 0;
+        glGenVertexArrays(1, &emptyVAO);
+        glBindVertexArray(emptyVAO);
+
+        // Disable depth testing for grid
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        m_gridShader->Use();
+        m_gridShader->SetUniform("u_Projection", m_camera->GetProjection());
+        m_gridShader->SetUniform("u_View", m_camera->GetView());
+        m_gridShader->SetUniform("u_cameraPos", m_camera->GetPosition());
+        m_gridShader->SetUniform("u_cameraSize", m_camera->GetCameraSize());
+
+        glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
+
+        // Re-enable depth testing
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+
+        glBindVertexArray(0);
+        glDeleteVertexArrays(1, &emptyVAO);
+        glUseProgram(0);
+    }
+
+    // Start ImGui frame (renders after grid)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    RenderDockspace();
+    //RenderDockspace();
     RenderMenuBar();
     RenderEditorUI();
 
@@ -319,6 +353,8 @@ void Editor::HandleInput()
     m_mouseInfo.deltaPosition.y = 0.0f;
     m_mouseInfo.deltaScroll = 0.0f;
 
+    bool l_resized = false;
+
     while (SDL_PollEvent(&l_event))
     {
         ImGui_ImplSDL3_ProcessEvent(&l_event);
@@ -388,7 +424,16 @@ void Editor::HandleInput()
                 m_mouseInfo.deltaPosition.x = l_event.motion.xrel;
                 m_mouseInfo.deltaPosition.y = l_event.motion.yrel;
                 break;
+            case SDL_EVENT_WINDOW_RESIZED:
+                l_resized = true;
         }
+    }
+
+    if(l_resized)
+    {
+        int l_w, l_h;
+        SDL_GetWindowSizeInPixels(m_window->GetSDLWindow(), &l_w, &l_h);
+        m_window->SetScreenSize(Vector2(l_w, l_h));
     }
 
     SDL_GetMouseState(&m_mouseInfo.position.x, &m_mouseInfo.position.y);

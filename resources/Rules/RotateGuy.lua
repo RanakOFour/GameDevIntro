@@ -8,6 +8,8 @@ NewRule.data = {
 
 function NewRule:Init(_entityData)
     Log.Message("Started camera schenanigans")
+    _entityData["Drawable"].texturePath = "./resources/Textures/triangle.png"
+    _entityData["Drawable"].shaderPath = "./resources/Shaders/infinitegrid/frag.fs;./resources/Shaders/infinitegrid/vert.vs"
 end
 
 function NewRule:Update(_entityData)

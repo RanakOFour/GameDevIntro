@@ -19,7 +19,11 @@ class Editor : public std::enable_shared_from_this<Editor>
     private:
     std::shared_ptr<RE::IO::Window> m_window;
     std::shared_ptr<RE::Core::Scene> m_scene;
+    std::shared_ptr<RE::Core::Camera> m_camera;
+
     RE::EngineContents m_engineContents;
+
+    std::shared_ptr<RE::Asset::Shader> m_gridShader;
 
     // UI Panels
     std::unique_ptr<EntityPanel> m_entityPanel;

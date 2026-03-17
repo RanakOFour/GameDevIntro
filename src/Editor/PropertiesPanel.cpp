@@ -101,7 +101,7 @@ void PropertiesPanel::DrawCategoryAttributes(const std::string& _categoryName, s
         l_properties.push_back(l_pair.first.as<std::string>());
     }
 
-    // Sort property names lexographically
+    // Sort property names lexographically, probably a better way to do this than every frame
     std::sort(l_properties.begin(), l_properties.end());
 
     for (auto& l_property : l_properties)
@@ -143,6 +143,8 @@ void PropertiesPanel::DrawCategoryAttributes(const std::string& _categoryName, s
                 break;
             case sol::type::string:
                 {
+                    // This is terrible, change later
+                    // Use ID+Category+AttributeName as key
                     static std::map<std::string, std::string> stringBuffers;
                     std::string stringVal = l_value.as<std::string>();
                     
