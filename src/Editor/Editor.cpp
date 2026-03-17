@@ -146,7 +146,6 @@ void Editor::Render()
         // Disable depth testing for grid
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
-        glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         m_gridShader->Use();
@@ -160,7 +159,6 @@ void Editor::Render()
         // Re-enable depth testing
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_CULL_FACE);
-        glDisable(GL_BLEND);
 
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &emptyVAO);
