@@ -35,7 +35,7 @@ void CategoryPanel::RefreshCategoryList()
 void CategoryPanel::Draw()
 {
     if (!m_showPanel) return;
-
+    RefreshCategoryList();
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Categories", &m_showPanel))
     {
@@ -53,7 +53,7 @@ void CategoryPanel::Draw()
         ImGui::Separator();
 
         // Search/Filter
-        ImGui::InputTextWithHint("##CategoryFilter", "Search categories...", &m_selectedCategoryFilter[0], m_selectedCategoryFilter.size());
+        ImGui::InputTextWithHint("CategoryFilter", "Search categories...", &m_selectedCategoryFilter[0], m_selectedCategoryFilter.size());
 
         ImGui::Separator();
 
@@ -71,19 +71,7 @@ void CategoryPanel::Draw()
                     }
                 }
 
-                if (ImGui::Selectable(category.c_str(), false))
-                {
-                    // Assignment logic here
-                    auto editor = m_editor.lock();
-                    if (editor)
-                    {
-                        int selectedEntity = editor->GetSelectedEntityId();
-                        if (selectedEntity >= 0)
-                        {
-                            AssignCategoryToEntity(selectedEntity, category);
-                        }
-                    }
-                }
+                ImGui::Text(category.c_str());
             }
             ImGui::EndChild();
         }
@@ -105,7 +93,7 @@ void CategoryPanel::DrawCreateCategoryDialog()
     if (ImGui::BeginPopupModal("Create New Category", &m_showCreateDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Category Name:");
-        ImGui::InputText("##CategoryName", &m_newCategoryName[0], m_newCategoryName.size());
+        ImGui::InputText("CategoryName", &m_newCategoryName[0], m_newCategoryName.size());
 
         ImGui::Separator();
 
@@ -143,7 +131,7 @@ void CategoryPanel::DrawLoadCategoryDialog()
     {
         static char filePath[512] = "./resources/Categories/";
         ImGui::Text("Category File Path:");
-        ImGui::InputText("##CategoryPath", filePath, IM_ARRAYSIZE(filePath));
+        ImGui::InputText("CategoryPath", filePath, IM_ARRAYSIZE(filePath));
 
         ImGui::Separator();
 

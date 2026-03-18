@@ -1,7 +1,7 @@
 local NewRule = Rule.new()
 NewRule.name = "CameraSchenanigans"
 NewRule.categories = {"Transform", "Drawable"}
-NewRule.data = {
+NewRule.attributes = {
     audio = Asset.Audio("./resources/Audio/collect.wav"),
     orthoSize = Vector2.new(5.0, 5.0)
 }
@@ -14,11 +14,11 @@ end
 
 function NewRule:Update(_entityData)
     local rotation = _entityData["Transform"].rotation
-    local orthoSize = self.data.orthoSize
+    local orthoSize = self.attributes.orthoSize
     local guyScale = _entityData["Transform"].scale
 
     if(IO.GetKeyDown('p')) then
-        IO.PlayAudio(self.data.audio, false)
+        IO.PlayAudio(self.attributes.audio, false)
     end
 
     if(IO.GetKeyDown('o')) then
@@ -53,7 +53,7 @@ function NewRule:Update(_entityData)
     end
 
     if(IO.GetKeyDown('i')) then
-        Core.Camera:setCameraSize(self.data.orthoSize)
+        Core.Camera:setCameraSize(self.attributes.orthoSize)
         Core.Camera:setOrthographic()
     end
 end

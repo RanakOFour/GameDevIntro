@@ -3,7 +3,9 @@
 #include "Editor/CategoryPanel.h"
 #include "Editor/RulesPanel.h"
 #include "Editor/PropertiesPanel.h"
+
 #include "RanakEngine/IO.h"
+#include "RanakEngine/Core.h"
 
 #include "SDL3/SDL.h"
 #include <GL/gl.h>
@@ -26,8 +28,10 @@ Editor::Editor()
     auto l_context = RE::Core::LuaContext::Instance().lock();
     l_context->CreateCategory(l_transformFile);
 
-    auto l_drawableFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Drawable.lua");
-    l_context->CreateCategory(l_drawableFile);
+    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
+
+    m_scene->AddRule(l_renderRule);
 
     // Get the window from the IO Manager
     auto ioManager = m_engineContents.io;
@@ -81,8 +85,6 @@ void Editor::InitImGui()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
     
     // Enable mouse drag for window operations
     io.ConfigDragClickToInputText = 0.0f;
@@ -133,11 +135,12 @@ void Editor::Update(float _deltaTime)
 void Editor::Render()
 {
     // Clear the screen
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Render the infinite grid first (before ImGui)
-    if (m_gridShader)
+    //if (m_gridShader)
+    if(false)
     {
         GLuint emptyVAO = 0;
         glGenVertexArrays(1, &emptyVAO);
@@ -146,7 +149,6 @@ void Editor::Render()
         // Disable depth testing for grid
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         m_gridShader->Use();
         m_gridShader->SetUniform("u_Projection", m_camera->GetProjection());
@@ -165,6 +167,8 @@ void Editor::Render()
         glUseProgram(0);
     }
 
+    m_scene->Draw();
+
     // Start ImGui frame (renders after grid)
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -177,14 +181,6 @@ void Editor::Render()
     // Rendering
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    // Update and Render additional Platform Windows
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-    {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-    }
 
     m_window->Swap();
 }
@@ -239,37 +235,7 @@ void Editor::RenderMenuBar()
     }
 }
 
-void Editor::RenderDockspace()
-{
-    ImGuiDockNodeFlags l_dockFlags = ImGuiDockNodeFlags_PassthruCentralNode;
 
-    ImGuiWindowFlags l_windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-
-    const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
-    ImGui::SetNextWindowViewport(viewport->ID);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    l_windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-    l_windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-    ImGui::Begin("DockSpace", nullptr, l_windowFlags);
-    ImGui::PopStyleVar();
-
-    ImGui::PopStyleVar(2);
-
-    // DockSpace
-    ImGuiIO& io = ImGui::GetIO();
-    if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
-    {
-        ImGuiID l_dockID = ImGui::GetID("MyDockSpace");
-        ImGui::DockSpace(l_dockID, ImVec2(0.0f, 0.0f), l_dockFlags);
-    }
-
-    ImGui::End();
-}
 
 void Editor::RenderEditorUI()
 {

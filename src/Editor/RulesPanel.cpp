@@ -61,7 +61,7 @@ void RulesPanel::Draw()
         ImGui::Separator();
 
         // Search/Filter
-        ImGui::InputTextWithHint("##RuleFilter", "Search rules...", m_selectedRuleFilter.data(), m_selectedRuleFilter.size());
+        ImGui::InputTextWithHint("RuleFilter", "Search rules...", m_selectedRuleFilter.data(), m_selectedRuleFilter.size());
 
         ImGui::Separator();
 
@@ -88,7 +88,7 @@ void RulesPanel::Draw()
 
                 // Remove button
                 ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-                if (ImGui::Button("X##remove", ImVec2(25, 0)))
+                if (ImGui::Button("Xremove", ImVec2(25, 0)))
                 {
                     RemoveRule(rule);
                 }
@@ -115,7 +115,7 @@ void RulesPanel::DrawCreateRuleDialog()
     if (ImGui::BeginPopupModal("Create New Rule", &m_showCreateDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Rule Name:");
-        ImGui::InputText("##RuleName", &m_newRuleName[0], m_newRuleName.size());
+        ImGui::InputText("RuleName", &m_newRuleName[0], m_newRuleName.size());
 
         ImGui::Separator();
 
@@ -161,7 +161,7 @@ void RulesPanel::DrawLoadRuleDialog()
     {
         static char filePath[512] = "./resources/Rules/";
         ImGui::Text("Rule File Path:");
-        ImGui::InputText("##RulePath", filePath, IM_ARRAYSIZE(filePath));
+        ImGui::InputText("RulePath", filePath, IM_ARRAYSIZE(filePath));
 
         ImGui::Separator();
 

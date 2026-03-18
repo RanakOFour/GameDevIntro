@@ -49,7 +49,7 @@ void EntityPanel::Draw()
             for (int entityId : m_cachedEntities)
             {
                 bool selected = (m_selectedEntity == entityId);
-                if (ImGui::Selectable(("Entity##" + std::to_string(entityId)).c_str(), selected))
+                if (ImGui::Selectable(("Entity" + std::to_string(entityId)).c_str(), selected))
                 {
                     SelectEntity(entityId);
                 }
