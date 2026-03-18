@@ -42,9 +42,9 @@ class Editor : public std::enable_shared_from_this<Editor>
 
     void InitImGui();
     void CleanupImGui();
-    void RenderMenuBar();
-    void RenderDockspace();
-    void RenderEditorUI();
+    void DrawMenuBar();
+    void DrawDockspace();
+    void DrawEditorUI();
     void HandleInput();
 
     public:
@@ -56,7 +56,7 @@ class Editor : public std::enable_shared_from_this<Editor>
 
     void Run();
     void Update(float _deltaTime);
-    void Render();
+    void Draw();
     
     // Accessors
     std::shared_ptr<RE::Core::Scene> GetScene() { return m_scene; }

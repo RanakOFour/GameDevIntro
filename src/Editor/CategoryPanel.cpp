@@ -3,6 +3,8 @@
 #include "imgui/imgui.h"
 
 #include <algorithm>
+#include <sstream>
+#include <string>
 
 CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
@@ -21,15 +23,18 @@ CategoryPanel::~CategoryPanel()
 void CategoryPanel::RefreshCategoryList()
 {
     m_availableCategories.clear();
-    // TODO: Get all available categories from the core manager
-    // This depends on the API to access all loaded categories
-    auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
-    sol::table categories = l_registry->GetCategoryTable();
-    for (auto& pair : categories)
+
+    auto l_context = m_editor.lock()->GetEngineContents().core->GetLuaContext();
+    std::stringstream l_catNames(l_context->GetLoadedCategories());
+    
+    std::string l_segment;
+
+    while(std::getline(l_catNames, l_segment, ';'))
     {
-        std::string categoryName = pair.first.as<std::string>();
-        m_availableCategories.push_back(categoryName);
+        m_availableCategories.push_back(l_segment);
     }
+
+    std::sort(m_availableCategories.begin(), m_availableCategories.end());
 }
 
 void CategoryPanel::Draw()

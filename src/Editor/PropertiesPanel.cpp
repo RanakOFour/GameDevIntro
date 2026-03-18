@@ -5,6 +5,7 @@
 PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_displayedEntityId(-1)
+, m_showAddToCategoryMenu(false)
 {
 }
 
@@ -16,46 +17,50 @@ void PropertiesPanel::Draw()
 {
     if (!m_showPanel) return;
 
+    auto l_editor = m_editor.lock();
+
+    int l_selectedEntity = l_editor->GetSelectedEntityId();
+    if(l_selectedEntity < 0)
+    {
+        return;
+    }
+
     ImGui::SetNextWindowSize(ImVec2(400, 600), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Properties", &m_showPanel))
     {
-        auto editor = m_editor.lock();
-        if (editor)
+        ImGui::Text("Entity ID: %d", l_selectedEntity);
+        ImGui::Separator();
+
+        DrawEntityProperties(l_selectedEntity);
+
+        if(ImGui::Button("Add to Category", ImVec2(-1, 0)))
         {
-            int selectedEntity = editor->GetSelectedEntityId();
-            
-            if (selectedEntity >= 0)
+            auto l_registry = l_editor->GetScene()->GetRegistry();
+            sol::table l_categories = l_registry->GetCategoryTable();
+            for (auto& l_pair : l_categories)
             {
-                ImGui::Text("Entity ID: %d", selectedEntity);
-                ImGui::Separator();
-
-                DrawEntityProperties(selectedEntity);
-
-                static bool l_showAddToCategoryMenu = false;
-                if(ImGui::Button("Add to Category", ImVec2(-1, 0)))
+                std::string l_name = l_pair.first.as<std::string>();
+                if (ImGui::MenuItem(l_name.c_str()))
                 {
-                    l_showAddToCategoryMenu = true;
-                }
-
-                if (l_showAddToCategoryMenu)
-                {
-                    auto registry = editor->GetScene()->GetRegistry();
-                    sol::table categories = registry->GetCategoryTable();
-                    for (auto& pair : categories)
-                    {
-                        std::string categoryName = pair.first.as<std::string>();
-                        if (ImGui::MenuItem(categoryName.c_str()))
-                        {
-                            registry->AddToCategory(selectedEntity, pair.second.as<std::bitset<1024>>());
-                            l_showAddToCategoryMenu = false;
-                        }
-                    }
+                    l_registry->AddToCategory(l_selectedEntity, l_pair.second.as<std::bitset<1024>>());
+                    m_showAddToCategoryMenu = false;
                 }
             }
-            else
+        }
+
+        if (m_showAddToCategoryMenu)
+        {
+            // Need to pull categories from Category Panel instead
+            auto l_registry = l_editor->GetScene()->GetRegistry();
+            sol::table l_categories = l_registry->GetCategoryTable();
+            for (auto& l_pair : l_categories)
             {
-                ImGui::TextDisabled("No entity selected");
-                ImGui::TextDisabled("Select an entity from the Entities panel to view/edit its properties");
+                std::string l_name = l_pair.first.as<std::string>();
+                if (ImGui::MenuItem(l_name.c_str()))
+                {
+                    l_registry->AddToCategory(l_selectedEntity, l_pair.second.as<std::bitset<1024>>());
+                    m_showAddToCategoryMenu = false;
+                }
             }
         }
     }

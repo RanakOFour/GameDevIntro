@@ -15,6 +15,8 @@ class PropertiesPanel : public Panel
 
     int m_displayedEntityId;
 
+    bool m_showAddToCategoryMenu;
+
     void DrawEntityProperties(int _entityId);
     void DrawCategoryAttributes(const std::string& _categoryName, sol::table& _attributes);
 

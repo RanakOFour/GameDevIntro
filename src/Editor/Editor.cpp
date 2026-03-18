@@ -122,7 +122,7 @@ void Editor::Run()
         else
         {
             HandleInput();
-            Render();
+            Draw();
         }
     }
 }
@@ -132,11 +132,13 @@ void Editor::Update(float _deltaTime)
     m_scene->Update(_deltaTime);
 }
 
-void Editor::Render()
+void Editor::Draw()
 {
     // Clear the screen
     glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Draw grid
 
     // Render the infinite grid first (before ImGui)
     //if (m_gridShader)
@@ -167,16 +169,17 @@ void Editor::Render()
         glUseProgram(0);
     }
 
+    // Draw scene with EditorRenderer
     m_scene->Draw();
 
-    // Start ImGui frame (renders after grid)
+    // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
     //RenderDockspace();
-    RenderMenuBar();
-    RenderEditorUI();
+    DrawMenuBar();
+    DrawEditorUI();
 
     // Rendering
     ImGui::Render();
@@ -185,7 +188,7 @@ void Editor::Render()
     m_window->Swap();
 }
 
-void Editor::RenderMenuBar()
+void Editor::DrawMenuBar()
 {
     if (ImGui::BeginMainMenuBar())
     {
@@ -237,8 +240,9 @@ void Editor::RenderMenuBar()
 
 
 
-void Editor::RenderEditorUI()
+void Editor::DrawEditorUI()
 {
+    // Context menu
     if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
         if(ImGui::Button("Create Entity", ImVec2(140, 20)))
@@ -251,7 +255,7 @@ void Editor::RenderEditorUI()
 
             m_categoryPanel->AssignCategoryToEntity(m_selectedEntityId, "Transform");
             sol::table l_entityTable = m_scene->GetRegistry()->GetEntityAttributes(m_selectedEntityId);
-            l_entityTable.raw_get<sol::table>("Transform").raw_set("position", l_entityPos);
+            l_entityTable.raw_get<sol::table>("Transform").raw_set("Position", l_entityPos);
         }
 
         if(m_selectedEntityId > -1)
@@ -291,22 +295,12 @@ void Editor::RenderEditorUI()
         ImGui::EndPopup();
     }
 
-    // Render all panels
+    // Draw panels
     m_entityPanel->Draw();
-
-    if(m_entityPanel->IsShown() && m_entityPanel->GetSelectedEntity() != -1)
-    {
-        m_propertiesPanel->SetDisplayedEntity(m_entityPanel->GetSelectedEntity());
-        m_propertiesPanel->SetShown(true);
-    }
-    else
-    {
-        m_propertiesPanel->SetShown(false);
-    }
-    
+    // Properties panel is now integrated into EntityPanel on the right side
+    // m_propertiesPanel->Draw();
     m_categoryPanel->Draw();
     m_rulesPanel->Draw();
-    m_propertiesPanel->Draw();
 }
 
 void Editor::HandleInput()

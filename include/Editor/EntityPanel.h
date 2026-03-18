@@ -14,8 +14,12 @@ class EntityPanel : public Panel
 
     int m_selectedEntity;
     std::vector<int> m_cachedEntities;
+    bool m_showAddToCategoryMenu;
 
     void RefreshEntityList();
+
+    void DrawEntityProperties(int _entityId);
+    void DrawCategoryAttributes(const std::string& _categoryName, sol::table& _attributes);
 
     public:
     EntityPanel(std::weak_ptr<Editor> _editor);
