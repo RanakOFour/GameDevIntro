@@ -3,7 +3,7 @@
 int main()
 {
     // Start engine
-    auto l_contents = RE::Initialise(true, Vector2(1280, 720));
+    auto l_contents = RE::Initialise(true, Vector2(1920, 1080));
 
     RE::Log::Message("Engine Initialised");
 

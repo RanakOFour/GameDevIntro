@@ -7,23 +7,17 @@ NewRule.attributes = {
 }
 
 function NewRule:Init(_entityData)
-    Log.Message("Started camera schenanigans")
     _entityData["Drawable"].texturePath = "./resources/Textures/triangle.png"
-    _entityData["Drawable"].shaderPath = "./resources/Shaders/infinitegrid/frag.fs;./resources/Shaders/infinitegrid/vert.vs"
+    _entityData["Drawable"].texture = Asset.Texture("./resources/Textures/triangle.png")
+    _entityData["Drawable"].modelPath = "./resources/Models/FlatTexture.obj"
 end
 
 function NewRule:Update(_entityData)
-    local rotation = _entityData["Transform"].rotation
     local orthoSize = self.attributes.orthoSize
     local guyScale = _entityData["Transform"].scale
 
     if(IO.GetKeyDown('p')) then
         IO.PlayAudio(self.attributes.audio, false)
-    end
-
-    if(IO.GetKeyDown('o')) then
-        Core.Camera:setCameraSize(Vector2.new(1920.0, 1080.0))
-        Core.Camera:setPerspective()
     end
 
     if(IO.GetKeyDown('k')) then
@@ -55,6 +49,11 @@ function NewRule:Update(_entityData)
     if(IO.GetKeyDown('i')) then
         Core.Camera:setCameraSize(self.attributes.orthoSize)
         Core.Camera:setOrthographic()
+    end
+
+    if(IO.GetKeyDown('o')) then
+        Core.Camera:setCameraSize(Vector2.new(1920.0, 1080.0))
+        Core.Camera:setPerspective()
     end
 end
 

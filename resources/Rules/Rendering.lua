@@ -3,15 +3,7 @@ Rendering.name = "Rendering"
 Rendering.categories = {"Transform", "Drawable"}
 
 function Rendering:Update(_entityData)
-    local message = "Deltatime: " .. Core.DeltaTime()
-
-    if(Core.DeltaTime() == nil) then
-        Log.Message("Core.DeltaTime is nil")
-    else
-        Log.Message("Core.DeltaTime is not nil")
-    end
-
-    Log.Message(message)
+    
 end
 
 function Rendering:Draw(_entityData)

@@ -16,7 +16,6 @@ EditorRender.attributes = {
 function EditorRender:Draw(_entityData)
     if(_entityData["Drawable"] == nil) then
         Core.Camera:Draw(_entityData["Transform"], self.attributes.templateDrawable)
-
     else
         Core.Camera:Draw(_entityData["Transform"], _entityData["Drawable"])
     end

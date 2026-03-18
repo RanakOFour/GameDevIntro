@@ -53,7 +53,7 @@ std::shared_ptr<Editor> Editor::Create()
 {
     auto editor = std::make_shared<Editor>();
     
-    // Now that editor is in a shared_ptr, we can initialize panels
+    // Make shared_ptr specifid to editor i.e. does not exit scope
     auto editorPtr = editor->shared_from_this();
     
     editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
