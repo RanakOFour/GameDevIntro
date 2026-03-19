@@ -3,8 +3,6 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(GameDevIntro)
 
-find_package(Lua REQUIRED)
-
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp"
                         "extern/imgui/backends/imgui_impl_sdl3.cpp"
@@ -23,7 +21,11 @@ add_executable(GameEditor "src/editor_main.cpp" ${IMGUI_SOURCES})
 add_subdirectory(src)
 
 # Set up TestRun target
-target_include_directories(TestRun PUBLIC include extern extern/imgui extern/imgui/backends extern/pugixml ${LUA_INCLUDE_DIR})
+target_include_directories(TestRun PUBLIC include extern
+                                                  extern/imgui
+                                                  extern/imgui/backends
+                                                  extern/pugixml)
+
 target_link_libraries(TestRun PUBLIC RanakEngine)
 
 if(UNIX)
@@ -32,7 +34,11 @@ if(UNIX)
 endif()
 
 # Set up GameEditor target (links against RanakEngine library)
-target_include_directories(GameEditor PUBLIC include extern extern/imgui extern/imgui/backends extern/pugixml ${LUA_INCLUDE_DIR})
+target_include_directories(GameEditor PUBLIC include extern
+                                                     extern/imgui
+                                                     extern/imgui/backends
+                                                     extern/pugixml)
+
 target_link_libraries(GameEditor PUBLIC RanakEngine)
 
 if(UNIX)
