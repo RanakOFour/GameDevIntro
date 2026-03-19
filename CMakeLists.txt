@@ -63,6 +63,11 @@ elseif(WIN32)
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
                        $<TARGET_FILE_DIR:GameEditor>)
+
+    add_custom_command(TARGET GameEditor POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${CMAKE_CURRENT_SOURCE_DIR}/resources"
+                       $<TARGET_FILE_DIR:GameEditor>)
 endif()
 
 #endif()

@@ -4,7 +4,7 @@ int main()
 {
     try
     {
-        auto l_editor = Editor::Create();
+        std::shared_ptr<Editor> l_editor = Editor::Create();
         l_editor->Run();
     }
     catch (std::exception e)

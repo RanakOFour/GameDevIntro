@@ -46,18 +46,15 @@ Editor::Editor()
 
 std::shared_ptr<Editor> Editor::Create()
 {
-    auto editor = std::make_shared<Editor>();
+    std::shared_ptr<Editor> l_editor = std::make_shared<Editor>();
     
-    // Make shared_ptr specifid to editor i.e. does not exit scope
-    auto editorPtr = editor->shared_from_this();
-    
-    editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
-    editor->m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
-    editor->m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
+    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editor);
+    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editor);
+    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editor);
 
     RE::Log::Message("Editor initialized with UI panels");
     
-    return editor;
+    return l_editor;
 }
 
 Editor::~Editor()
@@ -392,4 +389,6 @@ void Editor::HandleInput()
 
     // Flip Y position so 0,0 is bottom left
     m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
+
+    RE::Log::Message("Input handled");
 }
