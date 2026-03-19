@@ -4,23 +4,25 @@ set(CMAKE_CXX_STANDARD 20)
 project(GameDevIntro)
 
 # Collect ImGui source files
-file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp"
+file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
+                        "extern/imgui/imgui_draw.cpp"
+                        "extern/imgui/imgui_tables.cpp"
+                        "extern/imgui/imgui_widgets.cpp"
                         "extern/imgui/backends/imgui_impl_sdl3.cpp"
                         "extern/imgui/backends/imgui_impl_opengl3.cpp"
                         "extern/imgui/misc/cpp/imgui_stdlib.cpp")
 
+add_subdirectory(extern/pugixml)
 add_subdirectory(extern/RanakEngine2)
 
-# Create game executable
+
 add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})
 
-# Create editor executable
 add_executable(GameEditor "src/editor_main.cpp" ${IMGUI_SOURCES})
 
-# Add subdirectories (this will create RanakEngine library and add Editor sources)
 add_subdirectory(src)
 
-# Set up TestRun target
+
 target_include_directories(TestRun PUBLIC include extern
                                                   extern/imgui
                                                   extern/imgui/backends
@@ -28,12 +30,7 @@ target_include_directories(TestRun PUBLIC include extern
 
 target_link_libraries(TestRun PUBLIC RanakEngine)
 
-if(UNIX)
-    target_link_directories(TestRun PUBLIC lib/unix)
-    target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
-endif()
 
-# Set up GameEditor target (links against RanakEngine library)
 target_include_directories(GameEditor PUBLIC include extern
                                                      extern/imgui
                                                      extern/imgui/backends
@@ -42,8 +39,27 @@ target_include_directories(GameEditor PUBLIC include extern
 target_link_libraries(GameEditor PUBLIC RanakEngine)
 
 if(UNIX)
+    target_link_directories(TestRun PUBLIC lib/unix)
+    target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
     target_link_directories(GameEditor PUBLIC lib/unix)
     target_link_libraries(GameEditor PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+elseif(WIN32)
+    target_link_directories(TestRun PUBLIC lib/win/release)
+    target_link_libraries(TestRun PUBLIC opengl32 glew32 SDL3 lua)
+    target_link_directories(GameEditor PUBLIC lib/win/release)
+    target_link_libraries(GameEditor PUBLIC opengl32 glew32 SDL3 lua)
+
+    
+    add_custom_command(TARGET TestRun POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
+                       $<TARGET_FILE_DIR:TestRun>)
+
+    
+    add_custom_command(TARGET GameEditor POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
+                       $<TARGET_FILE_DIR:GameEditor>)
 endif()
 
 #endif()
