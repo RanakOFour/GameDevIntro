@@ -49,10 +49,10 @@ std::shared_ptr<Editor> Editor::Create()
 {
     std::shared_ptr<Editor> l_editor = std::make_shared<Editor>();
     
-    editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
-    editor->m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
-    editor->m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
-    editor->m_cameraPanel = std::make_unique<CameraPanel>(editorPtr);
+    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editor);
+    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editor);
+    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editor);
+    l_editor->m_cameraPanel = std::make_unique<CameraPanel>(l_editor);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -119,6 +119,8 @@ void Editor::Run()
         }
     }
 
+    printf("Editor no longer running\n");
+
     m_categoryPanel.reset();
     m_entityPanel.reset();
     m_rulesPanel.reset();
@@ -139,8 +141,8 @@ void Editor::Draw()
     // Draw grid
 
     // Render the infinite grid first (before ImGui)
-    //if (m_gridShader)
-    if(false)
+    if (m_gridShader)
+    //if(false)
     {
         GLuint emptyVAO = 0;
         glGenVertexArrays(1, &emptyVAO);

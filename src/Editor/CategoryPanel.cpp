@@ -147,14 +147,15 @@ void CategoryPanel::DrawLoadCategoryDialog()
     if (ImGui::BeginPopupModal("Load Category", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Category File Path:");
-        ImGui::InputText("CategoryPath", &m_loadCategoryFilePath);
+
+        ImGui::InputText("CategoryPath", &m_loadCategoryFilePath, ImGuiInputTextFlags_EnterReturnsTrue);
 
         ImGui::Separator();
 
         if (ImGui::Button("Load", ImVec2(120, 0)))
         {
+            RE::Log::Message("Creating category from " + m_loadCategoryFilePath);
             LoadCategoryFromFile(m_loadCategoryFilePath);
-            
             m_loadCategoryFilePath = "./resources/Categories/";
             m_showLoadDialog = false;
             ImGui::CloseCurrentPopup();
