@@ -1,6 +1,11 @@
 #include "Editor/RulesPanel.h"
 #include "Editor/Editor.h"
+
 #include "imgui/imgui.h"
+
+// String compatible functions for ImGui
+#include "imgui/misc/cpp/imgui_stdlib.h"
+
 #include <algorithm>
 
 RulesPanel::RulesPanel(std::weak_ptr<Editor> _editor)
@@ -159,15 +164,15 @@ void RulesPanel::DrawLoadRuleDialog()
 
     if (ImGui::BeginPopupModal("Load Rule", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        static char filePath[512] = "./resources/Rules/";
+        std::string l_filePath = "./resources/Rules/";
         ImGui::Text("Rule File Path:");
-        ImGui::InputText("RulePath", filePath, IM_ARRAYSIZE(filePath));
+        ImGui::InputText("Rule Path", &l_filePath);
 
         ImGui::Separator();
 
         if (ImGui::Button("Load", ImVec2(120, 0)))
         {
-            LoadRuleFromFile(filePath);
+            LoadRuleFromFile(l_filePath);
             m_showLoadDialog = false;
             ImGui::CloseCurrentPopup();
         }
@@ -192,27 +197,24 @@ void RulesPanel::CreateNewRule(const std::string& _name)
 
 void RulesPanel::LoadRuleFromFile(const std::string& _path)
 {
-    auto editor = m_editor.lock();
-    if (editor)
-    {
-        auto& engineContents = editor->GetEngineContents();
-        auto scene = editor->GetScene();
-        auto luaContext = RE::Core::LuaContext::Instance().lock();
+    auto l_editor = m_editor.lock();
+    RE::EngineContents& l_engineContents = l_editor->GetEngineContents();
+    std::shared_ptr<RE::Core::Scene> scene = l_editor->GetScene();
+    auto luaContext = RE::Core::LuaContext::Instance().lock();
 
-        try
-        {
-            auto ruleFile = engineContents.resources->Load<RE::Asset::LuaFile>(_path);
-            RE::Core::Rule newRule = luaContext->RunScript<RE::Core::Rule>(ruleFile);
-            
-            scene->AddRule(newRule);
-            m_activeRules.push_back(newRule.GetName());
-            
-            RE::Log::Message("Rule loaded from: " + _path);
-        }
-        catch (const std::exception& e)
-        {
-            RE::Log::Error("Failed to load rule: " + std::string(e.what()));
-        }
+    try
+    {
+        auto ruleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
+        RE::Core::Rule newRule = luaContext->RunScript<RE::Core::Rule>(ruleFile);
+        
+        scene->AddRule(newRule);
+        m_activeRules.push_back(newRule.GetName());
+        
+        RE::Log::Message("Rule loaded from: " + _path);
+    }
+    catch (const std::exception& e)
+    {
+        RE::Log::Error("Failed to load rule: " + std::string(e.what()));
     }
 }
 
@@ -224,4 +226,9 @@ void RulesPanel::RemoveRule(const std::string& _ruleName)
         m_activeRules.erase(it);
         RE::Log::Message("Rule removed: " + _ruleName);
     }
+}
+
+bool RulesPanel::IsDialogOpen()
+{
+    return m_showLoadDialog || m_showCreateDialog;
 }

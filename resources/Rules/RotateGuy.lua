@@ -8,7 +8,6 @@ NewRule.attributes = {
 
 function NewRule:Init(_entityData)
     _entityData["Drawable"].texturePath = "./resources/Textures/triangle.png"
-    _entityData["Drawable"].texture = Asset.Texture("./resources/Textures/triangle.png")
     _entityData["Drawable"].modelPath = "./resources/Models/FlatTexture.obj"
 end
 

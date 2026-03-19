@@ -1,11 +1,16 @@
 #include "Editor/EntityPanel.h"
 #include "Editor/Editor.h"
+
 #include "imgui/imgui.h"
+
+// String compatible functions for ImGui
+#include "imgui/misc/cpp/imgui_stdlib.h"
 
 EntityPanel::EntityPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_selectedEntity(-1)
 , m_showAddToCategoryMenu(false)
+, m_stringValueMap()
 {
     RefreshEntityList();
 }
@@ -105,26 +110,54 @@ void EntityPanel::Draw()
                     if (m_showAddToCategoryMenu)
                     {
                         ImGui::Separator();
-                        sol::table l_categories = l_registry->GetCategoryTable();
-                        for (auto& l_pair : l_categories)
+
+                        // I love cache!!! Bleh :3
+                        std::stringstream l_categories(l_editor->GetEngineContents()
+                                                          .core->GetLuaContext()
+                                                               ->GetCategoryNames());
+                        std::string l_categoryName;
+
+                        sol::table l_entityData = l_registry->GetEntityAttributes(m_selectedEntity);
+
+                        while(std::getline(l_categories, l_categoryName, ';'))
                         {
-                            std::string l_name = l_pair.first.as<std::string>();
-                            if (ImGui::MenuItem(l_name.c_str()))
+                            bool l_showCategory = true;
+
+                            // Rule out categories that are already on the entity
+                            for(auto& l_pair : l_entityData)
                             {
-                                auto l_category = l_registry->GetCategory(l_name).lock();
-                                l_registry->AddToCategory(m_selectedEntity, l_category->GetSignature());
-                                m_showAddToCategoryMenu = false;
+                                std::string l_entityCatName = l_pair.first.as<std::string>();
+                                if(l_entityCatName == l_categoryName)
+                                {
+                                    l_showCategory = false;
+                                }
+                            }
+
+                            //Only show unknown categories
+                            if(l_showCategory)
+                            {
+                                if(ImGui::MenuItem(l_categoryName.c_str()))
+                                {
+                                    // Peak cache optimisation. A s_ptr<LuaContext> would probably be best
+                                    auto l_category = l_editor->GetEngineContents()
+                                                         .core->GetLuaContext()
+                                                              ->GetCategory(l_categoryName).lock();
+
+                                    l_registry->AddToCategory(m_selectedEntity, l_category->GetSignature());
+                                    m_showAddToCategoryMenu = false;
+                                }
                             }
                         }
                     }
                 }
                 else
                 {
-                    ImGui::TextDisabled("No entity selected");
+                    ImGui::Text("No entity selected");
                 }
 
             }
 
+            // Program fails an assert when this is inside the above selection branch
             ImGui::EndChild();
 
             ImGui::EndTable();
@@ -180,24 +213,25 @@ void EntityPanel::DrawEntityProperties(int _entityId)
         // Display each category and its attributes
         for (auto& l_pair : l_entityData)
         {
-            std::string categoryName = l_pair.first.as<std::string>();
-            sol::table attributes = l_pair.second.as<sol::table>();
+            std::string l_categoryName = l_pair.first.as<std::string>();
+            sol::table l_attributes = l_pair.second.as<sol::table>();
 
-            if (ImGui::CollapsingHeader(categoryName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+            if (ImGui::CollapsingHeader(l_categoryName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
             {
                 ImGui::Indent();
-                DrawCategoryAttributes(categoryName, attributes);
+                DrawCategoryAttributes(_entityId, l_categoryName, l_attributes);
                 ImGui::Unindent();
             }
         }
     }
-    catch (const std::exception& e)
+    // I have literally no clue what could cause this, maybe a usertype I haven't implemented could break it, but oh well
+    catch (const std::exception& _e)
     {
         ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: Could not load entity properties");
     }
 }
 
-void EntityPanel::DrawCategoryAttributes(const std::string& _categoryName, sol::table& _attributes)
+void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string& _categoryName, sol::table& _attributes)
 {
     float columnWidth = ImGui::GetColumnWidth() - 30;
 
@@ -224,41 +258,43 @@ void EntityPanel::DrawCategoryAttributes(const std::string& _categoryName, sol::
             case sol::type::number:
                 if (l_value.is<int>())
                 {
-                    int intVal = l_value.as<int>();
-                    if (ImGui::InputInt(l_property.c_str(), &intVal))
+                    int l_val = l_value.as<int>();
+                    if (ImGui::InputInt(l_property.c_str(), &l_val))
                     {
-                        _attributes[l_property] = intVal;
+                        _attributes[l_property] = l_val;
                     }
                 }
                 else if (l_value.is<float>())
                 {
-                    float floatVal = l_value.as<float>();
-                    if (ImGui::InputFloat(l_property.c_str(), &floatVal))
+                    float l_val = l_value.as<float>();
+                    if (ImGui::InputFloat(l_property.c_str(), &l_val))
                     {
-                        _attributes[l_property] = floatVal;
+                        _attributes[l_property] = l_val;
                     }
                 }
                 break;
             case sol::type::boolean:
                 {
-                    bool boolVal = l_value.as<bool>();
-                    if (ImGui::Checkbox(l_property.c_str(), &boolVal))
+                    bool l_val = l_value.as<bool>();
+                    if (ImGui::Checkbox(l_property.c_str(), &l_val))
                     {
-                        _attributes[l_property] = boolVal;
+                        _attributes[l_property] = l_val;
                     }
                 }
                 break;
             case sol::type::string:
                 {
-                    // This is terrible, change later
                     // Use ID+Category+AttributeName as key
-                    static std::map<std::string, std::string> stringBuffers;
-                    std::string stringVal = l_value.as<std::string>();
-                    
-                    stringBuffers[l_property] = stringVal;
-                    if (ImGui::InputText(l_property.c_str(), &stringBuffers[l_property][0], ImGuiInputTextFlags_EnterReturnsTrue))
+                    std::string l_key = std::to_string(_entityId) + _categoryName + l_property;
+
+                    if(m_stringValueMap.find(l_key) == m_stringValueMap.end())
                     {
-                        _attributes[l_property] = stringBuffers[l_property];
+                        m_stringValueMap[l_key] = l_value.as<std::string>();
+                    }
+
+                    if (ImGui::InputText(l_property.c_str(), &m_stringValueMap[l_key], ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        _attributes[l_property] = m_stringValueMap[l_key];
                     }
                 }
                 break;
@@ -266,18 +302,18 @@ void EntityPanel::DrawCategoryAttributes(const std::string& _categoryName, sol::
                 // Assuming Vector2 is exposed as userdata
                 if (l_value.is<Vector2>())
                 {
-                    Vector2 vec = l_value.as<Vector2>();
-                    if (ImGui::InputFloat2(l_property.c_str(), &vec.x))
+                    Vector2 l_val = l_value.as<Vector2>();
+                    if (ImGui::InputFloat2(l_property.c_str(), &l_val.x))
                     {
-                        _attributes[l_property] = vec;
+                        _attributes[l_property] = l_val;
                     }
                 }
                 else if(l_value.is<Vector3>())
                 {
-                    Vector3 vec = l_value.as<Vector3>();
-                    if (ImGui::InputFloat3(l_property.c_str(), &vec.x))
+                    Vector3 l_val = l_value.as<Vector3>();
+                    if (ImGui::InputFloat3(l_property.c_str(), &l_val.x))
                     {
-                        _attributes[l_property] = vec;
+                        _attributes[l_property] = l_val;
                     }
                 }
                 break;

@@ -34,6 +34,8 @@ class RulesPanel : public Panel
     void CreateNewRule(const std::string& _name);
     void LoadRuleFromFile(const std::string& _path);
     void RemoveRule(const std::string& _ruleName);
+
+    bool IsDialogOpen();
 };
 
 #endif

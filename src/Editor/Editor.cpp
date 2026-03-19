@@ -2,7 +2,6 @@
 #include "Editor/EntityPanel.h"
 #include "Editor/CategoryPanel.h"
 #include "Editor/RulesPanel.h"
-#include "Editor/PropertiesPanel.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -23,10 +22,6 @@ Editor::Editor()
     m_camera = m_engineContents.core->GetCamera().lock();
 
     m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinitegrid/frag.fs;./resources/Shaders/infinitegrid/vert.vs").lock();
-
-    auto l_transformFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Transform.lua");
-    auto l_context = RE::Core::LuaContext::Instance().lock();
-    l_context->CreateCategory(l_transformFile);
 
     auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
     RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
@@ -59,7 +54,6 @@ std::shared_ptr<Editor> Editor::Create()
     editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
     editor->m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
     editor->m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
-    editor->m_propertiesPanel = std::make_unique<PropertiesPanel>(editorPtr);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -252,10 +246,6 @@ void Editor::DrawEditorUI()
 
             m_entityPanel->SetShown(true);
             m_entityPanel->AddEntity();
-
-            m_categoryPanel->AssignCategoryToEntity(m_selectedEntityId, "Transform");
-            sol::table l_entityTable = m_scene->GetRegistry()->GetEntityAttributes(m_selectedEntityId);
-            l_entityTable.raw_get<sol::table>("Transform").raw_set("Position", l_entityPos);
         }
 
         if(m_selectedEntityId > -1)
@@ -297,8 +287,6 @@ void Editor::DrawEditorUI()
 
     // Draw panels
     m_entityPanel->Draw();
-    // Properties panel is now integrated into EntityPanel on the right side
-    // m_propertiesPanel->Draw();
     m_categoryPanel->Draw();
     m_rulesPanel->Draw();
 }
@@ -331,25 +319,30 @@ void Editor::HandleInput()
             break;
 
             case SDL_EVENT_KEY_DOWN:
+            // Need more conditionsfor typing, etc.
+            if(!m_categoryPanel->IsDialogOpen() &&
+               !m_rulesPanel->IsDialogOpen() &&
+               !m_isTyping)
+            {
                 if (l_event.key.key == SDLK_ESCAPE)
                 {
                     m_rulesPanel->SetShown(false);
                     m_entityPanel->SetShown(false);
                     m_categoryPanel->SetShown(false);
-                    m_propertiesPanel->SetShown(false);
                 }
                 else if(l_event.key.key == SDLK_C)
                 {
-                    m_categoryPanel->SetShown(true);
+                    m_categoryPanel->SetShown(m_categoryPanel->IsShown());
                 }
                 else if(l_event.key.key == SDLK_E)
                 {
-                    m_entityPanel->SetShown(true);
+                    m_entityPanel->SetShown(m_entityPanel->IsShown());
                 }
                 else if(l_event.key.key == SDLK_R)
                 {
-                    m_rulesPanel->SetShown(true);
+                    m_rulesPanel->SetShown(m_rulesPanel->IsShown());
                 }
+            }
             break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:

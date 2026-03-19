@@ -24,9 +24,10 @@ void CategoryPanel::RefreshCategoryList()
 {
     m_availableCategories.clear();
 
-    auto l_context = m_editor.lock()->GetEngineContents().core->GetLuaContext();
-    std::stringstream l_catNames(l_context->GetLoadedCategories());
+    auto l_context = m_editor.lock()->GetEngineContents()
+                               .core->GetLuaContext();
     
+    std::stringstream l_catNames(l_context->GetCategoryNames());
     std::string l_segment;
 
     while(std::getline(l_catNames, l_segment, ';'))
@@ -40,7 +41,9 @@ void CategoryPanel::RefreshCategoryList()
 void CategoryPanel::Draw()
 {
     if (!m_showPanel) return;
+
     RefreshCategoryList();
+    
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
     if (ImGui::Begin("Categories", &m_showPanel))
     {
@@ -49,7 +52,9 @@ void CategoryPanel::Draw()
         {
             m_showCreateDialog = true;
         }
+
         ImGui::SameLine();
+
         if (ImGui::Button("Load", ImVec2((ImGui::GetContentRegionAvail().x), 0)))
         {
             m_showLoadDialog = true;
@@ -65,22 +70,24 @@ void CategoryPanel::Draw()
         // Category list
         if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
         {
-            for (const auto& category : m_availableCategories)
+            for (auto& l_category : m_availableCategories)
             {
                 if (m_selectedCategoryFilter.size() > 0)
                 {
                     std::string filter(m_selectedCategoryFilter);
-                    if (category.find(filter) == std::string::npos)
+                    if (l_category.find(filter) == std::string::npos)
                     {
                         continue;
                     }
                 }
 
-                ImGui::Text(category.c_str());
+                ImGui::Text(l_category.c_str());
             }
+            
             ImGui::EndChild();
         }
     }
+
     ImGui::End();
 
     // Draw dialogs
@@ -206,4 +213,9 @@ void CategoryPanel::AssignCategoryToEntity(int _entityId, const std::string& _ca
             }
         }
     }
+}
+
+bool CategoryPanel::IsDialogOpen()
+{
+    return m_showCreateDialog || m_showLoadDialog;
 }

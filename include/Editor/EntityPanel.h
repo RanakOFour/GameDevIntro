@@ -3,8 +3,10 @@
 
 #include "RanakEngine/RanakEngine.h"
 #include "Editor/Panel.h"
+
 #include <vector>
 #include <memory>
+#include <map>
 
 class Editor;
 
@@ -13,13 +15,15 @@ class EntityPanel : public Panel
     private:
 
     int m_selectedEntity;
-    std::vector<int> m_cachedEntities;
     bool m_showAddToCategoryMenu;
+
+    std::vector<int> m_cachedEntities;
+    std::map<std::string, std::string> m_stringValueMap;
 
     void RefreshEntityList();
 
     void DrawEntityProperties(int _entityId);
-    void DrawCategoryAttributes(const std::string& _categoryName, sol::table& _attributes);
+    void DrawCategoryAttributes(const int& _entityId, const std::string& _categoryName, sol::table& _attributes);
 
     public:
     EntityPanel(std::weak_ptr<Editor> _editor);

@@ -6,7 +6,10 @@ project(GameDevIntro)
 find_package(Lua REQUIRED)
 
 # Collect ImGui source files
-file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp" "extern/imgui/backends/imgui_impl_sdl3.cpp" "extern/imgui/backends/imgui_impl_opengl3.cpp")
+file(GLOB IMGUI_SOURCES "extern/imgui/*.cpp"
+                        "extern/imgui/backends/imgui_impl_sdl3.cpp"
+                        "extern/imgui/backends/imgui_impl_opengl3.cpp"
+                        "extern/imgui/misc/cpp/imgui_stdlib.cpp")
 
 add_subdirectory(extern/RanakEngine2)
 

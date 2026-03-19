@@ -33,6 +33,8 @@ class CategoryPanel : public Panel
     void CreateNewCategory(const std::string& _name);
     void LoadCategoryFromFile(const std::string& _path);
     void AssignCategoryToEntity(int _entityId, const std::string& _categoryName);
+
+    bool IsDialogOpen();
 };
 
 #endif

@@ -2,9 +2,11 @@
 #define EDITOR_H
 
 #include "RanakEngine/RanakEngine.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_opengl3.h"
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -12,7 +14,6 @@
 class EntityPanel;
 class CategoryPanel;
 class RulesPanel;
-class PropertiesPanel;
 
 class Editor : public std::enable_shared_from_this<Editor>
 {
@@ -29,7 +30,6 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<EntityPanel> m_entityPanel;
     std::unique_ptr<CategoryPanel> m_categoryPanel;
     std::unique_ptr<RulesPanel> m_rulesPanel;
-    std::unique_ptr<PropertiesPanel> m_propertiesPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
 
@@ -39,6 +39,8 @@ class Editor : public std::enable_shared_from_this<Editor>
     bool m_isGameRunning;
 
     bool m_showContext;
+
+    bool m_isTyping;
 
     void InitImGui();
     void CleanupImGui();
@@ -63,6 +65,9 @@ class Editor : public std::enable_shared_from_this<Editor>
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     int GetSelectedEntityId() const { return m_selectedEntityId; }
     void SetSelectedEntityId(int _id) { m_selectedEntityId = _id; }
+
+    void SetTyping(bool _t) { m_isTyping =_t; }
+    bool IsTyping() { return m_isTyping; }
 };
 
 #endif
