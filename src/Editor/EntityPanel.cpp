@@ -27,10 +27,10 @@ void EntityPanel::RefreshEntityList()
     sol::table l_entityTable = l_registry->GetEntityTable();
 
     auto l_entityPairs = l_entityTable.pairs();
-    for (auto& pair : l_entityPairs)
+    for (auto& l_pair : l_entityPairs)
     {
-        int entityId = pair.first.as<int>();
-        m_cachedEntities.push_back(entityId);
+        int l_entityId = l_pair.first.as<int>();
+        m_cachedEntities.push_back(l_entityId);
     }
 }
 
@@ -53,35 +53,38 @@ void EntityPanel::Draw()
             // LEFT COLUMN: Entity List
             if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
             {
-                // Add button
-                if (ImGui::Button("+ Add Entity", ImVec2(-1, 0)))
+                // Button row: Add Entity and conditionally Remove Selected
+                float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
+                
+                if (ImGui::Button("+ Add Entity", ImVec2(buttonWidth, 0)))
                 {
                     AddEntity();
+                }
+                
+                // Only show Remove button when an entity is selected
+                if (m_selectedEntity >= 0)
+                {
+                    ImGui::SameLine();
+                    if (ImGui::Button("- Remove Entity", ImVec2(buttonWidth, 0)))
+                    {
+                        RemoveEntity(m_selectedEntity);
+                    }
                 }
 
                 ImGui::Separator();
 
                 // Entity list
-                if (ImGui::BeginChild("EntityList", ImVec2(0, -50), true))
+                if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true))
                 {
-                    for (int entityId : m_cachedEntities)
+                    for (int l_entityId : m_cachedEntities)
                     {
-                        bool selected = (m_selectedEntity == entityId);
-                        if (ImGui::Selectable(("Entity" + std::to_string(entityId)).c_str(), selected))
+                        bool selected = (m_selectedEntity == l_entityId);
+                        if (ImGui::Selectable((m_entityNameMap[l_entityId]).c_str(), selected))
                         {
-                            SelectEntity(entityId);
+                            SelectEntity(l_entityId);
                         }
                     }
                     ImGui::EndChild();
-                }
-
-                // Remove button
-                if (ImGui::Button("- Remove Selected", ImVec2(-1, 0)))
-                {
-                    if (m_selectedEntity >= 0)
-                    {
-                        RemoveEntity(m_selectedEntity);
-                    }
                 }
 
                 ImGui::EndChild();
@@ -173,6 +176,7 @@ void EntityPanel::AddEntity()
     auto l_scene = l_editorPtr->GetScene();
 
     int newId = l_scene->AddEntity();
+    m_entityNameMap[newId] = "Entity " + std::to_string(newId);
     m_cachedEntities.push_back(newId);
     SelectEntity(newId);
     RE::Log::Message("Entity created with ID: " + std::to_string(newId));
@@ -183,11 +187,13 @@ void EntityPanel::RemoveEntity(int _id)
     auto l_scene = m_editor.lock()->GetScene();
     l_scene->RemoveEntity(_id);
     
-    auto it = std::find(m_cachedEntities.begin(), m_cachedEntities.end(), _id);
-    if (it != m_cachedEntities.end())
+    auto l_entityLocation = std::find(m_cachedEntities.begin(), m_cachedEntities.end(), _id);
+    if (l_entityLocation != m_cachedEntities.end())
     {
-        m_cachedEntities.erase(it);
+        m_cachedEntities.erase(l_entityLocation);
     }
+
+    m_entityNameMap.erase(_id);
 
     if (m_selectedEntity == _id)
     {
@@ -206,28 +212,20 @@ void EntityPanel::DrawEntityProperties(int _entityId)
 {
     auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
 
-    try
-    {
-        sol::table l_entityData = l_registry->GetEntityAttributes(_entityId);
+    sol::table l_entityData = l_registry->GetEntityAttributes(_entityId);
         
-        // Display each category and its attributes
-        for (auto& l_pair : l_entityData)
-        {
-            std::string l_categoryName = l_pair.first.as<std::string>();
-            sol::table l_attributes = l_pair.second.as<sol::table>();
-
-            if (ImGui::CollapsingHeader(l_categoryName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-            {
-                ImGui::Indent();
-                DrawCategoryAttributes(_entityId, l_categoryName, l_attributes);
-                ImGui::Unindent();
-            }
-        }
-    }
-    // I have literally no clue what could cause this, maybe a usertype I haven't implemented could break it, but oh well
-    catch (const std::exception& _e)
+    // Display each category and its attributes
+    for (auto& l_pair : l_entityData)
     {
-        ImGui::TextColored(ImVec4(1, 0, 0, 1), "Error: Could not load entity properties");
+        std::string l_categoryName = l_pair.first.as<std::string>();
+        sol::table l_attributes = l_pair.second.as<sol::table>();
+
+        if (ImGui::CollapsingHeader(l_categoryName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        {
+            ImGui::Indent();
+            DrawCategoryAttributes(_entityId, l_categoryName, l_attributes);
+            ImGui::Unindent();
+        }
     }
 }
 
@@ -284,7 +282,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 break;
             case sol::type::string:
                 {
-                    // Use ID+Category+AttributeName as key
+                    // Use ID+Category+AttributeName as key, should be specific enough
                     std::string l_key = std::to_string(_entityId) + _categoryName + l_property;
 
                     if(m_stringValueMap.find(l_key) == m_stringValueMap.end())
@@ -303,7 +301,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 if (l_value.is<Vector2>())
                 {
                     Vector2 l_val = l_value.as<Vector2>();
-                    if (ImGui::InputFloat2(l_property.c_str(), &l_val.x))
+                    if (ImGui::DragFloat2(l_property.c_str(), &l_val.x))
                     {
                         _attributes[l_property] = l_val;
                     }
@@ -311,7 +309,15 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 else if(l_value.is<Vector3>())
                 {
                     Vector3 l_val = l_value.as<Vector3>();
-                    if (ImGui::InputFloat3(l_property.c_str(), &l_val.x))
+                    if (ImGui::DragFloat3(l_property.c_str(), &l_val.x))
+                    {
+                        _attributes[l_property] = l_val;
+                    }
+                }
+                else if(l_value.is<Vector4>())
+                {
+                    Vector4 l_val = l_value.as<Vector4>();
+                    if (ImGui::DragFloat4(l_property.c_str(), &l_val.x))
                     {
                         _attributes[l_property] = l_val;
                     }

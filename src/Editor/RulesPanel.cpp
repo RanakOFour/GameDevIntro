@@ -73,29 +73,29 @@ void RulesPanel::Draw()
         // Active rules list
         if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
         {
-            for (const auto& rule : m_activeRules)
+            for (auto& l_rule : m_activeRules)
             {
                 if (m_selectedRuleFilter.size() > 0)
                 {
                     std::string filter(m_selectedRuleFilter);
-                    if (rule.find(filter) == std::string::npos)
+                    if (l_rule.find(filter) == std::string::npos)
                     {
                         continue;
                     }
                 }
 
-                ImGui::PushID(rule.c_str());
+                ImGui::PushID(l_rule.c_str());
                 
-                if (ImGui::Selectable(rule.c_str(), false))
+                if (ImGui::Selectable(l_rule.c_str(), false))
                 {
                     // Handle rule selection
                 }
 
                 // Remove button
                 ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-                if (ImGui::Button("Xremove", ImVec2(25, 0)))
+                if (ImGui::Button("X", ImVec2(25, 0)))
                 {
-                    RemoveRule(rule);
+                    RemoveRule(l_rule);
                 }
 
                 ImGui::PopID();

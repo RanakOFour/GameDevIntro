@@ -1,6 +1,10 @@
 #include "Editor/CategoryPanel.h"
 #include "Editor/Editor.h"
+
 #include "imgui/imgui.h"
+
+// String compatible functions for ImGui
+#include "imgui/misc/cpp/imgui_stdlib.h"
 
 #include <algorithm>
 #include <sstream>
@@ -141,15 +145,15 @@ void CategoryPanel::DrawLoadCategoryDialog()
 
     if (ImGui::BeginPopupModal("Load Category", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        static char filePath[512] = "./resources/Categories/";
+        std::string l_filePath = "./resources/Categories/";
         ImGui::Text("Category File Path:");
-        ImGui::InputText("CategoryPath", filePath, IM_ARRAYSIZE(filePath));
+        ImGui::InputText("CategoryPath", &l_filePath);
 
         ImGui::Separator();
 
         if (ImGui::Button("Load", ImVec2(120, 0)))
         {
-            LoadCategoryFromFile(filePath);
+            LoadCategoryFromFile(l_filePath);
             m_showLoadDialog = false;
             ImGui::CloseCurrentPopup();
         }
@@ -174,45 +178,24 @@ void CategoryPanel::CreateNewCategory(const std::string& _name)
 
 void CategoryPanel::LoadCategoryFromFile(const std::string& _path)
 {
-    auto editor = m_editor.lock();
-    if (editor)
-    {
-        auto& engineContents = editor->GetEngineContents();
-        auto luaContext = RE::Core::LuaContext::Instance().lock();
+    RE::EngineContents l_engineContents = m_editor.lock()->GetEngineContents();
+    auto l_luaContext = l_engineContents.core->GetLuaContext();
 
-        try
-        {
-            auto categoryFile = engineContents.resources->Load<RE::Asset::LuaFile>(_path);
-            auto category = luaContext->CreateCategory(categoryFile);
-            
-            m_availableCategories.push_back(category.lock()->GetName());
-            RE::Log::Message("Category loaded from: " + _path);
-        }
-        catch (const std::exception& e)
-        {
-            RE::Log::Error("Failed to load category: " + std::string(e.what()));
-        }
-    }
+    auto l_categoryFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
+    auto l_categoryWPtr = l_luaContext->CreateCategory(l_categoryFile);
+    
+    m_availableCategories.push_back(l_categoryWPtr.lock()->GetName());
+    RE::Log::Message("Category loaded from: " + _path);
 }
 
 void CategoryPanel::AssignCategoryToEntity(int _entityId, const std::string& _categoryName)
 {
-    auto editor = m_editor.lock();
-    if (editor)
-    {
-        auto scene = editor->GetScene();
-        if (scene)
-        {
-            auto luaContext = RE::Core::LuaContext::Instance().lock();
-            auto category = luaContext->GetCategory(_categoryName);
-            
-            if (!category.expired())
-            {
-                scene->AddEntityToCategory(_entityId, category.lock()->GetSignature());
-                RE::Log::Message("Category '" + _categoryName + "' assigned to entity " + std::to_string(_entityId));
-            }
-        }
-    }
+    auto l_scene = m_editor.lock()->GetScene();
+    auto l_luaContext = RE::Core::LuaContext::Instance().lock();
+    auto l_category = l_luaContext->GetCategory(_categoryName);
+    
+    l_scene->AddEntityToCategory(_entityId, l_category.lock()->GetSignature());
+    RE::Log::Message("Category '" + _categoryName + "' assigned to entity " + std::to_string(_entityId));
 }
 
 bool CategoryPanel::IsDialogOpen()

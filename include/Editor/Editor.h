@@ -40,8 +40,6 @@ class Editor : public std::enable_shared_from_this<Editor>
 
     bool m_showContext;
 
-    bool m_isTyping;
-
     void InitImGui();
     void CleanupImGui();
     void DrawMenuBar();
@@ -65,9 +63,6 @@ class Editor : public std::enable_shared_from_this<Editor>
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     int GetSelectedEntityId() const { return m_selectedEntityId; }
     void SetSelectedEntityId(int _id) { m_selectedEntityId = _id; }
-
-    void SetTyping(bool _t) { m_isTyping =_t; }
-    bool IsTyping() { return m_isTyping; }
 };
 
 #endif

@@ -319,11 +319,12 @@ void Editor::HandleInput()
             break;
 
             case SDL_EVENT_KEY_DOWN:
-            // Need more conditionsfor typing, etc.
-            if(!m_categoryPanel->IsDialogOpen() &&
-               !m_rulesPanel->IsDialogOpen() &&
-               !m_isTyping)
-            {
+                // Discard key events when ImGui input field is active
+                if (ImGui::GetIO().WantTextInput)
+                {
+                    break;
+                }
+                
                 if (l_event.key.key == SDLK_ESCAPE)
                 {
                     m_rulesPanel->SetShown(false);
@@ -332,18 +333,18 @@ void Editor::HandleInput()
                 }
                 else if(l_event.key.key == SDLK_C)
                 {
-                    m_categoryPanel->SetShown(m_categoryPanel->IsShown());
+                    m_categoryPanel->SetShown(!m_categoryPanel->IsShown());
                 }
                 else if(l_event.key.key == SDLK_E)
                 {
-                    m_entityPanel->SetShown(m_entityPanel->IsShown());
+                    m_entityPanel->SetShown(!m_entityPanel->IsShown());
                 }
                 else if(l_event.key.key == SDLK_R)
                 {
-                    m_rulesPanel->SetShown(m_rulesPanel->IsShown());
+                    m_rulesPanel->SetShown(!m_rulesPanel->IsShown());
                 }
-            }
-            break;
+                
+                break;
 
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 if (l_event.button.button == SDL_BUTTON_LEFT)

@@ -19,6 +19,7 @@ class EntityPanel : public Panel
 
     std::vector<int> m_cachedEntities;
     std::map<std::string, std::string> m_stringValueMap;
+    std::map<int, std::string> m_entityNameMap;
 
     void RefreshEntityList();
 
