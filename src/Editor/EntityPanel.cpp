@@ -265,7 +265,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 else if (l_value.is<float>())
                 {
                     float l_val = l_value.as<float>();
-                    if (ImGui::InputFloat(l_property.c_str(), &l_val))
+                    if (ImGui::InputFloat(l_property.c_str(), &l_val, 0.1f, 0.0f, "%.3f"))
                     {
                         _attributes[l_property] = l_val;
                     }
@@ -301,7 +301,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 if (l_value.is<Vector2>())
                 {
                     Vector2 l_val = l_value.as<Vector2>();
-                    if (ImGui::DragFloat2(l_property.c_str(), &l_val.x))
+                    if (ImGui::DragFloat2(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
                     {
                         _attributes[l_property] = l_val;
                     }
@@ -309,7 +309,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 else if(l_value.is<Vector3>())
                 {
                     Vector3 l_val = l_value.as<Vector3>();
-                    if (ImGui::DragFloat3(l_property.c_str(), &l_val.x))
+                    if (ImGui::DragFloat3(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
                     {
                         _attributes[l_property] = l_val;
                     }
@@ -317,7 +317,7 @@ void EntityPanel::DrawCategoryAttributes(const int& _entityId, const std::string
                 else if(l_value.is<Vector4>())
                 {
                     Vector4 l_val = l_value.as<Vector4>();
-                    if (ImGui::DragFloat4(l_property.c_str(), &l_val.x))
+                    if (ImGui::DragFloat4(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
                     {
                         _attributes[l_property] = l_val;
                     }

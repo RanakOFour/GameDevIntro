@@ -2,6 +2,7 @@
 #include "Editor/EntityPanel.h"
 #include "Editor/CategoryPanel.h"
 #include "Editor/RulesPanel.h"
+#include "Editor/CameraPanel.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -48,9 +49,10 @@ std::shared_ptr<Editor> Editor::Create()
 {
     std::shared_ptr<Editor> l_editor = std::make_shared<Editor>();
     
-    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editor);
-    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editor);
-    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editor);
+    editor->m_entityPanel = std::make_unique<EntityPanel>(editorPtr);
+    editor->m_categoryPanel = std::make_unique<CategoryPanel>(editorPtr);
+    editor->m_rulesPanel = std::make_unique<RulesPanel>(editorPtr);
+    editor->m_cameraPanel = std::make_unique<CameraPanel>(editorPtr);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -116,6 +118,11 @@ void Editor::Run()
             Draw();
         }
     }
+
+    m_categoryPanel.reset();
+    m_entityPanel.reset();
+    m_rulesPanel.reset();
+    m_cameraPanel.reset();
 }
 
 void Editor::Update(float _deltaTime)
@@ -147,7 +154,15 @@ void Editor::Draw()
         m_gridShader->SetUniform("u_Projection", m_camera->GetProjection());
         m_gridShader->SetUniform("u_View", m_camera->GetView());
         m_gridShader->SetUniform("u_cameraPos", m_camera->GetPosition());
-        m_gridShader->SetUniform("u_cameraSize", m_camera->GetCameraSize());
+
+        float l_cameraWidth = m_camera->GetCameraWidth();
+        Vector2 l_viewportSize = m_window->GetScreenSize();
+        float l_aspectRatio = l_viewportSize.x / l_viewportSize.y;
+        
+        // Calculate the height based on the width and viewport aspect ratio to prevent stretching
+        float l_orthoHeight = l_cameraWidth / l_aspectRatio;
+
+        m_gridShader->SetUniform("u_cameraSize", Vector2(l_cameraWidth, l_orthoHeight));
 
         glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
 
@@ -222,6 +237,12 @@ void Editor::DrawMenuBar()
         {
             ImGui::MenuItem("Show Grid");
             ImGui::MenuItem("Show Gizmos");
+
+            if(ImGui::MenuItem("Camera Settings"))
+            {
+                m_cameraPanel->SetShown(true);
+            }
+
             ImGui::EndMenu();
         }
 
@@ -251,6 +272,14 @@ void Editor::DrawEditorUI()
             {
                 m_scene->RemoveEntity(m_selectedEntityId);
                 m_selectedEntityId = -1;
+            }
+        }
+
+        if(!m_cameraPanel->IsShown())
+        {
+            if(ImGui::Button("Show Camera Settings", ImVec2(140, 20)))
+            {
+                m_cameraPanel->SetShown(true);
             }
         }
 
@@ -286,6 +315,7 @@ void Editor::DrawEditorUI()
     m_entityPanel->Draw();
     m_categoryPanel->Draw();
     m_rulesPanel->Draw();
+    m_cameraPanel->Draw();
 }
 
 void Editor::HandleInput()

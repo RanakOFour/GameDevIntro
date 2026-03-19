@@ -14,6 +14,7 @@
 class EntityPanel;
 class CategoryPanel;
 class RulesPanel;
+class CameraPanel;
 
 class Editor : public std::enable_shared_from_this<Editor>
 {
@@ -30,6 +31,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<EntityPanel> m_entityPanel;
     std::unique_ptr<CategoryPanel> m_categoryPanel;
     std::unique_ptr<RulesPanel> m_rulesPanel;
+    std::unique_ptr<CameraPanel> m_cameraPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
 
@@ -37,7 +39,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     
     bool m_isEditorRunning;
     bool m_isGameRunning;
-
+    
     bool m_showContext;
 
     void InitImGui();
@@ -63,6 +65,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     int GetSelectedEntityId() const { return m_selectedEntityId; }
     void SetSelectedEntityId(int _id) { m_selectedEntityId = _id; }
+    std::weak_ptr<RE::Core::Camera> GetCamera() { return m_camera; }
 };
 
 #endif

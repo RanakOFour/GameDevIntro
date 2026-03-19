@@ -16,6 +16,7 @@ CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 , m_showLoadDialog(false)
 , m_newCategoryName("")
 , m_selectedCategoryFilter("")
+, m_loadCategoryFilePath("./resources/Categories/")
 {
     RefreshCategoryList();
 }
@@ -145,15 +146,16 @@ void CategoryPanel::DrawLoadCategoryDialog()
 
     if (ImGui::BeginPopupModal("Load Category", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
-        std::string l_filePath = "./resources/Categories/";
         ImGui::Text("Category File Path:");
-        ImGui::InputText("CategoryPath", &l_filePath);
+        ImGui::InputText("CategoryPath", &m_loadCategoryFilePath);
 
         ImGui::Separator();
 
         if (ImGui::Button("Load", ImVec2(120, 0)))
         {
-            LoadCategoryFromFile(l_filePath);
+            LoadCategoryFromFile(m_loadCategoryFilePath);
+            
+            m_loadCategoryFilePath = "./resources/Categories/";
             m_showLoadDialog = false;
             ImGui::CloseCurrentPopup();
         }
@@ -162,6 +164,7 @@ void CategoryPanel::DrawLoadCategoryDialog()
 
         if (ImGui::Button("Cancel", ImVec2(120, 0)))
         {
+            m_loadCategoryFilePath = "./resources/Categories/";
             m_showLoadDialog = false;
             ImGui::CloseCurrentPopup();
         }
