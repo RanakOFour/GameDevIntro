@@ -34,9 +34,9 @@ void RulesPanel::RefreshRuleList()
     sol::table l_rulesTable = l_sceneTable["Rules"];
     auto l_rulesPairs = l_rulesTable.pairs();
 
-    for(auto& pair : l_rulesPairs)
+    for(auto& l_pair : l_rulesPairs)
     {
-        std::string ruleName = pair.first.as<std::string>();
+        std::string ruleName = l_pair.first.as<std::string>();
         m_activeRules.push_back(ruleName);
         m_availableRuleFiles.push_back("./resources/Rules/" + ruleName + ".lua");
     }
