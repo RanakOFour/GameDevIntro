@@ -41,8 +41,11 @@ target_link_libraries(GameEditor PUBLIC RanakEngine)
 if(UNIX)
     target_link_directories(TestRun PUBLIC lib/unix)
     target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+    
     target_link_directories(GameEditor PUBLIC lib/unix)
     target_link_libraries(GameEditor PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+
+
 elseif(WIN32)
     target_link_directories(TestRun PUBLIC lib/win/release)
     target_link_libraries(TestRun PUBLIC opengl32 glew32 SDL3 lua)
