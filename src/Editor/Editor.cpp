@@ -22,7 +22,7 @@ Editor::Editor()
     m_scene = m_engineContents.core->GetScene().lock();
     m_camera = m_engineContents.core->GetCamera().lock();
 
-    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vertd.vs").lock();
+    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
 
     auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
     RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
@@ -399,6 +399,7 @@ void Editor::HandleInput()
 
             case SDL_EVENT_MOUSE_WHEEL:
                 m_mouseInfo.deltaScroll = -l_event.wheel.y;
+                m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:

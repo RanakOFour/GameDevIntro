@@ -5,7 +5,7 @@ out vec3 WorldPos;
 uniform mat4 u_View;
 uniform mat4 u_Projection;
 
-uniform float gGridSize = 1000.0;
+uniform float gGridSize = 100.0;
 uniform vec3 u_cameraPos;
 
 const vec3 Pos[4] = vec3[4](
@@ -25,7 +25,6 @@ void main()
 
     vPos3.x += u_cameraPos.x;
     vPos3.y += u_cameraPos.y;
-    vPos3.z = u_cameraPos.z - 1.0;
 
     vec4 vPos4 = vec4(vPos3, 1.0);
 
