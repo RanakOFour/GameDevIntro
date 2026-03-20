@@ -22,7 +22,7 @@ Editor::Editor()
     m_scene = m_engineContents.core->GetScene().lock();
     m_camera = m_engineContents.core->GetCamera().lock();
 
-    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinitegrid/frag.fs;./resources/Shaders/infinitegrid/vert.vs").lock();
+    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vertd.vs").lock();
 
     auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
     RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
