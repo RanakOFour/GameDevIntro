@@ -335,6 +335,8 @@ void Editor::HandleInput()
     m_mouseInfo.deltaPosition.x = 0.0f;
     m_mouseInfo.deltaPosition.y = 0.0f;
     m_mouseInfo.deltaScroll = 0.0f;
+    m_mouseInfo.LMBDown = false;
+    m_mouseInfo.RMBDown = false;
 
     bool l_resized = false;
 
@@ -397,17 +399,6 @@ void Editor::HandleInput()
                 }
                 break;
 
-            case SDL_EVENT_MOUSE_BUTTON_UP:
-                if (l_event.button.button == SDL_BUTTON_LEFT)
-                {
-                    m_mouseInfo.LMBDown = false;
-                }
-                else
-                {
-                    m_mouseInfo.RMBDown = false;
-                }
-                break;
-
             case SDL_EVENT_MOUSE_WHEEL:
                 m_mouseInfo.deltaScroll = -l_event.wheel.y;
                 m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
@@ -434,7 +425,7 @@ void Editor::HandleInput()
     // Flip Y position so 0,0 is bottom left
     m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
 
-    if(m_mouseInfo.LMBDown)
+    if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && m_mouseInfo.LMBDown)
     {
         Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
         l_mouseWorldPos.z = m_camera->GetPosition().z;

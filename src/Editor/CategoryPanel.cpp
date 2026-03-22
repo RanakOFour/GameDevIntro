@@ -86,7 +86,8 @@ void CategoryPanel::Draw()
 
                 if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
                 {
-                    m_showLoadDialog = true;
+                    m_loadCategoryFilePath = m_editor.lock()->GetEngineContents().io->OpenFileDialog();
+                    LoadCategoryFromFile(m_loadCategoryFilePath);
                 }
 
                 ImGui::Separator();
