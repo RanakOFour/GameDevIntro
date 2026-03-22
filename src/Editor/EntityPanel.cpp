@@ -38,13 +38,13 @@ void EntityPanel::Draw()
 {
     if (!m_showPanel) return;
 
-    ImGui::SetNextWindowSize(ImVec2(800, 600), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(800, 600));
     if (ImGui::Begin("Entities & Properties", &m_showPanel))
     {
         // Use a table with 2 columns: left for entity list, right for properties
         if (ImGui::BeginTable("Entities", 2, ImGuiTableFlags_BordersInnerV))
         {
-            ImGui::TableSetupColumn("Entities", ImGuiTableColumnFlags_WidthFixed, 250);
+            ImGui::TableSetupColumn("Entities", ImGuiTableColumnFlags_WidthFixed, 100);
             ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
 
             ImGui::TableNextRow();

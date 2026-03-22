@@ -17,12 +17,23 @@ CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 , m_newCategoryName("")
 , m_selectedCategoryFilter("")
 , m_loadCategoryFilePath("./resources/Categories/")
+, m_selectedCategory(-1)
 {
     RefreshCategoryList();
+    m_textEditor = std::make_shared<TextEditor>();
+
+    std::function<void()> l_textCallback([this](){ m_selectedCategoryOrigin->FlagReloaded(); });
+
+    m_textEditor->SetChangeCallback(l_textCallback);
 }
 
 CategoryPanel::~CategoryPanel()
 {
+}
+
+void CategoryPanel::TextEditorCallback()
+{
+    m_selectedCategoryOrigin->FlagReloaded();
 }
 
 void CategoryPanel::RefreshCategoryList()
@@ -49,47 +60,96 @@ void CategoryPanel::Draw()
 
     RefreshCategoryList();
     
-    ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(800, 400));
     if (ImGui::Begin("Categories", &m_showPanel))
     {
-        // Create and Load buttons
-        if (ImGui::Button("+ Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
+        if(ImGui::BeginTable("Categories", 2, ImGuiTableFlags_BordersInnerV))
         {
-            m_showCreateDialog = true;
-        }
+            ImGui::TableSetupColumn("Categories", ImGuiTableColumnFlags_WidthFixed, 250);
+            ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
 
-        ImGui::SameLine();
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
 
-        if (ImGui::Button("Load", ImVec2((ImGui::GetContentRegionAvail().x), 0)))
-        {
-            m_showLoadDialog = true;
-        }
 
-        ImGui::Separator();
-
-        // Search/Filter
-        ImGui::InputTextWithHint("CategoryFilter", "Search categories...", &m_selectedCategoryFilter[0], m_selectedCategoryFilter.size());
-
-        ImGui::Separator();
-
-        // Category list
-        if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
-        {
-            for (auto& l_category : m_availableCategories)
+            // Category list
+            if(ImGui::BeginChild("CategoryListPanel", ImVec2(0, 0), true))
             {
-                if (m_selectedCategoryFilter.size() > 0)
+                float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+                // Create and Load buttons
+                if (ImGui::Button("+ Create", ImVec2(buttonWidth, 0)))
                 {
-                    std::string filter(m_selectedCategoryFilter);
-                    if (l_category.find(filter) == std::string::npos)
-                    {
-                        continue;
-                    }
+                    m_showCreateDialog = true;
                 }
 
-                ImGui::Text(l_category.c_str());
+                ImGui::SameLine();
+
+                if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
+                {
+                    m_showLoadDialog = true;
+                }
+
+                ImGui::Separator();
+
+                // Search/Filter
+                ImGui::InputTextWithHint("CategoryFilter", "Search categories...", &m_selectedCategoryFilter[0], m_selectedCategoryFilter.size());
+
+                ImGui::Separator();
+
+                // Category list
+                if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
+                {
+                    for (int i = 0; i < m_availableCategories.size(); i++)
+                    {
+                        auto& l_category = m_availableCategories[i];
+
+                        if (m_selectedCategoryFilter.size() > 0)
+                        {
+                            std::string filter(m_selectedCategoryFilter);
+                            if (l_category.find(filter) == std::string::npos)
+                            {
+                                continue;
+                            }
+                        }
+
+                        bool l_selected = (m_selectedCategory == i);
+                        if(ImGui::Selectable(l_category.c_str(), l_selected))
+                        {
+                            SelectCategory(i);
+                        };
+                    }
+                    
+                    ImGui::EndChild();
+                }
+
+                ImGui::EndChild();
             }
-            
-            ImGui::EndChild();
+
+            ImGui::TableSetColumnIndex(1);
+
+            if(m_selectedCategory != -1 && ImGui::BeginChild("Properties", ImVec2(0, 0), true))
+            {
+                ImGui::Text("Category: %s", m_availableCategories[m_selectedCategory].c_str());
+                ImGui::Separator();
+
+                if(m_selectedCategoryOrigin != nullptr)
+                {
+                    if(m_selectedCategoryOrigin->GetReloaded())
+                    {
+                        ImGui::Text("%s*", m_availableCategories[m_selectedCategory]);
+                    }
+                    else
+                    {
+                        ImGui::Text("%s", m_availableCategories[m_selectedCategory]);
+                    }
+
+                    m_textEditor->Render(m_availableCategories[m_selectedCategory].c_str(), ImVec2(500, 500), true);
+                }
+
+                ImGui::EndChild();
+            }
+
+            ImGui::EndTable();
         }
     }
 
@@ -98,6 +158,25 @@ void CategoryPanel::Draw()
     // Draw dialogs
     DrawCreateCategoryDialog();
     DrawLoadCategoryDialog();
+}
+
+void CategoryPanel::SelectCategory(int _idx)
+{
+    m_selectedCategory = _idx;
+    m_textEditor->ClearText();
+
+    auto l_category = m_editor.lock()
+                      ->GetEngineContents().core
+                      ->GetLuaContext()
+                      ->GetCategory(m_availableCategories[m_selectedCategory])
+                      .lock();
+
+    m_selectedCategoryOrigin = l_category->GetOriginFile().lock();
+
+    if(m_selectedCategoryOrigin != nullptr)
+    {
+        m_textEditor->SetText(m_selectedCategoryOrigin->GetCode());
+    }
 }
 
 void CategoryPanel::DrawCreateCategoryDialog()

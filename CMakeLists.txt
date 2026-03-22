@@ -11,11 +11,11 @@ file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
                         "extern/imgui/imgui_widgets.cpp"
                         "extern/imgui/backends/imgui_impl_sdl3.cpp"
                         "extern/imgui/backends/imgui_impl_opengl3.cpp"
-                        "extern/imgui/misc/cpp/imgui_stdlib.cpp")
+                        "extern/imgui/misc/cpp/imgui_stdlib.cpp"
+                        "extern/imguiTextEdit/TextEditor.cpp")
 
 add_subdirectory(extern/pugixml)
 add_subdirectory(extern/RanakEngine2)
-
 
 add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})
 
@@ -35,6 +35,7 @@ target_link_libraries(TestRun PUBLIC RanakEngine)
 target_include_directories(GameEditor PUBLIC include extern
                                                      extern/imgui
                                                      extern/imgui/backends
+                                                     extern/imguiTextEdit
                                                      extern/pugixml)
 
 target_link_libraries(GameEditor PUBLIC RanakEngine)
