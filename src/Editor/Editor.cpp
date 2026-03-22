@@ -259,18 +259,26 @@ void Editor::DrawEditorUI()
     // Context menu
     if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
-        if(ImGui::Button("Create Entity", ImVec2(140, 20)))
+        ImVec2 l_buttonSize(150, 20);
+        if(ImGui::Button("Create Entity", l_buttonSize))
         {
             Vector3 l_entityPos = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
             l_entityPos.z = 0.0f;
 
             m_entityPanel->SetShown(true);
             m_entityPanel->AddEntity();
+
+            // Awful fucking sentence
+            sol::table l_entityTransform = m_scene->GetRegistry()
+                                            ->GetEntityAttributes(m_selectedEntityId)
+                                            .raw_get<sol::table>("Transform");
+
+            l_entityTransform.raw_set("Position", l_entityPos);
         }
 
         if(m_selectedEntityId > -1)
         {
-            if(ImGui::Button("Delete Entity", ImVec2(140, 20)))
+            if(ImGui::Button("Delete Entity", l_buttonSize))
             {
                 m_scene->RemoveEntity(m_selectedEntityId);
                 m_selectedEntityId = -1;
@@ -279,7 +287,7 @@ void Editor::DrawEditorUI()
 
         if(!m_cameraPanel->IsShown())
         {
-            if(ImGui::Button("Show Camera Settings", ImVec2(140, 20)))
+            if(ImGui::Button("Show Camera Settings", l_buttonSize))
             {
                 m_cameraPanel->SetShown(true);
             }
@@ -288,7 +296,7 @@ void Editor::DrawEditorUI()
 
         if(!m_entityPanel->IsShown())
         {
-            if(ImGui::Button("Show Entity List", ImVec2(140, 20)))
+            if(ImGui::Button("Show Entity List", l_buttonSize))
             {
                 m_entityPanel->SetShown(true);
             }
@@ -296,7 +304,7 @@ void Editor::DrawEditorUI()
 
         if(!m_categoryPanel->IsShown())
         {
-            if(ImGui::Button("Show Category List", ImVec2(140, 20)))
+            if(ImGui::Button("Show Category List", l_buttonSize))
             {
                 m_categoryPanel->SetShown(true);
             }
@@ -304,7 +312,7 @@ void Editor::DrawEditorUI()
 
         if(!m_rulesPanel->IsShown())
         {
-            if(ImGui::Button("Show Rules List", ImVec2(140, 20)))
+            if(ImGui::Button("Show Rules List", l_buttonSize))
             {
                 m_rulesPanel->SetShown(true);
             }
@@ -356,6 +364,9 @@ void Editor::HandleInput()
                 
                 if (l_event.key.key == SDLK_ESCAPE)
                 {
+                    m_selectedEntityId = -1;
+                    m_entityPanel->SelectEntity(-1);
+
                     m_rulesPanel->SetShown(false);
                     m_entityPanel->SetShown(false);
                     m_categoryPanel->SetShown(false);
@@ -423,5 +434,23 @@ void Editor::HandleInput()
     // Flip Y position so 0,0 is bottom left
     m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
 
-    RE::Log::Message("Input handled");
+    if(m_mouseInfo.LMBDown)
+    {
+        Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
+        l_mouseWorldPos.z = m_camera->GetPosition().z;
+        //Raycast into screen to check for object
+        RE::Core::Ray l_ray{
+            l_mouseWorldPos,
+            Vector3(0.0f, 0.0f, -1.0f)
+        };
+
+        RE::Core::RaycastHit l_hitInfo;
+
+        int l_hitEntity = m_scene->Raycast(l_ray, l_hitInfo);
+
+        m_selectedEntityId = l_hitEntity;
+        m_entityPanel->SelectEntity(m_selectedEntityId);
+
+        RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
+    }
 }

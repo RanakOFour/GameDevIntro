@@ -157,9 +157,8 @@ void EntityPanel::Draw()
                 {
                     ImGui::Text("No entity selected");
                 }
-
             }
-
+            
             // Program fails an assert when this is inside the above selection branch
             ImGui::EndChild();
 

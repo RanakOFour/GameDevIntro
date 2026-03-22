@@ -18,12 +18,12 @@
 
 #version 430 core
 
-out vec3 WorldPos;
+out vec3 o_worldPos;
 
 uniform mat4 u_View;
 uniform mat4 u_Projection;
 
-uniform float gGridSize = 100.0;
+uniform float u_gridSize = 100.0;
 uniform vec3 u_cameraPos;
 
 const vec3 Pos[4] = vec3[4](
@@ -39,7 +39,7 @@ const int Indices[6] = int[6](0, 2, 1, 2, 0, 3);
 void main()
 {
     int Index = Indices[gl_VertexID];
-    vec3 vPos3 = Pos[Index] * gGridSize;
+    vec3 vPos3 = Pos[Index] * u_gridSize;
 
     vPos3.x += u_cameraPos.x;
     vPos3.y += u_cameraPos.y;
@@ -48,5 +48,5 @@ void main()
 
     gl_Position = u_Projection * u_View * vPos4;
 
-    WorldPos = vPos3;
+    o_worldPos = vPos3;
 }
