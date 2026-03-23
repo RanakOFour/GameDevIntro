@@ -34,6 +34,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<CameraPanel> m_cameraPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
+    std::shared_ptr<ImFont> m_font;
 
     int m_selectedEntityId;
     

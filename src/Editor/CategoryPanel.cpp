@@ -59,12 +59,11 @@ void CategoryPanel::Draw()
 
     RefreshCategoryList();
     
-    ImGui::SetNextWindowSize(ImVec2(800, 400));
     if (ImGui::Begin("Categories", &m_showPanel))
     {
         if(ImGui::BeginTable("Categories", 2, ImGuiTableFlags_BordersInnerV))
         {
-            ImGui::TableSetupColumn("Categories", ImGuiTableColumnFlags_WidthFixed, 250);
+            ImGui::TableSetupColumn("Categories", ImGuiTableColumnFlags_WidthFixed, 300);
             ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
 
             ImGui::TableNextRow();
@@ -92,7 +91,7 @@ void CategoryPanel::Draw()
                 ImGui::Separator();
 
                 // Search/Filter
-                ImGui::InputTextWithHint("CategoryFilter", "Search categories...", &m_selectedCategoryFilter[0], m_selectedCategoryFilter.size());
+                ImGui::InputTextWithHint("##", "Search categories...", &m_selectedCategoryFilter);
 
                 ImGui::Separator();
 
@@ -129,15 +128,11 @@ void CategoryPanel::Draw()
 
             if(m_selectedCategory != -1 && ImGui::BeginChild("Properties", ImVec2(0, 0), true))
             {
-                ImGui::Text("Selected category: %i", m_selectedCategory);
-                ImGui::Text("Category: %s", m_availableCategories[m_selectedCategory].c_str());
-                ImGui::Separator();
-
                 if(m_selectedCategoryOrigin != nullptr)
                 {
                     if(m_selectedCategoryOrigin->GetReloaded())
                     {
-                        ImGui::Text("%s*", m_availableCategories[m_selectedCategory]);
+                        ImGui::Text("%s *", m_availableCategories[m_selectedCategory].c_str());
                         ImGui::SameLine();
                         if(ImGui::Button("Save"))
                         {
@@ -146,7 +141,7 @@ void CategoryPanel::Draw()
                     }
                     else
                     {
-                        ImGui::Text("%s", m_availableCategories[m_selectedCategory]);
+                        ImGui::Text("%s", m_availableCategories[m_selectedCategory].c_str());
                     }
 
                     m_textEditor->Render(m_availableCategories[m_selectedCategory].c_str(), ImVec2(500, 500), true);

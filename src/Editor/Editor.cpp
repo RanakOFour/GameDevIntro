@@ -42,6 +42,11 @@ Editor::Editor()
     // Initialize ImGui with the window from IO Manager
     InitImGui();
 
+    ImFont* l_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
+
+    m_font = std::shared_ptr<ImFont>();
+    m_font.reset(l_font);
+
     RE::Log::Message("Editor constructed");
 }
 
@@ -184,12 +189,14 @@ void Editor::Draw()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
+    ImGui::PushFont(m_font.get(), 17.5f);
 
     //RenderDockspace();
     DrawMenuBar();
     DrawEditorUI();
 
     // Rendering
+    ImGui::PopFont();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
