@@ -5,11 +5,11 @@ EditorRender.attributes = {
     --Template drawable
     templateDrawable = {
         shaderPath = "./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs",
-        shader = nil,
+        shader = Asset.Shader("./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs"),
         texturePath = "./resources/Textures/NoDrawable.png",
-        texture = nil,
+        texture = Asset.Texture("./resources/Textures/NoDrawable.png"),
         modelPath = "./resources/Models/FlatTexture.obj",
-        model = nil
+        model = Asset.Model("./resources/Models/FlatTexture.obj")
     }
 }
 

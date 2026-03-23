@@ -44,7 +44,7 @@ void EntityPanel::Draw()
         // Use a table with 2 columns: left for entity list, right for properties
         if (ImGui::BeginTable("Entities", 2, ImGuiTableFlags_BordersInnerV))
         {
-            ImGui::TableSetupColumn("Entities", ImGuiTableColumnFlags_WidthFixed, 100);
+            ImGui::TableSetupColumn("Entities", ImGuiTableColumnFlags_WidthFixed, 300);
             ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
 
             ImGui::TableNextRow();

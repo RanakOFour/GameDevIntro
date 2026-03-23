@@ -270,7 +270,7 @@ void Editor::DrawEditorUI()
     // Context menu
     if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
-        ImVec2 l_buttonSize(150, 20);
+        ImVec2 l_buttonSize(170, 25);
         if(ImGui::Button("Create Entity", l_buttonSize))
         {
             Vector3 l_entityPos = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
@@ -412,7 +412,6 @@ void Editor::HandleInput()
 
             case SDL_EVENT_MOUSE_WHEEL:
                 m_mouseInfo.deltaScroll = -l_event.wheel.y;
-                m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
                 break;
 
             case SDL_EVENT_MOUSE_MOTION:
@@ -437,23 +436,28 @@ void Editor::HandleInput()
     // Flip Y position so 0,0 is bottom left
     m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
 
-    if(!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) && m_mouseInfo.LMBDown)
+    if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
-        Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
-        l_mouseWorldPos.z = m_camera->GetPosition().z;
-        //Raycast into screen to check for object
-        RE::Core::Ray l_ray{
-            l_mouseWorldPos,
-            Vector3(0.0f, 0.0f, -1.0f)
-        };
+        if (m_mouseInfo.LMBDown)
+        {
+            Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
+            l_mouseWorldPos.z = m_camera->GetPosition().z;
+            //Raycast into screen to check for object
+            RE::Core::Ray l_ray{
+                l_mouseWorldPos,
+                Vector3(0.0f, 0.0f, -1.0f)
+            };
 
-        RE::Core::RaycastHit l_hitInfo;
+            RE::Core::RaycastHit l_hitInfo;
 
-        int l_hitEntity = m_scene->Raycast(l_ray, l_hitInfo);
+            int l_hitEntity = m_scene->Raycast(l_ray, l_hitInfo);
 
-        m_selectedEntityId = l_hitEntity;
-        m_entityPanel->SelectEntity(m_selectedEntityId);
+            m_selectedEntityId = l_hitEntity;
+            m_entityPanel->SelectEntity(m_selectedEntityId);
 
-        RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
+            RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
+        }
+
+        m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
     }
 }

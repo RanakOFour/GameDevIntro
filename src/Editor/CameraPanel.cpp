@@ -21,6 +21,7 @@ void CameraPanel::Draw()
 {
     if(!m_showPanel) return;
 
+    ImGui::SetNextWindowSize(ImVec2(300, 150));
     if(ImGui::Begin("Camera Options", &m_showPanel, ImGuiWindowFlags_NoResize))
     {
         auto l_camera = m_camera.lock();
