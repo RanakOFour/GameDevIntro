@@ -22,9 +22,6 @@ class EntityPanel : public Panel
 
     void RefreshEntityList();
 
-    void DrawEntityProperties(int _entityId);
-    void DrawCategoryAttributes(const int& _entityId, const std::string& _categoryName, sol::table& _attributes);
-
     public:
     EntityPanel(std::weak_ptr<Editor> _editor);
     ~EntityPanel();

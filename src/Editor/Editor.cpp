@@ -3,6 +3,7 @@
 #include "Editor/CategoryPanel.h"
 #include "Editor/RulesPanel.h"
 #include "Editor/CameraPanel.h"
+#include "Editor/PropertiesPanel.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -59,6 +60,7 @@ std::shared_ptr<Editor> Editor::Create()
     l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editorFromThis);
     l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editorFromThis);
     l_editor->m_cameraPanel = std::make_unique<CameraPanel>(l_editorFromThis);
+    l_editor->m_propertiesPanel = std::make_unique<PropertiesPanel>(l_editorFromThis);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -337,6 +339,7 @@ void Editor::DrawEditorUI()
     m_categoryPanel->Draw();
     m_rulesPanel->Draw();
     m_cameraPanel->Draw();
+    m_propertiesPanel->Draw();
 }
 
 void Editor::HandleInput()
@@ -453,7 +456,14 @@ void Editor::HandleInput()
             int l_hitEntity = m_scene->Raycast(l_ray, l_hitInfo);
 
             m_selectedEntityId = l_hitEntity;
-            m_entityPanel->SelectEntity(m_selectedEntityId);
+            
+            if (l_hitEntity > -1)
+            {
+                m_entityPanel->SelectEntity(m_selectedEntityId);
+                m_propertiesPanel->SetEntity(m_selectedEntityId);
+                m_propertiesPanel->SetShown(true);
+                m_propertiesPanel->SetPosition(ImVec2(m_mouseInfo.position.x + 200, m_mouseInfo.position.y - 250));
+            }
 
             RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
         }

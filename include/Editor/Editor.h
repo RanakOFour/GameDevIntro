@@ -15,6 +15,7 @@ class EntityPanel;
 class CategoryPanel;
 class RulesPanel;
 class CameraPanel;
+class PropertiesPanel;
 
 class Editor : public std::enable_shared_from_this<Editor>
 {
@@ -33,6 +34,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<CategoryPanel> m_categoryPanel;
     std::unique_ptr<RulesPanel> m_rulesPanel;
     std::unique_ptr<CameraPanel> m_cameraPanel;
+    std::unique_ptr<PropertiesPanel> m_propertiesPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
     ImFont* m_font;
