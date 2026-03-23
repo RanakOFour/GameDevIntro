@@ -218,7 +218,7 @@ void CategoryPanel::DrawCreateCategoryDialog()
 
 void CategoryPanel::CreateNewCategory(const std::string& _name)
 {
-    // TODO: Implement category creation logic
+    // Implement category creation logic
     RE::Log::Message("Creating new category: " + _name);
 }
 

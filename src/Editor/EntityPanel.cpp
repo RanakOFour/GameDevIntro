@@ -50,6 +50,9 @@ void EntityPanel::Draw()
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
 
+            auto l_editor = m_editor.lock();
+            auto l_registry = l_editor->GetScene()->GetRegistry();
+
             // LEFT COLUMN: Entity List
             if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
             {
@@ -79,7 +82,8 @@ void EntityPanel::Draw()
                     for (int l_entityId : m_cachedEntities)
                     {
                         bool selected = (m_selectedEntity == l_entityId);
-                        if (ImGui::Selectable((m_entityNameMap[l_entityId]).c_str(), selected))
+                        std::string l_entityName = l_registry->GetEntityName(l_entityId);
+                        if (ImGui::Selectable(l_entityName.c_str(), selected))
                         {
                             SelectEntity(l_entityId);
                         }
@@ -101,9 +105,6 @@ void EntityPanel::Draw()
                     ImGui::Separator();
 
                     DrawEntityProperties(m_selectedEntity);
-
-                    auto l_editor = m_editor.lock();
-                    auto l_registry = l_editor->GetScene()->GetRegistry();
 
                     if (ImGui::Button("Add to Category", ImVec2(-1, 0)))
                     {
@@ -175,7 +176,6 @@ void EntityPanel::AddEntity()
     auto l_scene = l_editorPtr->GetScene();
 
     int newId = l_scene->AddEntity();
-    m_entityNameMap[newId] = "Entity " + std::to_string(newId);
     m_cachedEntities.push_back(newId);
     SelectEntity(newId);
     RE::Log::Message("Entity created with ID: " + std::to_string(newId));
@@ -191,8 +191,6 @@ void EntityPanel::RemoveEntity(int _id)
     {
         m_cachedEntities.erase(l_entityLocation);
     }
-
-    m_entityNameMap.erase(_id);
 
     if (m_selectedEntity == _id)
     {
