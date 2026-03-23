@@ -104,6 +104,21 @@ void EntityPanel::Draw()
                     ImGui::Text("Entity ID: %d", m_selectedEntity);
                     ImGui::Separator();
 
+                    std::string l_entityIDString = std::to_string(m_selectedEntity);
+
+                    if(m_stringValueMap.find(l_entityIDString) == m_stringValueMap.end())
+                    {
+                        m_stringValueMap[l_entityIDString] = l_registry->GetEntityName(m_selectedEntity);
+                    }
+
+                    if(ImGui::InputText("Name", &m_stringValueMap[l_entityIDString], ImGuiInputTextFlags_EnterReturnsTrue))
+                    {
+                        sol::table l_entityTable = l_registry->GetEntityTable().raw_get<sol::table>(m_selectedEntity);
+                        l_entityTable["name"] = m_stringValueMap[l_entityIDString];
+                    }
+
+                    ImGui::Separator();
+
                     DrawEntityProperties(m_selectedEntity);
 
                     if (ImGui::Button("Add to Category", ImVec2(-1, 0)))

@@ -28,6 +28,19 @@ CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
     std::function<void()> l_textCallback([this](){ m_selectedCategoryOrigin->FlagReloaded(); });
 
     m_textEditor->SetChangeCallback(l_textCallback);
+    m_textEditor->SetLanguage(TextEditor::Language::Lua());
+    TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
+    l_config->triggerOnTyping = true;
+    l_config->triggerOnShortcut = true;
+    std::function<void(TextEditor::AutoCompleteState&)> l_configCallback([](TextEditor::AutoCompleteState& _state)
+    {
+        // Search current word for keywords (lib names, functions, etc.)
+        RE::Log::Message("Current search term: " + _state.searchTerm);
+    });
+
+    l_config->callback = l_configCallback;
+
+    m_textEditor->SetAutoCompleteConfig(l_config);
 }
 
 CategoryPanel::~CategoryPanel()
