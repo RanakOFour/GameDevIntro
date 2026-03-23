@@ -26,11 +26,9 @@ class CategoryPanel : public Panel
     std::string m_loadCategoryFilePath;
     
     bool m_showCreateDialog;
-    bool m_showLoadDialog;
 
     void RefreshCategoryList();
     void DrawCreateCategoryDialog();
-    void DrawLoadCategoryDialog();
 
     void TextEditorCallback();
 
@@ -44,6 +42,7 @@ class CategoryPanel : public Panel
     void CreateNewCategory(const std::string& _name);
     void LoadCategoryFromFile(const std::string& _path);
     void AssignCategoryToEntity(int _entityId, const std::string& _categoryName);
+    void SaveCategoryToFile();
 
     bool IsDialogOpen();
 };

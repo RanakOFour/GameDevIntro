@@ -13,7 +13,6 @@
 CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_showCreateDialog(false)
-, m_showLoadDialog(false)
 , m_newCategoryName("")
 , m_selectedCategoryFilter("")
 , m_loadCategoryFilePath("./resources/Categories/")
@@ -130,6 +129,7 @@ void CategoryPanel::Draw()
 
             if(m_selectedCategory != -1 && ImGui::BeginChild("Properties", ImVec2(0, 0), true))
             {
+                ImGui::Text("Selected category: %i", m_selectedCategory);
                 ImGui::Text("Category: %s", m_availableCategories[m_selectedCategory].c_str());
                 ImGui::Separator();
 
@@ -138,6 +138,11 @@ void CategoryPanel::Draw()
                     if(m_selectedCategoryOrigin->GetReloaded())
                     {
                         ImGui::Text("%s*", m_availableCategories[m_selectedCategory]);
+                        ImGui::SameLine();
+                        if(ImGui::Button("Save"))
+                        {
+                            SaveCategoryToFile();
+                        }
                     }
                     else
                     {
@@ -158,7 +163,6 @@ void CategoryPanel::Draw()
 
     // Draw dialogs
     DrawCreateCategoryDialog();
-    DrawLoadCategoryDialog();
 }
 
 void CategoryPanel::SelectCategory(int _idx)
@@ -217,43 +221,6 @@ void CategoryPanel::DrawCreateCategoryDialog()
     }
 }
 
-void CategoryPanel::DrawLoadCategoryDialog()
-{
-    if (m_showLoadDialog)
-    {
-        ImGui::OpenPopup("Load Category");
-    }
-
-    if (ImGui::BeginPopupModal("Load Category", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        ImGui::Text("Category File Path:");
-
-        ImGui::InputText("CategoryPath", &m_loadCategoryFilePath, ImGuiInputTextFlags_EnterReturnsTrue);
-
-        ImGui::Separator();
-
-        if (ImGui::Button("Load", ImVec2(120, 0)))
-        {
-            RE::Log::Message("Creating category from " + m_loadCategoryFilePath);
-            LoadCategoryFromFile(m_loadCategoryFilePath);
-            m_loadCategoryFilePath = "./resources/Categories/";
-            m_showLoadDialog = false;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            m_loadCategoryFilePath = "./resources/Categories/";
-            m_showLoadDialog = false;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-}
-
 void CategoryPanel::CreateNewCategory(const std::string& _name)
 {
     // TODO: Implement category creation logic
@@ -284,5 +251,38 @@ void CategoryPanel::AssignCategoryToEntity(int _entityId, const std::string& _ca
 
 bool CategoryPanel::IsDialogOpen()
 {
-    return m_showCreateDialog || m_showLoadDialog;
+    return m_showCreateDialog;
+}
+
+void CategoryPanel::SaveCategoryToFile()
+{
+    if (m_selectedCategoryOrigin != nullptr)
+    {
+        // Get the text from the editor
+        std::string l_newCode = m_textEditor->GetText();
+        
+        // Save to the file
+        m_selectedCategoryOrigin->SetCode(l_newCode);
+        m_selectedCategoryOrigin->Save();
+        
+        // Clear the reload flag
+        m_selectedCategoryOrigin->Reload();
+
+        auto l_newCategory = m_selectedCategoryOrigin->GetCategory().lock();
+        std::bitset<1024> l_catSignature = l_newCategory->GetSignature();
+
+        auto l_scene = m_editor.lock()->GetScene();
+        auto l_registry = l_scene->GetRegistry();
+
+        // Remove category to delete all old data and readd category
+        std::vector<int> l_entitiesInCategory = l_registry->GetEntitiesWith(l_catSignature);
+        l_scene->RemoveCategory(l_catSignature);
+
+        for(int l_entity : l_entitiesInCategory)
+        {
+            l_scene->AddEntityToCategory(l_entity, l_catSignature);
+        }
+        
+        RE::Log::Message("Category saved to file: " + m_selectedCategoryOrigin->GetPath());
+    }
 }
