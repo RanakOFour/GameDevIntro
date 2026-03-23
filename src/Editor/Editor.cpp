@@ -13,6 +13,7 @@
 Editor::Editor()
 : m_selectedEntityId(-1)
 , m_isEditorRunning(true)
+, m_isGameRunning(false)
 , m_dummyGridVAO(0)
 {
     // Initialize the engine (this creates the SDL window and GL context)
@@ -38,16 +39,12 @@ Editor::Editor()
     {
         RE::Log::Error("Failed to get window from IO Manager");
         m_isEditorRunning = false;
-        return;
     }
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
 
-    ImFont* l_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
-
-    m_font = std::shared_ptr<ImFont>();
-    m_font.reset(l_font);
+    m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
 
     RE::Log::Message("Editor constructed");
 }
@@ -55,11 +52,13 @@ Editor::Editor()
 std::shared_ptr<Editor> Editor::Create()
 {
     std::shared_ptr<Editor> l_editor = std::make_shared<Editor>();
+
+    std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
-    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editor);
-    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editor);
-    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editor);
-    l_editor->m_cameraPanel = std::make_unique<CameraPanel>(l_editor);
+    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editorFromThis);
+    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editorFromThis);
+    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editorFromThis);
+    l_editor->m_cameraPanel = std::make_unique<CameraPanel>(l_editorFromThis);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -70,10 +69,12 @@ Editor::~Editor()
 {
     glDeleteVertexArrays(1, &m_dummyGridVAO);
 
-    m_font.reset();
-
     // Clean up ImGui
     CleanupImGui();
+
+    m_camera.reset();
+    m_scene.reset();
+    m_gridShader.reset();
 
     // Shut down engine
     RE::Shutdown(m_engineContents);
@@ -192,7 +193,7 @@ void Editor::Draw()
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
-    ImGui::PushFont(m_font.get(), 17.5f);
+    ImGui::PushFont(m_font, 17.5f);
 
     //RenderDockspace();
     DrawMenuBar();

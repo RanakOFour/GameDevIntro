@@ -5,7 +5,7 @@ local baseAttributes = {
     texturePath = "",
     texture = nil,
     modelPath = "",
-    model = nil
+    model = Asset.Model("./resources/Models/curuthers.obj")
 }
 
 return Category.new(categoryName, baseAttributes)

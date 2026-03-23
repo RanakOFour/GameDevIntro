@@ -12,7 +12,9 @@ file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
                         "extern/imgui/backends/imgui_impl_sdl3.cpp"
                         "extern/imgui/backends/imgui_impl_opengl3.cpp"
                         "extern/imgui/misc/cpp/imgui_stdlib.cpp"
-                        "extern/imguiTextEdit/TextEditor.cpp")
+                        "extern/imguiTextEdit/TextEditor.cpp"
+                        "extern/imguiFileDialog/ImGuiFileDialog.cpp")
+
 
 add_subdirectory(extern/pugixml)
 add_subdirectory(extern/RanakEngine2)
@@ -42,12 +44,10 @@ target_link_libraries(GameEditor PUBLIC RanakEngine)
 
 if(UNIX)
     target_link_directories(TestRun PUBLIC lib/unix)
-    target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+    target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES} )
     
     target_link_directories(GameEditor PUBLIC lib/unix)
     target_link_libraries(GameEditor PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
-
-
 elseif(WIN32)
     target_link_directories(TestRun PUBLIC lib/win/release)
     target_link_libraries(TestRun PUBLIC opengl32 glew32 SDL3 lua)

@@ -35,14 +35,14 @@ class Editor : public std::enable_shared_from_this<Editor>
     std::unique_ptr<CameraPanel> m_cameraPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
-    std::shared_ptr<ImFont> m_font;
+    ImFont* m_font;
 
-    int m_selectedEntityId;
+    int m_selectedEntityId = -1;
     
-    bool m_isEditorRunning;
-    bool m_isGameRunning;
+    bool m_isEditorRunning = true;
+    bool m_isGameRunning = false;
     
-    bool m_showContext;
+    bool m_showContext = false;
 
     void InitImGui();
     void CleanupImGui();

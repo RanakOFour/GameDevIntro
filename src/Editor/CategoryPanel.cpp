@@ -6,6 +6,9 @@
 // String compatible functions for ImGui
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
+#define USE_STD_FILESYSTEM 1
+#include "imguiFileDialog/ImGuiFileDialog.h"
+
 #include <algorithm>
 #include <sstream>
 #include <string>
@@ -13,6 +16,7 @@
 CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_showCreateDialog(false)
+, m_showLoadDialog(false)
 , m_newCategoryName("")
 , m_selectedCategoryFilter("")
 , m_loadCategoryFilePath("./resources/Categories/")
@@ -84,8 +88,7 @@ void CategoryPanel::Draw()
 
                 if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
                 {
-                    m_loadCategoryFilePath = m_editor.lock()->GetEngineContents().io->OpenFileDialog();
-                    LoadCategoryFromFile(m_loadCategoryFilePath);
+                    m_showLoadDialog = true;
                 }
 
                 ImGui::Separator();
@@ -158,6 +161,7 @@ void CategoryPanel::Draw()
 
     // Draw dialogs
     DrawCreateCategoryDialog();
+    DrawLoadCategoryDialog();
 }
 
 void CategoryPanel::SelectCategory(int _idx)
@@ -216,13 +220,38 @@ void CategoryPanel::DrawCreateCategoryDialog()
     }
 }
 
-void CategoryPanel::CreateNewCategory(const std::string& _name)
+void CategoryPanel::DrawLoadCategoryDialog()
+{
+    if (!m_showLoadDialog)
+        return;
+
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
+
+
+    if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
+            LoadCategoryFromFile(l_filePathName);
+        }
+
+
+        ImGuiFileDialog::Instance()->Close();
+        m_showLoadDialog = false;
+    }
+}
+
+void CategoryPanel::CreateNewCategory(std::string _name)
 {
     // Implement category creation logic
     RE::Log::Message("Creating new category: " + _name);
 }
 
-void CategoryPanel::LoadCategoryFromFile(const std::string& _path)
+void CategoryPanel::LoadCategoryFromFile(std::string _path)
 {
     RE::EngineContents l_engineContents = m_editor.lock()->GetEngineContents();
     auto l_luaContext = l_engineContents.core->GetLuaContext();
@@ -234,7 +263,7 @@ void CategoryPanel::LoadCategoryFromFile(const std::string& _path)
     RE::Log::Message("Category loaded from: " + _path);
 }
 
-void CategoryPanel::AssignCategoryToEntity(int _entityId, const std::string& _categoryName)
+void CategoryPanel::AssignCategoryToEntity(int _entityId, std::string _categoryName)
 {
     auto l_scene = m_editor.lock()->GetScene();
     auto l_luaContext = RE::Core::LuaContext::Instance().lock();
