@@ -66,6 +66,8 @@ std::shared_ptr<Editor> Editor::Create()
 
 Editor::~Editor()
 {
+    m_font.reset();
+
     // Clean up ImGui
     CleanupImGui();
 
