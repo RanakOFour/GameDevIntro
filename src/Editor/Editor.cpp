@@ -13,6 +13,7 @@
 Editor::Editor()
 : m_selectedEntityId(-1)
 , m_isEditorRunning(true)
+, m_dummyGridVAO(0)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
@@ -23,7 +24,8 @@ Editor::Editor()
     m_camera = m_engineContents.core->GetCamera().lock();
 
     m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
-
+    glGenVertexArrays(1, &m_dummyGridVAO);
+    
     auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
     RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
 
@@ -66,6 +68,8 @@ std::shared_ptr<Editor> Editor::Create()
 
 Editor::~Editor()
 {
+    glDeleteVertexArrays(1, &m_dummyGridVAO);
+
     m_font.reset();
 
     // Clean up ImGui
@@ -151,9 +155,7 @@ void Editor::Draw()
     if (m_gridShader)
     //if(false)
     {
-        GLuint emptyVAO = 0;
-        glGenVertexArrays(1, &emptyVAO);
-        glBindVertexArray(emptyVAO);
+        glBindVertexArray(m_dummyGridVAO);
 
         // Disable depth testing for grid
         glDisable(GL_DEPTH_TEST);
@@ -180,7 +182,6 @@ void Editor::Draw()
         glEnable(GL_CULL_FACE);
 
         glBindVertexArray(0);
-        glDeleteVertexArrays(1, &emptyVAO);
         glUseProgram(0);
     }
 
@@ -417,6 +418,7 @@ void Editor::HandleInput()
                 m_mouseInfo.deltaPosition.x = l_event.motion.xrel;
                 m_mouseInfo.deltaPosition.y = l_event.motion.yrel;
                 break;
+                
             case SDL_EVENT_WINDOW_RESIZED:
                 l_resized = true;
         }

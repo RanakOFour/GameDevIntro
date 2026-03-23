@@ -26,6 +26,7 @@ class Editor : public std::enable_shared_from_this<Editor>
     RE::EngineContents m_engineContents;
 
     std::shared_ptr<RE::Asset::Shader> m_gridShader;
+    GLuint m_dummyGridVAO = 0;
 
     // UI Panels
     std::unique_ptr<EntityPanel> m_entityPanel;
