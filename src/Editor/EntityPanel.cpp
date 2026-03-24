@@ -1,5 +1,6 @@
 #include "Editor/EntityPanel.h"
 #include "Editor/Editor.h"
+#include "Editor/SceneEditTab.h"
 
 #include "imgui/imgui.h"
 
@@ -9,7 +10,7 @@
 EntityPanel::EntityPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_cachedEntities()
-, m_registry(_editor.lock()->GetScene()->GetRegistry())
+, m_registry(_editor.lock()->GetEngineContents().core->GetScene().lock()->GetRegistry())
 {
     RefreshEntityList();
 }
@@ -45,7 +46,8 @@ void EntityPanel::Draw()
     if (ImGui::Begin("Entities", &m_showPanel))
     {
         auto l_editor = m_editor.lock();
-        int l_selectedEntity = l_editor->GetSelectedEntityId();
+        auto l_sceneEdit = l_editor->GetSceneEdit().lock();
+        int l_selectedEntity = l_sceneEdit->GetSelectedEntity();
 
         if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
         {
@@ -81,7 +83,7 @@ void EntityPanel::Draw()
 
                     if (ImGui::Selectable(l_entityName.c_str(), selected))
                     {
-                        l_editor->SetSelectedEntityId(l_entityId);
+                        l_sceneEdit->SelectEntity(l_entityId);
                     }
                 }
                 ImGui::EndChild();
@@ -97,17 +99,20 @@ void EntityPanel::Draw()
 void EntityPanel::AddEntity()
 {
     auto l_editorPtr = m_editor.lock();
-    auto l_scene = l_editorPtr->GetScene();
+    auto l_sceneEdit = l_editorPtr->GetSceneEdit().lock();
+
+    auto l_scene = l_editorPtr->GetEngineContents().core->GetScene().lock();
 
     int newId = l_scene->AddEntity();
     m_cachedEntities.push_back(newId);
-    l_editorPtr->SetSelectedEntityId(newId);
+    l_sceneEdit->SelectEntity(newId);
     RE::Log::Message("Entity created with ID: " + std::to_string(newId));
 }
 
 void EntityPanel::RemoveEntity(int _id)
 {
-    auto l_scene = m_editor.lock()->GetScene();
+    auto l_scene = m_editor.lock()->GetEngineContents()
+                                  .core->GetScene().lock();
     l_scene->RemoveEntity(_id);
     
     auto l_entityLocation = std::find(m_cachedEntities.begin(), m_cachedEntities.end(), _id);

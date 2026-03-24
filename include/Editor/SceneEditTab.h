@@ -3,6 +3,7 @@
 
 #include "RanakEngine/RanakEngine.h"
 
+#include "Editor/Editor.h"
 #include "Editor/EntityPanel.h"
 #include "Editor/CategoryPanel.h"
 #include "Editor/RulesPanel.h"
@@ -17,6 +18,7 @@
 
 class SceneEditTab
 {
+    friend Editor;
 private:
 	std::weak_ptr<Editor> m_editor;
 	std::shared_ptr<RE::IO::Window> m_window;
@@ -33,8 +35,6 @@ private:
     CameraPanel m_cameraPanel;
     PropertiesPanel m_propertiesPanel;
 
-    RE::IO::MouseInfo m_mouseInfo;
-
     int m_selectedEntityId = -1;
 
     bool m_isEditorRunning = true;
@@ -42,11 +42,11 @@ private:
 
     bool m_showContext = false;
 
-
     void DrawMenuBar();
     void DrawEditorUI();
     void DrawContextMenu();
     void HandleInput();
+
 public:
     SceneEditTab(std::weak_ptr<Editor> _editor);
     ~SceneEditTab();

@@ -31,7 +31,7 @@ void RulesPanel::RefreshRuleList()
     m_activeRules.clear();
     m_loadedRules.clear();
     
-    auto l_scene = m_editor.lock()->GetScene();
+    auto l_scene = m_editor.lock()->GetEngineContents().core->GetScene().lock();
 
     // Get active rules from the scene
     sol::table l_sceneTable = l_scene->GetSceneTable();
@@ -102,7 +102,7 @@ void RulesPanel::Draw()
                 if (ImGui::Button("Toggle", ImVec2(0, 0)))
                 {
                     // Set rule to not active
-                    sol::table l_sceneTable = m_editor.lock()->GetScene()->GetSceneTable();
+                    sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
                     std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
                     l_rulePtr->SetActive(!l_rulePtr->GetActive());
                     

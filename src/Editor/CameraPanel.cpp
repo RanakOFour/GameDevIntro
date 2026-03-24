@@ -9,7 +9,7 @@
 CameraPanel::CameraPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 {
-    m_camera = _editor.lock()->GetCamera();
+    m_camera = _editor.lock()->GetEngineContents().core->GetCamera();
 }
 
 CameraPanel::~CameraPanel()

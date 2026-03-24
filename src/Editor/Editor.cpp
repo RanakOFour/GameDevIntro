@@ -1,9 +1,6 @@
 #include "Editor/Editor.h"
-#include "Editor/EntityPanel.h"
-#include "Editor/CategoryPanel.h"
-#include "Editor/RulesPanel.h"
-#include "Editor/CameraPanel.h"
-#include "Editor/PropertiesPanel.h"
+
+#include "Editor/SceneEditTab.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -12,35 +9,11 @@
 #include <GL/gl.h>
 
 Editor::Editor()
-: m_selectedEntityId(-1)
-, m_isEditorRunning(true)
-, m_isGameRunning(false)
-, m_dummyGridVAO(0)
+: m_running(true)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
     RE::Log::Message("Engine Initialised for Editor");
-
-    // Get the scene
-    m_scene = m_engineContents.core->GetScene().lock();
-    m_camera = m_engineContents.core->GetCamera().lock();
-
-    m_gridShader = m_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
-    glGenVertexArrays(1, &m_dummyGridVAO);
-    
-    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
-
-    m_scene->AddRule(l_renderRule);
-
-    // Get the window from the IO Manager
-    auto ioManager = m_engineContents.io;
-    m_window = ioManager->GetWindow().lock();
-    if (!m_window)
-    {
-        RE::Log::Error("Failed to get window from IO Manager");
-        m_isEditorRunning = false;
-    }
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
@@ -58,11 +31,7 @@ std::shared_ptr<Editor> Editor::Create()
 
     std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
-    l_editor->m_entityPanel = EntityPanel(l_editorFromThis);
-    l_editor->m_categoryPanel = CategoryPanel(l_editorFromThis);
-    l_editor->m_rulesPanel = RulesPanel(l_editorFromThis);
-    l_editor->m_cameraPanel = CameraPanel(l_editorFromThis);
-    l_editor->m_propertiesPanel = PropertiesPanel(l_editorFromThis);
+    l_editor->m_sceneEdit = std::make_shared<SceneEditTab>(l_editorFromThis);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -71,14 +40,8 @@ std::shared_ptr<Editor> Editor::Create()
 
 Editor::~Editor()
 {
-    glDeleteVertexArrays(1, &m_dummyGridVAO);
-
     // Clean up ImGui
     CleanupImGui();
-
-    m_camera.reset();
-    m_scene.reset();
-    m_gridShader.reset();
 
     // Shut down engine
     RE::Shutdown(m_engineContents);
@@ -105,8 +68,9 @@ void Editor::InitImGui()
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
+    auto l_window = m_engineContents.io->GetWindow().lock();
     // Setup Platform/Renderer backends
-    ImGui_ImplSDL3_InitForOpenGL(m_window->GetSDLWindow(), m_window->GetGLContext());
+    ImGui_ImplSDL3_InitForOpenGL(l_window->GetSDLWindow(), l_window->GetGLContext());
     ImGui_ImplOpenGL3_Init("#version 430");
 
     RE::Log::Message("ImGui initialized");
@@ -122,26 +86,14 @@ void Editor::CleanupImGui()
 void Editor::Run()
 {
     float l_oneSixtieth = 1.0f / 60.0f;
-    while (m_isEditorRunning)
+    while (!m_engineContents.io->GetQuitSignal())
     {
-        if(m_isGameRunning)
-        {
-            Update(l_oneSixtieth);
-        }
-        else
-        {
-            HandleInput();
-            Update(l_oneSixtieth);
-            Draw();
-        }
+        HandleInput();
+        //Update(l_oneSixtieth);
+        Draw();
     }
 
     printf("Editor no longer running\n");
-}
-
-void Editor::Update(float _deltaTime)
-{
-    m_scene->Update(_deltaTime);
 }
 
 void Editor::Draw()
@@ -150,199 +102,20 @@ void Editor::Draw()
     glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Draw grid
-
-    // Render the infinite grid first (before ImGui)
-    if (m_gridShader)
-    //if(false)
-    {
-        glBindVertexArray(m_dummyGridVAO);
-
-        // Disable depth testing for grid
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
-
-        m_gridShader->Use();
-        m_gridShader->SetUniform("u_Projection", m_camera->GetProjection());
-        m_gridShader->SetUniform("u_View", m_camera->GetView());
-        m_gridShader->SetUniform("u_cameraPos", m_camera->GetPosition());
-
-        float l_cameraWidth = m_camera->GetCameraWidth();
-        Vector2 l_viewportSize = m_window->GetScreenSize();
-        float l_aspectRatio = l_viewportSize.x / l_viewportSize.y;
-        
-        // Calculate the height based on the width and viewport aspect ratio to prevent stretching
-        float l_orthoHeight = l_cameraWidth / l_aspectRatio;
-
-        m_gridShader->SetUniform("u_cameraSize", Vector2(l_cameraWidth, l_orthoHeight));
-
-        glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 6, 1, 0);
-
-        // Re-enable depth testing
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-
-        glBindVertexArray(0);
-        glUseProgram(0);
-    }
-
-    // Draw scene with EditorRenderer
-    m_scene->Draw();
-
     // Start ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
 
-    //RenderDockspace();
-    DrawMenuBar();
-    DrawEditorUI();
+    m_sceneEdit->Draw();
 
     // Rendering
     ImGui::PopFont();
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-    m_window->Swap();
-}
-
-void Editor::DrawMenuBar()
-{
-    if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-            {
-                // TODO: Implement new scene
-            }
-            if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
-            {
-                // TODO: Implement load scene
-            }
-            if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-            {
-                // TODO: Implement save scene
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Exit", "Ctrl+Q"))
-            {
-                m_isEditorRunning = false;
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-            {
-                // TODO: Implement undo
-            }
-            if (ImGui::MenuItem("Redo", "Ctrl+Y"))
-            {
-                // TODO: Implement redo
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("View"))
-        {
-            ImGui::MenuItem("Show Grid");
-            ImGui::MenuItem("Show Gizmos");
-
-            if(ImGui::MenuItem("Camera Settings"))
-            {
-                m_cameraPanel.SetShown(true);
-            }
-
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMainMenuBar();
-    }
-}
-
-
-
-void Editor::DrawEditorUI()
-{
-    // Context menu
-    if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
-    {
-        ImVec2 l_buttonSize(170, 25);
-        if(ImGui::Button("Create Entity", l_buttonSize))
-        {
-            Vector3 l_mousePosWorld = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
-            Vector2 l_entityPos(l_mousePosWorld.x, l_mousePosWorld.y);
-
-            m_entityPanel.AddEntity();
-
-            // Awful fucking sentence
-            sol::table l_entityTransform = m_scene->GetRegistry()
-                                            .GetEntityAttributes(m_selectedEntityId)
-                                            .raw_get<sol::table>("Transform");
-
-            l_entityTransform.raw_set("Position", l_entityPos);
-
-            m_propertiesPanel.SetShown(true);
-            ImVec2 l_panelSize = m_propertiesPanel.GetSize();
-            m_propertiesPanel.SetPosition(ImVec2(m_mouseInfo.position.x + l_panelSize.x * 0.25f, m_mouseInfo.position.y - l_panelSize.y * 0.25f));
-        }
-
-        if(m_selectedEntityId > -1)
-        {
-            if(ImGui::Button("Delete Entity", l_buttonSize))
-            {
-                m_scene->RemoveEntity(m_selectedEntityId);
-                m_selectedEntityId = -1;
-
-                m_propertiesPanel.SetShown(false);
-            }
-        }
-
-        if(!m_cameraPanel.IsShown())
-        {
-            if(ImGui::Button("Show Camera Settings", l_buttonSize))
-            {
-                m_cameraPanel.SetShown(true);
-            }
-        }
-
-
-        if(!m_entityPanel.IsShown())
-        {
-            if(ImGui::Button("Show Entity List", l_buttonSize))
-            {
-                m_entityPanel.SetShown(true);
-            }
-        }
-
-        if(!m_categoryPanel.IsShown())
-        {
-            if(ImGui::Button("Show Category List", l_buttonSize))
-            {
-                m_categoryPanel.SetShown(true);
-            }
-        }
-
-        if(!m_rulesPanel.IsShown())
-        {
-            if(ImGui::Button("Show Rules List", l_buttonSize))
-            {
-                m_rulesPanel.SetShown(true);
-            }
-        }
-
-        ImGui::EndPopup();
-    }
-
-    // Draw panels
-    m_entityPanel.Draw();
-    m_categoryPanel.Draw();
-    m_rulesPanel.Draw();
-    m_cameraPanel.Draw();
-    m_propertiesPanel.Draw();
+    m_engineContents.io->GetWindow().lock()->Swap();
 }
 
 void Editor::HandleInput()
@@ -355,14 +128,14 @@ void Editor::HandleInput()
         ImGui_ImplSDL3_ProcessEvent(&l_event);
     }
 
-    m_mouseInfo = m_engineContents.io->GetMouseInfo();
+    RE::IO::MouseInfo l_mouseInfo = m_engineContents.io->GetMouseInfo();
 
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
-        if (m_mouseInfo.LMBDown && !m_engineContents.io->GetLastFrameMouseInfo().LMBDown)
+        if (l_mouseInfo.LMBDown && !m_engineContents.io->GetLastFrameMouseInfo().LMBDown)
         {
-            Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
-            l_mouseWorldPos.z = m_camera->GetPosition().z;
+            Vector3 l_mouseWorldPos = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
+            l_mouseWorldPos.z = m_sceneEdit->m_camera->GetPosition().z;
             //Raycast into screen to check for object
             RE::Core::Ray l_ray{
                 l_mouseWorldPos,
@@ -371,64 +144,61 @@ void Editor::HandleInput()
 
             RE::Core::RaycastHit l_hitInfo;
 
-            int l_hitEntity = m_scene->Raycast(l_ray, l_hitInfo);
-
-            m_selectedEntityId = l_hitEntity;
+            int l_hitEntity = m_sceneEdit->m_scene->Raycast(l_ray, l_hitInfo);
             
             if (l_hitEntity > -1)
             {
-                SetSelectedEntityId(l_hitEntity);
-                ImVec2 l_panelSize = m_propertiesPanel.GetSize();
+                m_sceneEdit->SelectEntity(l_hitEntity);
+                ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
 
-                RE::Core::EntityRegistry& l_registry = m_scene->GetRegistry();
+                RE::Core::EntityRegistry& l_registry = m_sceneEdit->m_scene->GetRegistry();
 
                 Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
 
-                Vector2 l_entityScreenPos = m_camera->WorldToScreenPoint(l_entityWorldPos);
+                Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
 
-                m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
             }
             else
             {
-                m_propertiesPanel.SetShown(false);
+                m_sceneEdit->m_propertiesPanel.SetShown(false);
             }
 
-            RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
+            RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
         }
 
-        m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
+        m_sceneEdit->m_camera->SetCameraWidth(m_sceneEdit->m_camera->GetCameraWidth() + l_mouseInfo.deltaScroll);
     }
 
     if (!ImGui::GetIO().WantTextInput)
     {
         if (m_engineContents.io->GetKeyDownThisFrame('c'))
         {
-            m_categoryPanel.SetShown(!m_categoryPanel.IsShown());
+            m_sceneEdit->m_categoryPanel.SetShown(!m_sceneEdit->m_categoryPanel.IsShown());
         }
 
         if (m_engineContents.io->GetKeyDownThisFrame('e'))
         {
-            m_entityPanel.SetShown(!m_entityPanel.IsShown());
+            m_sceneEdit->m_entityPanel.SetShown(!m_sceneEdit->m_entityPanel.IsShown());
         }
 
         if (m_engineContents.io->GetKeyDownThisFrame('r'))
         {
-            m_rulesPanel.SetShown(!m_rulesPanel.IsShown());
+            m_sceneEdit->m_rulesPanel.SetShown(!m_sceneEdit->m_rulesPanel.IsShown());
         }
 
         // ESC input
         if (m_engineContents.io->GetKeyDownThisFrame((char)27))
         {
-            m_categoryPanel.SetShown(false);
-            m_entityPanel.SetShown(false);
-            m_rulesPanel.SetShown(false);
-            m_propertiesPanel.SetShown(false);
+            m_sceneEdit->m_categoryPanel.SetShown(false);
+            m_sceneEdit->m_entityPanel.SetShown(false);
+            m_sceneEdit->m_rulesPanel.SetShown(false);
+            m_sceneEdit->m_propertiesPanel.SetShown(false);
         }
     }
 }
 
-void Editor::SetSelectedEntityId(int _idx)
+std::weak_ptr<SceneEditTab> Editor::GetSceneEdit()
 {
-    m_selectedEntityId = _idx;
-    m_propertiesPanel.SetShown(true);
+    return m_sceneEdit;
 }

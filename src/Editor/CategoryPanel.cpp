@@ -116,10 +116,9 @@ void CategoryPanel::Draw()
                     SelectCategory(i);
                 };
             }
-            
-            ImGui::EndChild();
         }
 
+        ImGui::EndChild();
         ImGui::End();
     }
 
@@ -265,7 +264,7 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 
 void CategoryPanel::AssignCategoryToEntity(const int _entityId, const std::string _categoryName)
 {
-    auto l_scene = m_editor.lock()->GetScene();
+    auto l_scene = m_editor.lock()->GetEngineContents().core->GetScene().lock();
     auto l_luaContext = RE::Core::LuaContext::Instance().lock();
     auto l_category = l_luaContext->GetCategory(_categoryName);
     

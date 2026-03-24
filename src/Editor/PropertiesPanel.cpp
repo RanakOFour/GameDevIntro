@@ -1,5 +1,7 @@
 #include "Editor/PropertiesPanel.h"
 #include "Editor/Editor.h"
+#include "Editor/SceneEditTab.h"
+
 #include "RanakEngine/RanakEngine.h"
 
 #include "imgui/imgui.h"
@@ -18,7 +20,7 @@ PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 , m_setPosition(false)
 , m_position(0, 0)
 , m_size(400.0f, 500.0f)
-, m_registry(m_editor.lock()->GetScene()->GetRegistry())
+, m_registry(m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetRegistry())
 {
 
 }
@@ -150,7 +152,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 void PropertiesPanel::Draw()
 {
     auto l_editor = m_editor.lock();
-    int l_selectedEntity = l_editor->GetSelectedEntityId();
+    int l_selectedEntity = l_editor->GetSceneEdit().lock()->GetSelectedEntity();
 
     if (!m_showPanel || l_selectedEntity == -1)
         return;
