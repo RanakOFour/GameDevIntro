@@ -23,6 +23,7 @@ class EntityPanel : public Panel
     void RefreshEntityList();
 
     public:
+    EntityPanel() {};
     EntityPanel(std::weak_ptr<Editor> _editor);
     ~EntityPanel();
 

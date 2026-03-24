@@ -14,6 +14,7 @@ class CameraPanel : public Panel
     std::weak_ptr<RE::Core::Camera> m_camera;
 
     public:
+    CameraPanel() {};
     CameraPanel(std::weak_ptr<Editor> _editor);
     ~CameraPanel();
 

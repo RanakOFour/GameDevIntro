@@ -75,7 +75,7 @@ void EntityPanel::Draw()
                     std::string l_entityName = l_registry->GetEntityName(l_entityId);
                     if (ImGui::Selectable(l_entityName.c_str(), selected))
                     {
-                        SelectEntity(l_entityId);
+                        l_editor->SetSelectedEntityId(l_entityId);
                     }
                 }
                 ImGui::EndChild();
@@ -95,7 +95,7 @@ void EntityPanel::AddEntity()
 
     int newId = l_scene->AddEntity();
     m_cachedEntities.push_back(newId);
-    SelectEntity(newId);
+    l_editorPtr->SetSelectedEntityId(newId);
     RE::Log::Message("Entity created with ID: " + std::to_string(newId));
 }
 
@@ -120,5 +120,4 @@ void EntityPanel::RemoveEntity(int _id)
 void EntityPanel::SelectEntity(int _id)
 {
     m_selectedEntity = _id;
-    m_editor.lock()->SetSelectedEntityId(_id);
 }

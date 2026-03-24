@@ -1,9 +1,10 @@
 #ifndef PROPERTIESPANEL_H
 #define PROPERTIESPANEL_H
 
-#include "Editor/Editor.h"
 #include "Editor/Panel.h"
 #include "RanakEngine/RanakEngine.h"
+
+#include "imgui/imgui.h"
 
 #include <map>
 
@@ -14,6 +15,8 @@ private:
 	std::map<int, std::string> m_entityNameMap;
 	bool m_showCategoryMenu;
 	int m_selectedEntityId;
+
+	bool m_setPosition;
 	ImVec2 m_position;
 	ImVec2 m_size;
 
@@ -21,12 +24,14 @@ private:
 	void DrawCategoryAttributes(const int& _entityId, const std::string& _categoryName, sol::table& _attributes);
 
 public:
+	PropertiesPanel() {};
 	PropertiesPanel(std::weak_ptr<Editor> _editor);
 	~PropertiesPanel();
 
 	void Draw();
 
 	void SetPosition(ImVec2 _pos);
+	ImVec2 GetSize();
 
 	void SetEntity(int _id);
 	int GetEntity();

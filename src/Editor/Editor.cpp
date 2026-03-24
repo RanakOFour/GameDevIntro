@@ -52,15 +52,17 @@ Editor::Editor()
 
 std::shared_ptr<Editor> Editor::Create()
 {
-    std::shared_ptr<Editor> l_editor = std::make_shared<Editor>();
+    std::shared_ptr<Editor> l_editor = std::shared_ptr<Editor>();
+    Editor* l_editorRaw = new Editor();
+    l_editor.reset(l_editorRaw);
 
     std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
-    l_editor->m_entityPanel = std::make_unique<EntityPanel>(l_editorFromThis);
-    l_editor->m_categoryPanel = std::make_unique<CategoryPanel>(l_editorFromThis);
-    l_editor->m_rulesPanel = std::make_unique<RulesPanel>(l_editorFromThis);
-    l_editor->m_cameraPanel = std::make_unique<CameraPanel>(l_editorFromThis);
-    l_editor->m_propertiesPanel = std::make_unique<PropertiesPanel>(l_editorFromThis);
+    l_editor->m_entityPanel = EntityPanel(l_editorFromThis);
+    l_editor->m_categoryPanel = CategoryPanel(l_editorFromThis);
+    l_editor->m_rulesPanel = RulesPanel(l_editorFromThis);
+    l_editor->m_cameraPanel = CameraPanel(l_editorFromThis);
+    l_editor->m_propertiesPanel = PropertiesPanel(l_editorFromThis);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -129,16 +131,12 @@ void Editor::Run()
         else
         {
             HandleInput();
+            Update(l_oneSixtieth);
             Draw();
         }
     }
 
     printf("Editor no longer running\n");
-
-    m_categoryPanel.reset();
-    m_entityPanel.reset();
-    m_rulesPanel.reset();
-    m_cameraPanel.reset();
 }
 
 void Editor::Update(float _deltaTime)
@@ -255,7 +253,7 @@ void Editor::DrawMenuBar()
 
             if(ImGui::MenuItem("Camera Settings"))
             {
-                m_cameraPanel->SetShown(true);
+                m_cameraPanel.SetShown(true);
             }
 
             ImGui::EndMenu();
@@ -275,11 +273,10 @@ void Editor::DrawEditorUI()
         ImVec2 l_buttonSize(170, 25);
         if(ImGui::Button("Create Entity", l_buttonSize))
         {
-            Vector3 l_entityPos = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
-            l_entityPos.z = 0.0f;
+            Vector3 l_mousePosWorld = m_engineContents.core->ScreenToWorldPoint(m_mouseInfo.position);
+            Vector2 l_entityPos(l_mousePosWorld.x, l_mousePosWorld.y);
 
-            m_entityPanel->SetShown(true);
-            m_entityPanel->AddEntity();
+            m_entityPanel.AddEntity();
 
             // Awful fucking sentence
             sol::table l_entityTransform = m_scene->GetRegistry()
@@ -287,6 +284,10 @@ void Editor::DrawEditorUI()
                                             .raw_get<sol::table>("Transform");
 
             l_entityTransform.raw_set("Position", l_entityPos);
+
+            m_propertiesPanel.SetShown(true);
+            ImVec2 l_panelSize = m_propertiesPanel.GetSize();
+            m_propertiesPanel.SetPosition(ImVec2(m_mouseInfo.position.x + l_panelSize.x * 0.25f, m_mouseInfo.position.y - l_panelSize.y * 0.25f));
         }
 
         if(m_selectedEntityId > -1)
@@ -295,39 +296,41 @@ void Editor::DrawEditorUI()
             {
                 m_scene->RemoveEntity(m_selectedEntityId);
                 m_selectedEntityId = -1;
+
+                m_propertiesPanel.SetShown(false);
             }
         }
 
-        if(!m_cameraPanel->IsShown())
+        if(!m_cameraPanel.IsShown())
         {
             if(ImGui::Button("Show Camera Settings", l_buttonSize))
             {
-                m_cameraPanel->SetShown(true);
+                m_cameraPanel.SetShown(true);
             }
         }
 
 
-        if(!m_entityPanel->IsShown())
+        if(!m_entityPanel.IsShown())
         {
             if(ImGui::Button("Show Entity List", l_buttonSize))
             {
-                m_entityPanel->SetShown(true);
+                m_entityPanel.SetShown(true);
             }
         }
 
-        if(!m_categoryPanel->IsShown())
+        if(!m_categoryPanel.IsShown())
         {
             if(ImGui::Button("Show Category List", l_buttonSize))
             {
-                m_categoryPanel->SetShown(true);
+                m_categoryPanel.SetShown(true);
             }
         }
 
-        if(!m_rulesPanel->IsShown())
+        if(!m_rulesPanel.IsShown())
         {
             if(ImGui::Button("Show Rules List", l_buttonSize))
             {
-                m_rulesPanel->SetShown(true);
+                m_rulesPanel.SetShown(true);
             }
         }
 
@@ -335,11 +338,11 @@ void Editor::DrawEditorUI()
     }
 
     // Draw panels
-    m_entityPanel->Draw();
-    m_categoryPanel->Draw();
-    m_rulesPanel->Draw();
-    m_cameraPanel->Draw();
-    m_propertiesPanel->Draw();
+    m_entityPanel.Draw();
+    m_categoryPanel.Draw();
+    m_rulesPanel.Draw();
+    m_cameraPanel.Draw();
+    m_propertiesPanel.Draw();
 }
 
 void Editor::HandleInput()
@@ -380,24 +383,24 @@ void Editor::HandleInput()
                 
                 if (l_event.key.key == SDLK_ESCAPE)
                 {
-                    m_selectedEntityId = -1;
-                    m_entityPanel->SelectEntity(-1);
+                    SetSelectedEntityId(-1);
 
-                    m_rulesPanel->SetShown(false);
-                    m_entityPanel->SetShown(false);
-                    m_categoryPanel->SetShown(false);
+                    m_propertiesPanel.SetShown(false);
+                    m_rulesPanel.SetShown(false);
+                    m_entityPanel.SetShown(false);
+                    m_categoryPanel.SetShown(false);
                 }
                 else if(l_event.key.key == SDLK_C)
                 {
-                    m_categoryPanel->SetShown(!m_categoryPanel->IsShown());
+                    m_categoryPanel.SetShown(!m_categoryPanel.IsShown());
                 }
                 else if(l_event.key.key == SDLK_E)
                 {
-                    m_entityPanel->SetShown(!m_entityPanel->IsShown());
+                    m_entityPanel.SetShown(!m_entityPanel.IsShown());
                 }
                 else if(l_event.key.key == SDLK_R)
                 {
-                    m_rulesPanel->SetShown(!m_rulesPanel->IsShown());
+                    m_rulesPanel.SetShown(!m_rulesPanel.IsShown());
                 }
                 
                 break;
@@ -459,10 +462,20 @@ void Editor::HandleInput()
             
             if (l_hitEntity > -1)
             {
-                m_entityPanel->SelectEntity(m_selectedEntityId);
-                m_propertiesPanel->SetEntity(m_selectedEntityId);
-                m_propertiesPanel->SetShown(true);
-                m_propertiesPanel->SetPosition(ImVec2(m_mouseInfo.position.x + 200, m_mouseInfo.position.y - 250));
+                SetSelectedEntityId(l_hitEntity);
+                ImVec2 l_panelSize = m_propertiesPanel.GetSize();
+
+                auto l_registry = m_scene->GetRegistry();
+
+                Vector2 l_entityWorldPos = l_registry->GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
+
+                Vector2 l_entityScreenPos = m_camera->WorldToScreenPoint(l_entityWorldPos);
+
+                m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+            }
+            else
+            {
+                m_propertiesPanel.SetShown(false);
             }
 
             RE::Log::Message("Clicked entity: " + std::to_string(m_selectedEntityId));
@@ -470,4 +483,12 @@ void Editor::HandleInput()
 
         m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
     }
+}
+
+void Editor::SetSelectedEntityId(int _idx)
+{
+    m_selectedEntityId = _idx;
+    m_entityPanel.SelectEntity(m_selectedEntityId);
+    m_propertiesPanel.SetEntity(m_selectedEntityId);
+    m_propertiesPanel.SetShown(true);
 }

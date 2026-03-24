@@ -1,4 +1,5 @@
 #include "Editor/PropertiesPanel.h"
+#include "Editor/Editor.h"
 #include "RanakEngine/RanakEngine.h"
 
 #include "imgui/imgui.h"
@@ -7,11 +8,14 @@
 
 #include "sol/sol.hpp"
 
+#include <memory>
+
 PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_stringValueMap()
 , m_entityNameMap()
 , m_showCategoryMenu(false)
+, m_setPosition(false)
 , m_selectedEntityId(-1)
 , m_position(0, 0)
 , m_size(400.0f, 500.0f)
@@ -155,8 +159,14 @@ void PropertiesPanel::Draw()
     auto l_editor = m_editor.lock();
     auto l_registry = l_editor->GetScene()->GetRegistry();
 
-    ImGui::SetWindowPos(m_position);
-    ImGui::SetWindowSize(m_size);
+    // Only set position initially to prevent locking the panel
+    if(m_setPosition)
+    {
+        ImGui::SetNextWindowPos(m_position);
+        m_setPosition = false;
+    }
+
+    ImGui::SetNextWindowSize(m_size);
     if (ImGui::Begin("Entity Properties", &m_showPanel))
     {
         if (m_selectedEntityId > -1)
@@ -239,7 +249,13 @@ void PropertiesPanel::Draw()
 
 void PropertiesPanel::SetPosition(ImVec2 _pos)
 {
+    m_setPosition = true;
     m_position = _pos;
+}
+
+ImVec2 PropertiesPanel::GetSize()
+{
+    return m_size;
 }
 
 void PropertiesPanel::SetEntity(int _id)

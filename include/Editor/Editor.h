@@ -3,6 +3,12 @@
 
 #include "RanakEngine/RanakEngine.h"
 
+#include "Editor/EntityPanel.h"
+#include "Editor/CategoryPanel.h"
+#include "Editor/RulesPanel.h"
+#include "Editor/PropertiesPanel.h"
+#include "Editor/CameraPanel.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_opengl3.h"
@@ -10,12 +16,6 @@
 #include <memory>
 #include <vector>
 #include <string>
-
-class EntityPanel;
-class CategoryPanel;
-class RulesPanel;
-class CameraPanel;
-class PropertiesPanel;
 
 class Editor : public std::enable_shared_from_this<Editor>
 {
@@ -30,11 +30,11 @@ class Editor : public std::enable_shared_from_this<Editor>
     GLuint m_dummyGridVAO = 0;
 
     // UI Panels
-    std::unique_ptr<EntityPanel> m_entityPanel;
-    std::unique_ptr<CategoryPanel> m_categoryPanel;
-    std::unique_ptr<RulesPanel> m_rulesPanel;
-    std::unique_ptr<CameraPanel> m_cameraPanel;
-    std::unique_ptr<PropertiesPanel> m_propertiesPanel;
+    EntityPanel m_entityPanel;
+    CategoryPanel m_categoryPanel;
+    RulesPanel m_rulesPanel;
+    CameraPanel m_cameraPanel;
+    PropertiesPanel m_propertiesPanel;
 
     RE::IO::MouseInfo m_mouseInfo;
     ImFont* m_font;
@@ -53,8 +53,8 @@ class Editor : public std::enable_shared_from_this<Editor>
     void DrawEditorUI();
     void HandleInput();
 
-    public:
     Editor();
+    public:
     ~Editor();
 
     // Factory method to create Editor as shared_ptr
@@ -64,11 +64,11 @@ class Editor : public std::enable_shared_from_this<Editor>
     void Update(float _deltaTime);
     void Draw();
     
-    // Accessors
+    
     std::shared_ptr<RE::Core::Scene> GetScene() { return m_scene; }
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     int GetSelectedEntityId() const { return m_selectedEntityId; }
-    void SetSelectedEntityId(int _id) { m_selectedEntityId = _id; }
+    void SetSelectedEntityId(int _id);
     std::weak_ptr<RE::Core::Camera> GetCamera() { return m_camera; }
 };
 

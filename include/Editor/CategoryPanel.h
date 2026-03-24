@@ -35,6 +35,7 @@ class CategoryPanel : public Panel
     void TextEditorCallback();
 
     public:
+    CategoryPanel() {};
     CategoryPanel(std::weak_ptr<Editor> _editor);
     ~CategoryPanel();
 

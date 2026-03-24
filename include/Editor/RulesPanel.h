@@ -27,6 +27,7 @@ class RulesPanel : public Panel
     void DrawLoadRuleDialog();
 
     public:
+    RulesPanel() {};
     RulesPanel(std::weak_ptr<Editor> _editor);
     ~RulesPanel();
 

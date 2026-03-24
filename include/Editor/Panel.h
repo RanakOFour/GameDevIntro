@@ -14,6 +14,7 @@ class Panel
     std::string m_filterString;
 
     public:
+    Panel() {};
     Panel(std::weak_ptr<Editor> _editor);
     virtual ~Panel() = default;
 
