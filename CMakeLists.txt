@@ -69,7 +69,7 @@ elseif(WIN32)
     add_custom_command(TARGET GameEditor POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/resources"
-                       $<TARGET_FILE_DIR:GameEditor>)
+                       $<TARGET_FILE_DIR:GameEditor>/resources)
 endif()
 
 #endif()

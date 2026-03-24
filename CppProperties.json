@@ -8,8 +8,8 @@
       "includePath": [
         "${env.INCLUDE}",
         "${workspaceRoot}\\**",
-        "${workspaceRoot}\\extern",
-        "${workspaceRoot}\\include"
+        "${workspaceRoot}\\extern\\**",
+        "${workspaceRoot}\\include\\**"
       ],
       "defines": [
         "WIN32",
@@ -17,7 +17,7 @@
         "UNICODE",
         "_UNICODE"
       ],
-      "intelliSenseMode": "windows-msvc-x64"
+      "intelliSenseMode": "windows-msvc-x64",
     }
   ]
 }

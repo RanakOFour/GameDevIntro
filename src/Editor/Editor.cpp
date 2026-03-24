@@ -347,104 +347,19 @@ void Editor::DrawEditorUI()
 
 void Editor::HandleInput()
 {
-    SDL_Event l_event;
+    std::vector<SDL_Event> l_polledEvents = m_engineContents.io->UpdateInputs();
 
-    m_mouseInfo.deltaPosition.x = 0.0f;
-    m_mouseInfo.deltaPosition.y = 0.0f;
-    m_mouseInfo.deltaScroll = 0.0f;
-    m_mouseInfo.LMBDown = false;
-    m_mouseInfo.RMBDown = false;
-
-    bool l_resized = false;
-
-    while (SDL_PollEvent(&l_event))
+    // Handle SDL_Events for imgui
+    for (const SDL_Event& l_event : l_polledEvents)
     {
         ImGui_ImplSDL3_ProcessEvent(&l_event);
-
-        switch(l_event.type)
-        {
-            case SDL_EVENT_QUIT:
-                m_isEditorRunning = false;
-            break;
-            
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                if (l_event.window.windowID == SDL_GetWindowID(m_window->GetSDLWindow()))
-                {
-                    m_isEditorRunning = false;
-                }
-            break;
-
-            case SDL_EVENT_KEY_DOWN:
-                // Discard key events when ImGui input field is active
-                if (ImGui::GetIO().WantTextInput)
-                {
-                    break;
-                }
-                
-                if (l_event.key.key == SDLK_ESCAPE)
-                {
-                    SetSelectedEntityId(-1);
-
-                    m_propertiesPanel.SetShown(false);
-                    m_rulesPanel.SetShown(false);
-                    m_entityPanel.SetShown(false);
-                    m_categoryPanel.SetShown(false);
-                }
-                else if(l_event.key.key == SDLK_C)
-                {
-                    m_categoryPanel.SetShown(!m_categoryPanel.IsShown());
-                }
-                else if(l_event.key.key == SDLK_E)
-                {
-                    m_entityPanel.SetShown(!m_entityPanel.IsShown());
-                }
-                else if(l_event.key.key == SDLK_R)
-                {
-                    m_rulesPanel.SetShown(!m_rulesPanel.IsShown());
-                }
-                
-                break;
-
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                if (l_event.button.button == SDL_BUTTON_LEFT)
-                {
-                    m_mouseInfo.LMBDown = true;
-                }
-                else
-                {
-                    m_mouseInfo.RMBDown = true;
-                }
-                break;
-
-            case SDL_EVENT_MOUSE_WHEEL:
-                m_mouseInfo.deltaScroll = -l_event.wheel.y;
-                break;
-
-            case SDL_EVENT_MOUSE_MOTION:
-                m_mouseInfo.deltaPosition.x = l_event.motion.xrel;
-                m_mouseInfo.deltaPosition.y = l_event.motion.yrel;
-                break;
-                
-            case SDL_EVENT_WINDOW_RESIZED:
-                l_resized = true;
-        }
     }
 
-    if(l_resized)
-    {
-        int l_w, l_h;
-        SDL_GetWindowSizeInPixels(m_window->GetSDLWindow(), &l_w, &l_h);
-        m_window->SetScreenSize(Vector2(l_w, l_h));
-    }
-
-    SDL_GetMouseState(&m_mouseInfo.position.x, &m_mouseInfo.position.y);
-
-    // Flip Y position so 0,0 is bottom left
-    m_mouseInfo.position.y = m_window->GetScreenSize().y - m_mouseInfo.position.y;
+    m_mouseInfo = m_engineContents.io->GetMouseInfo();
 
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
-        if (m_mouseInfo.LMBDown)
+        if (m_mouseInfo.LMBDown && !m_engineContents.io->GetLastFrameMouseInfo().LMBDown)
         {
             Vector3 l_mouseWorldPos = m_camera->ScreenToWorldPoint(m_mouseInfo.position);
             l_mouseWorldPos.z = m_camera->GetPosition().z;
@@ -482,6 +397,33 @@ void Editor::HandleInput()
         }
 
         m_camera->SetCameraWidth(m_camera->GetCameraWidth() + m_mouseInfo.deltaScroll);
+    }
+
+    if (!ImGui::GetIO().WantTextInput)
+    {
+        if (m_engineContents.io->GetKeyDownThisFrame('c'))
+        {
+            m_categoryPanel.SetShown(!m_categoryPanel.IsShown());
+        }
+
+        if (m_engineContents.io->GetKeyDownThisFrame('e'))
+        {
+            m_entityPanel.SetShown(!m_entityPanel.IsShown());
+        }
+
+        if (m_engineContents.io->GetKeyDownThisFrame('r'))
+        {
+            m_rulesPanel.SetShown(!m_rulesPanel.IsShown());
+        }
+
+        // ESC input
+        if (m_engineContents.io->GetKeyDownThisFrame((char)27))
+        {
+            m_categoryPanel.SetShown(false);
+            m_entityPanel.SetShown(false);
+            m_rulesPanel.SetShown(false);
+            m_propertiesPanel.SetShown(false);
+        }
     }
 }
 

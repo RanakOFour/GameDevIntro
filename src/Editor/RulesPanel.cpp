@@ -43,8 +43,8 @@ void RulesPanel::RefreshRuleList()
         std::string l_ruleName = l_pair.first.as<std::string>();
         m_loadedRules.push_back(l_ruleName);
 
-        RE::Core::Rule& l_rule = l_rulesTable.raw_get<RE::Core::Rule>(l_ruleName);
-        if(l_rule.GetActive())
+        std::shared_ptr<RE::Core::Rule> l_rulePtr = l_rulesTable.raw_get<std::shared_ptr<RE::Core::Rule>>(l_ruleName);
+        if(l_rulePtr->GetActive())
         {
             m_activeRules.push_back(l_ruleName);
         }
@@ -103,12 +103,12 @@ void RulesPanel::Draw()
                 {
                     // Set rule to not active
                     sol::table l_sceneTable = m_editor.lock()->GetScene()->GetSceneTable();
-                    auto& l_ruleObject = l_sceneTable.traverse_raw_get<RE::Core::Rule>("Rules", l_ruleName);
-                    l_ruleObject.SetActive(!l_ruleObject.GetActive());
+                    std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
+                    l_rulePtr->SetActive(!l_rulePtr->GetActive());
                     
                     std::string l_logMessage = "Set " + l_ruleName + " to ";
 
-                    if(!l_ruleObject.GetActive())
+                    if(!l_rulePtr->GetActive())
                     {
                         l_logMessage += "not ";
                     }
@@ -191,6 +191,7 @@ void RulesPanel::DrawLoadRuleDialog()
         {
             std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             LoadRuleFromFile(l_filePathName);
+            RefreshRuleList();
         }
 
 
@@ -221,10 +222,10 @@ void RulesPanel::LoadRuleFromFile(const std::string _path)
 
 void RulesPanel::RemoveRule(const std::string _ruleName)
 {
-    auto it = std::find(m_activeRules.begin(), m_activeRules.end(), _ruleName);
-    if (it != m_activeRules.end())
+    auto it = std::find(m_loadedRules.begin(), m_loadedRules.end(), _ruleName);
+    if (it != m_loadedRules.end())
     {
-        m_activeRules.erase(it);
+        m_loadedRules.erase(it);
         RE::Log::Message("Rule removed: " + _ruleName);
     }
 }
