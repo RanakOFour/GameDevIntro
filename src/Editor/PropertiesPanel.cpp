@@ -14,11 +14,11 @@ PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
 , m_stringValueMap()
 , m_entityNameMap()
-, m_showCategoryMenu(false)
+, m_showAddToCategory(false)
 , m_setPosition(false)
-, m_selectedEntityId(-1)
 , m_position(0, 0)
 , m_size(400.0f, 500.0f)
+, m_registry(m_editor.lock()->GetScene()->GetRegistry())
 {
 
 }
@@ -30,9 +30,7 @@ PropertiesPanel::~PropertiesPanel()
 
 void PropertiesPanel::DrawEntityProperties(int _id)
 {
-    auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
-
-    sol::table l_entityData = l_registry->GetEntityAttributes(_id);
+    sol::table l_entityData = m_registry.value().get().GetEntityAttributes(_id);
 
     // Display each category and its attributes
     for (auto& l_pair : l_entityData)
@@ -49,10 +47,8 @@ void PropertiesPanel::DrawEntityProperties(int _id)
     }
 }
 
-void PropertiesPanel::DrawCategoryAttributes(const int& _entityId, const std::string& _categoryName, sol::table& _attributes)
+void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categoryName, sol::table _attributes)
 {
-    float columnWidth = ImGui::GetColumnWidth() - 30;
-
     std::vector<std::string> l_properties;
 
     for (auto& l_pair : _attributes)
@@ -153,11 +149,11 @@ void PropertiesPanel::DrawCategoryAttributes(const int& _entityId, const std::st
 
 void PropertiesPanel::Draw()
 {
-    if (!m_showPanel || m_selectedEntityId == -1)
-        return;
-
     auto l_editor = m_editor.lock();
-    auto l_registry = l_editor->GetScene()->GetRegistry();
+    int l_selectedEntity = l_editor->GetSelectedEntityId();
+
+    if (!m_showPanel || l_selectedEntity == -1)
+        return;
 
     // Only set position initially to prevent locking the panel
     if(m_setPosition)
@@ -169,32 +165,32 @@ void PropertiesPanel::Draw()
     ImGui::SetNextWindowSize(m_size);
     if (ImGui::Begin("Entity Properties", &m_showPanel))
     {
-        if (m_selectedEntityId > -1)
+        if (l_selectedEntity > -1)
         {
-            ImGui::Text("Entity ID: %d", m_selectedEntityId);
+            ImGui::Text("Entity ID: %d", l_selectedEntity);
             ImGui::Separator();
 
-            if (m_entityNameMap.find(m_selectedEntityId) == m_entityNameMap.end())
+            if (m_entityNameMap.find(l_selectedEntity) == m_entityNameMap.end())
             {
-                m_entityNameMap[m_selectedEntityId] = l_registry->GetEntityName(m_selectedEntityId);
+                m_entityNameMap[l_selectedEntity] = m_registry.value().get().GetEntityName(l_selectedEntity);
             }
 
-            if (ImGui::InputText("Name", &m_entityNameMap[m_selectedEntityId], ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText("Name", &m_entityNameMap[l_selectedEntity], ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                sol::table l_entityTable = l_registry->GetEntityTable().raw_get<sol::table>(m_selectedEntityId);
-                l_entityTable["name"] = m_entityNameMap[m_selectedEntityId];
+                sol::table l_entityTable = m_registry.value().get().GetEntityTable().raw_get<sol::table>(l_selectedEntity);
+                l_entityTable["name"] = m_entityNameMap[l_selectedEntity];
             }
 
             ImGui::Separator();
 
-            DrawEntityProperties(m_selectedEntityId);
+            DrawEntityProperties(l_selectedEntity);
 
             if (ImGui::Button("Add to Category", ImVec2(-1, 0)))
             {
-                m_showCategoryMenu = !m_showCategoryMenu;
+                m_showAddToCategory = !m_showAddToCategory;
             }
 
-            if (m_showCategoryMenu)
+            if (m_showAddToCategory)
             {
                 ImGui::Separator();
 
@@ -204,7 +200,7 @@ void PropertiesPanel::Draw()
                     ->GetCategoryNames());
                 std::string l_categoryName;
 
-                sol::table l_entityData = l_registry->GetEntityAttributes(m_selectedEntityId);
+                sol::table l_entityData = m_registry.value().get().GetEntityAttributes(l_selectedEntity);
 
                 while (std::getline(l_categories, l_categoryName, ';'))
                 {
@@ -230,8 +226,8 @@ void PropertiesPanel::Draw()
                                 .core->GetLuaContext()
                                 ->GetCategory(l_categoryName).lock();
 
-                            l_registry->AddToCategory(m_selectedEntityId, l_category->GetSignature());
-                            m_showCategoryMenu = false;
+                            m_registry.value().get().AddToCategory(l_selectedEntity, l_category->GetSignature());
+                            m_showAddToCategory = false;
                         }
                     }
                 }
@@ -256,15 +252,4 @@ void PropertiesPanel::SetPosition(ImVec2 _pos)
 ImVec2 PropertiesPanel::GetSize()
 {
     return m_size;
-}
-
-void PropertiesPanel::SetEntity(int _id)
-{
-    m_selectedEntityId = _id;
-    m_showPanel = true;
-}
-
-int PropertiesPanel::GetEntity()
-{
-    return m_selectedEntityId;
 }

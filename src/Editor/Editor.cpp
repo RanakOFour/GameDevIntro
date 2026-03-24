@@ -280,7 +280,7 @@ void Editor::DrawEditorUI()
 
             // Awful fucking sentence
             sol::table l_entityTransform = m_scene->GetRegistry()
-                                            ->GetEntityAttributes(m_selectedEntityId)
+                                            .GetEntityAttributes(m_selectedEntityId)
                                             .raw_get<sol::table>("Transform");
 
             l_entityTransform.raw_set("Position", l_entityPos);
@@ -465,9 +465,9 @@ void Editor::HandleInput()
                 SetSelectedEntityId(l_hitEntity);
                 ImVec2 l_panelSize = m_propertiesPanel.GetSize();
 
-                auto l_registry = m_scene->GetRegistry();
+                RE::Core::EntityRegistry& l_registry = m_scene->GetRegistry();
 
-                Vector2 l_entityWorldPos = l_registry->GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
+                Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
 
                 Vector2 l_entityScreenPos = m_camera->WorldToScreenPoint(l_entityWorldPos);
 
@@ -488,7 +488,5 @@ void Editor::HandleInput()
 void Editor::SetSelectedEntityId(int _idx)
 {
     m_selectedEntityId = _idx;
-    m_entityPanel.SelectEntity(m_selectedEntityId);
-    m_propertiesPanel.SetEntity(m_selectedEntityId);
     m_propertiesPanel.SetShown(true);
 }

@@ -6,6 +6,9 @@
 // String compatible functions for ImGui
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
+#define USE_STD_FILESYSTEM 1
+#include "imguiFileDialog/ImGuiFileDialog.h"
+
 #include <algorithm>
 
 RulesPanel::RulesPanel(std::weak_ptr<Editor> _editor)
@@ -13,7 +16,8 @@ RulesPanel::RulesPanel(std::weak_ptr<Editor> _editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newRuleName("")
-, m_selectedRuleFilter("")
+, m_loadedRules()
+, m_activeRules()
 {
     RefreshRuleList();
 }
@@ -25,7 +29,7 @@ RulesPanel::~RulesPanel()
 void RulesPanel::RefreshRuleList()
 {
     m_activeRules.clear();
-    m_availableRuleFiles.clear();
+    m_loadedRules.clear();
     
     auto l_scene = m_editor.lock()->GetScene();
 
@@ -36,9 +40,14 @@ void RulesPanel::RefreshRuleList()
 
     for(auto& l_pair : l_rulesPairs)
     {
-        std::string ruleName = l_pair.first.as<std::string>();
-        m_activeRules.push_back(ruleName);
-        m_availableRuleFiles.push_back("./resources/Rules/" + ruleName + ".lua");
+        std::string l_ruleName = l_pair.first.as<std::string>();
+        m_loadedRules.push_back(l_ruleName);
+
+        RE::Core::Rule& l_rule = l_rulesTable.raw_get<RE::Core::Rule>(l_ruleName);
+        if(l_rule.GetActive())
+        {
+            m_activeRules.push_back(l_ruleName);
+        }
     }
 }
 
@@ -66,36 +75,45 @@ void RulesPanel::Draw()
         ImGui::Separator();
 
         // Search/Filter
-        ImGui::InputTextWithHint("RuleFilter", "Search rules...", m_selectedRuleFilter.data(), m_selectedRuleFilter.size());
+        ImGui::InputTextWithHint("RuleFilter", "Search rules...", &m_filterString);
 
         ImGui::Separator();
 
         // Active rules list
         if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
         {
-            for (auto& l_rule : m_activeRules)
+            for (auto& l_ruleName : m_activeRules)
             {
-                if (m_selectedRuleFilter.size() > 0)
+                if (m_filterString.size() > 0)
                 {
-                    std::string filter(m_selectedRuleFilter);
-                    if (l_rule.find(filter) == std::string::npos)
+                    std::string filter(m_filterString);
+                    if (l_ruleName.find(filter) == std::string::npos)
                     {
                         continue;
                     }
                 }
 
-                ImGui::PushID(l_rule.c_str());
+                ImGui::PushID(l_ruleName.c_str());
                 
-                if (ImGui::Selectable(l_rule.c_str(), false))
-                {
-                    // Handle rule selection
-                }
+                ImGui::Text(l_ruleName.c_str());
 
                 // Remove button
                 ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-                if (ImGui::Button("X", ImVec2(25, 0)))
+                if (ImGui::Button("Toggle", ImVec2(25, 0)))
                 {
-                    RemoveRule(l_rule);
+                    // Set rule to not active
+                    sol::table l_sceneTable = m_editor.lock()->GetScene()->GetSceneTable();
+                    auto& l_ruleObject = l_sceneTable.traverse_raw_get<RE::Core::Rule>("Rules", l_ruleName);
+                    l_ruleObject.SetActive(!l_ruleObject.GetActive());
+                    
+                    std::string l_logMessage = "Set " + l_ruleName + " to ";
+
+                    if(!l_ruleObject.GetActive())
+                    {
+                        l_logMessage += "not ";
+                    }
+
+                    RE::Log::Message(l_logMessage + "active!");
                 }
 
                 ImGui::PopID();
@@ -157,68 +175,51 @@ void RulesPanel::DrawCreateRuleDialog()
 
 void RulesPanel::DrawLoadRuleDialog()
 {
-    if (m_showLoadDialog)
+    if (!m_showLoadDialog)
     {
-        ImGui::OpenPopup("Load Rule");
+        return;
     }
 
-    if (ImGui::BeginPopupModal("Load Rule", &m_showLoadDialog, ImGuiWindowFlags_AlwaysAutoResize))
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
+
+
+    if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
     {
-        std::string l_filePath = "./resources/Rules/";
-        ImGui::Text("Rule File Path:");
-        ImGui::InputText("Rule Path", &l_filePath);
-
-        ImGui::Separator();
-
-        if (ImGui::Button("Load", ImVec2(120, 0)))
+        if (ImGuiFileDialog::Instance()->IsOk())
         {
-            LoadRuleFromFile(l_filePath);
-            m_showLoadDialog = false;
-            ImGui::CloseCurrentPopup();
+            std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            LoadRuleFromFile(l_filePathName);
         }
 
-        ImGui::SameLine();
 
-        if (ImGui::Button("Cancel", ImVec2(120, 0)))
-        {
-            m_showLoadDialog = false;
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
+        ImGuiFileDialog::Instance()->Close();
+        m_showLoadDialog = false;
     }
 }
 
-void RulesPanel::CreateNewRule(const std::string& _name)
+void RulesPanel::CreateNewRule(const std::string _name)
 {
     // TODO: Implement rule creation with template
     RE::Log::Message("Creating new rule: " + _name);
 }
 
-void RulesPanel::LoadRuleFromFile(const std::string& _path)
+void RulesPanel::LoadRuleFromFile(const std::string _path)
 {
-    auto l_editor = m_editor.lock();
-    RE::EngineContents& l_engineContents = l_editor->GetEngineContents();
-    std::shared_ptr<RE::Core::Scene> scene = l_editor->GetScene();
-    auto luaContext = RE::Core::LuaContext::Instance().lock();
+    RE::EngineContents l_engineContents = m_editor.lock()->GetEngineContents();
+    auto l_luaContext = l_engineContents.core->GetLuaContext();
 
-    try
-    {
-        auto ruleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
-        RE::Core::Rule newRule = luaContext->RunScript<RE::Core::Rule>(ruleFile);
-        
-        scene->AddRule(newRule);
-        m_activeRules.push_back(newRule.GetName());
-        
-        RE::Log::Message("Rule loaded from: " + _path);
-    }
-    catch (const std::exception& e)
-    {
-        RE::Log::Error("Failed to load rule: " + std::string(e.what()));
-    }
+    auto l_ruleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
+    RE::Core::Rule l_newRule = l_luaContext->RunScript<RE::Core::Rule>(l_ruleFile);
+    
+    l_engineContents.core->GetScene().lock()->AddRule(l_newRule);
+
+    m_loadedRules.push_back(l_newRule.GetName());
+    RE::Log::Message("Category loaded from: " + _path);
 }
 
-void RulesPanel::RemoveRule(const std::string& _ruleName)
+void RulesPanel::RemoveRule(const std::string _ruleName)
 {
     auto it = std::find(m_activeRules.begin(), m_activeRules.end(), _ruleName);
     if (it != m_activeRules.end())

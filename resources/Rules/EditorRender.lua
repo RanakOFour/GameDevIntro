@@ -4,11 +4,11 @@ EditorRender.categories = {"Transform"}
 EditorRender.attributes = {
     --Template drawable
     templateDrawable = {
-        shaderPath = "./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs",
+        shaderPath = "",
         shader = Asset.Shader("./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs"),
-        texturePath = "./resources/Textures/NoDrawable.png",
+        texturePath = "",
         texture = Asset.Texture("./resources/Textures/NoDrawable.png"),
-        modelPath = "./resources/Models/FlatTexture.obj",
+        modelPath = "",
         model = Asset.Model("./resources/Models/FlatTexture.obj")
     },
 
@@ -47,8 +47,15 @@ function EditorRender:Draw(_entityData)
     self.attributes.lastFrameInput = self.attributes.currentInput
 
     if(self.attributes.drawOutline) then
-        -- Draw with scale outline
+        -- Move outline to just infront of camera so it shows above models
+        local _entityLayer = _entityData["Transform"].Layer
+        _entityData["Transform"].Layer = Core.Camera:getPosition().z - 0.5
+        
+        
         Core.Camera:Draw(_entityData["Transform"], self.attributes.templateDrawable)
+
+        -- Restore original layer value
+        _entityData.Transform.Layer = _entityLayer
     end
 end
 

@@ -6,32 +6,30 @@
 
 #include <vector>
 #include <memory>
-#include <map>
+#include <optional>
 
 class Editor;
 
 class EntityPanel : public Panel
 {
     private:
-
-    int m_selectedEntity;
-    bool m_showAddToCategoryMenu;
-
     std::vector<int> m_cachedEntities;
-    std::map<std::string, std::string> m_stringValueMap;
+
+    // Optional so empty constructor works
+    // Reference wrapper because optional does not like type& reference
+    std::optional<std::reference_wrapper<RE::Core::EntityRegistry>> m_registry;
 
     void RefreshEntityList();
 
     public:
-    EntityPanel() {};
+    EntityPanel() : m_registry() {};
     EntityPanel(std::weak_ptr<Editor> _editor);
     ~EntityPanel();
 
     void Draw();
+
     void AddEntity();
     void RemoveEntity(int _id);
-    void SelectEntity(int _id);
-    int GetSelectedEntity() const { return m_selectedEntity; }
 };
 
 #endif

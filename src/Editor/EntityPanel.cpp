@@ -8,9 +8,8 @@
 
 EntityPanel::EntityPanel(std::weak_ptr<Editor> _editor)
 : Panel(_editor)
-, m_selectedEntity(-1)
-, m_showAddToCategoryMenu(false)
-, m_stringValueMap()
+, m_cachedEntities()
+, m_registry(_editor.lock()->GetScene()->GetRegistry())
 {
     RefreshEntityList();
 }
@@ -21,10 +20,14 @@ EntityPanel::~EntityPanel()
 
 void EntityPanel::RefreshEntityList()
 {
+    if(!m_registry.has_value())
+        return;
+    
     m_cachedEntities.clear();
-    auto l_registry = m_editor.lock()->GetScene()->GetRegistry();
 
-    sol::table l_entityTable = l_registry->GetEntityTable();
+    sol::table l_entityTable = m_registry.value()
+                                         .get()
+                                         .GetEntityTable();
 
     auto l_entityPairs = l_entityTable.pairs();
     for (auto& l_pair : l_entityPairs)
@@ -42,7 +45,7 @@ void EntityPanel::Draw()
     if (ImGui::Begin("Entities", &m_showPanel))
     {
         auto l_editor = m_editor.lock();
-        auto l_registry = l_editor->GetScene()->GetRegistry();
+        int l_selectedEntity = l_editor->GetSelectedEntityId();
 
         if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
         {
@@ -55,12 +58,12 @@ void EntityPanel::Draw()
             }
 
             // Only show Remove button when an entity is selected
-            if (m_selectedEntity >= 0)
+            if (l_selectedEntity >= 0)
             {
                 ImGui::SameLine();
                 if (ImGui::Button("- Remove Entity", ImVec2(buttonWidth, 0)))
                 {
-                    RemoveEntity(m_selectedEntity);
+                    RemoveEntity(l_selectedEntity);
                 }
             }
 
@@ -71,8 +74,11 @@ void EntityPanel::Draw()
             {
                 for (int l_entityId : m_cachedEntities)
                 {
-                    bool selected = (m_selectedEntity == l_entityId);
-                    std::string l_entityName = l_registry->GetEntityName(l_entityId);
+                    bool selected = (l_selectedEntity == l_entityId);
+                    std::string l_entityName = m_registry.value()
+                                                         .get()
+                                                         .GetEntityName(l_entityId);
+
                     if (ImGui::Selectable(l_entityName.c_str(), selected))
                     {
                         l_editor->SetSelectedEntityId(l_entityId);
@@ -110,14 +116,5 @@ void EntityPanel::RemoveEntity(int _id)
         m_cachedEntities.erase(l_entityLocation);
     }
 
-    if (m_selectedEntity == _id)
-    {
-        m_selectedEntity = -1;
-    }
     RE::Log::Message("Entity removed with ID: " + std::to_string(_id));
-}
-
-void EntityPanel::SelectEntity(int _id)
-{
-    m_selectedEntity = _id;
 }

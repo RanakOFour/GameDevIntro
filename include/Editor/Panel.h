@@ -23,10 +23,8 @@ class Panel
     bool IsShown() const { return m_showPanel; }
     void SetShown(bool _shown) { m_showPanel = _shown; }
     
-    const std::string& GetFilterString() const { return m_filterString; }
-    void SetFilterString(const std::string& _filter) { m_filterString = _filter; }
-    
-    std::weak_ptr<Editor> GetEditor() const { return m_editor; }
+    void SetFilterString(std::string _filter) { m_filterString = _filter; }
+    std::string GetFilterString() const { return m_filterString; }
 };
 
 #endif

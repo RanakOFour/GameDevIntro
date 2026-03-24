@@ -29,7 +29,7 @@ int main()
     // Add new entity to category
     l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
 
-    sol::table l_entityData = l_scene->GetRegistry()->GetEntityAttributes(l_testEntity);
+    sol::table l_entityData = l_scene->GetRegistry().GetEntityAttributes(l_testEntity);
 
     // Load new rule
     RE::Log::Message("Creating new rule");

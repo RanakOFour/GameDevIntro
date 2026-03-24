@@ -3,6 +3,7 @@
 
 #include "RanakEngine/RanakEngine.h"
 #include "Editor/Panel.h"
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -12,12 +13,11 @@ class Editor;
 class RulesPanel : public Panel
 {
     private:
-
     std::vector<std::string> m_activeRules;
-    std::vector<std::string> m_availableRuleFiles;
+
+    std::vector<std::string> m_loadedRules;
     
     std::string m_newRuleName;
-    std::string m_selectedRuleFilter;
     
     bool m_showCreateDialog;
     bool m_showLoadDialog;
@@ -32,9 +32,13 @@ class RulesPanel : public Panel
     ~RulesPanel();
 
     void Draw();
-    void CreateNewRule(const std::string& _name);
-    void LoadRuleFromFile(const std::string& _path);
-    void RemoveRule(const std::string& _ruleName);
+
+    void SelectRule(int _idx);
+    std::string GetRuleAt(int _idx);
+
+    void CreateNewRule(const std::string _name);
+    void LoadRuleFromFile(const std::string _path);
+    void RemoveRule(const std::string _ruleName);
 
     bool IsDialogOpen();
 };

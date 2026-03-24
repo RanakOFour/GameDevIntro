@@ -18,43 +18,38 @@ CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newCategoryName("")
-, m_selectedCategoryFilter("")
-, m_loadCategoryFilePath("./resources/Categories/")
 , m_selectedCategory(-1)
+, m_selectedCategoryOrigin()
+, m_loadedCategories()
 {
     RefreshCategoryList();
-    m_textEditor = std::make_shared<TextEditor>();
 
-    std::function<void()> l_textCallback([this](){ m_selectedCategoryOrigin->FlagReloaded(); });
+    // std::function<void()> l_textCallback([this](){ m_selectedCategoryOrigin->FlagReloaded(); });
 
-    m_textEditor->SetChangeCallback(l_textCallback);
-    m_textEditor->SetLanguage(TextEditor::Language::Lua());
-    TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
-    l_config->triggerOnTyping = true;
-    l_config->triggerOnShortcut = true;
-    std::function<void(TextEditor::AutoCompleteState&)> l_configCallback([](TextEditor::AutoCompleteState& _state)
-    {
-        // Search current word for keywords (lib names, functions, etc.)
-        RE::Log::Message("Current search term: " + _state.searchTerm);
-    });
+    // m_textEditor->SetChangeCallback(l_textCallback);
+    // m_textEditor->SetLanguage(TextEditor::Language::Lua());
+    // TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
+    // l_config->triggerOnTyping = true;
+    // l_config->triggerOnShortcut = true;
+    // std::function<void(TextEditor::AutoCompleteState&)> l_configCallback([](TextEditor::AutoCompleteState& _state)
+    // {
+    //     // Search current word for keywords (lib names, functions, etc.)
+    //     RE::Log::Message("Current search term: " + _state.searchTerm);
+    // });
 
-    l_config->callback = l_configCallback;
+    // l_config->callback = l_configCallback;
 
-    m_textEditor->SetAutoCompleteConfig(l_config);
+    // m_textEditor->SetAutoCompleteConfig(l_config);
 }
 
 CategoryPanel::~CategoryPanel()
 {
-}
 
-void CategoryPanel::TextEditorCallback()
-{
-    m_selectedCategoryOrigin->FlagReloaded();
 }
 
 void CategoryPanel::RefreshCategoryList()
 {
-    m_availableCategories.clear();
+    m_loadedCategories.clear();
 
     auto l_context = m_editor.lock()->GetEngineContents()
                                .core->GetLuaContext();
@@ -64,10 +59,10 @@ void CategoryPanel::RefreshCategoryList()
 
     while(std::getline(l_catNames, l_segment, ';'))
     {
-        m_availableCategories.push_back(l_segment);
+        m_loadedCategories.push_back(l_segment);
     }
 
-    std::sort(m_availableCategories.begin(), m_availableCategories.end());
+    std::sort(m_loadedCategories.begin(), m_loadedCategories.end());
 }
 
 void CategoryPanel::Draw()
@@ -78,122 +73,114 @@ void CategoryPanel::Draw()
     
     if (ImGui::Begin("Categories", &m_showPanel))
     {
-        if(ImGui::BeginTable("Categories", 2, ImGuiTableFlags_BordersInnerV))
+        float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+        // Create and Load buttons
+        if (ImGui::Button("Create", ImVec2(buttonWidth, 0)))
         {
-            ImGui::TableSetupColumn("Categories", ImGuiTableColumnFlags_WidthFixed, 300);
-            ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
-
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-
-
-            // Category list
-            if(ImGui::BeginChild("CategoryListPanel", ImVec2(0, 0), true))
-            {
-                float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-                // Create and Load buttons
-                if (ImGui::Button("+ Create", ImVec2(buttonWidth, 0)))
-                {
-                    m_showCreateDialog = true;
-                }
-
-                ImGui::SameLine();
-
-                if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
-                {
-                    m_showLoadDialog = true;
-                }
-
-                ImGui::Separator();
-
-                // Search/Filter
-                ImGui::InputTextWithHint("##", "Search categories...", &m_selectedCategoryFilter);
-
-                ImGui::Separator();
-
-                // Category list
-                if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
-                {
-                    for (int i = 0; i < m_availableCategories.size(); i++)
-                    {
-                        auto& l_category = m_availableCategories[i];
-
-                        if (m_selectedCategoryFilter.size() > 0)
-                        {
-                            std::string filter(m_selectedCategoryFilter);
-                            if (l_category.find(filter) == std::string::npos)
-                            {
-                                continue;
-                            }
-                        }
-
-                        bool l_selected = (m_selectedCategory == i);
-                        if(ImGui::Selectable(l_category.c_str(), l_selected))
-                        {
-                            SelectCategory(i);
-                        };
-                    }
-                    
-                    ImGui::EndChild();
-                }
-
-                ImGui::EndChild();
-            }
-
-            ImGui::TableSetColumnIndex(1);
-
-            if(m_selectedCategory != -1 && ImGui::BeginChild("Properties", ImVec2(0, 0), true))
-            {
-                if(m_selectedCategoryOrigin != nullptr)
-                {
-                    if(m_selectedCategoryOrigin->GetReloaded())
-                    {
-                        ImGui::Text("%s *", m_availableCategories[m_selectedCategory].c_str());
-                        ImGui::SameLine();
-                        if(ImGui::Button("Save"))
-                        {
-                            SaveCategoryToFile();
-                        }
-                    }
-                    else
-                    {
-                        ImGui::Text("%s", m_availableCategories[m_selectedCategory].c_str());
-                    }
-
-                    m_textEditor->Render(m_availableCategories[m_selectedCategory].c_str(), ImVec2(500, 500), true);
-                }
-
-                ImGui::EndChild();
-            }
-
-            ImGui::EndTable();
+            m_showCreateDialog = true;
         }
-    }
 
-    ImGui::End();
+        ImGui::SameLine();
+
+        if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
+        {
+            m_showLoadDialog = true;
+        }
+
+        ImGui::Separator();
+
+        // Search/Filter
+        ImGui::InputTextWithHint("##", "Search categories...", &m_filterString);
+
+        ImGui::Separator();
+
+        // Category list
+        if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
+        {
+            for (int i = 0; i < m_loadedCategories.size(); i++)
+            {
+                auto& l_category = m_loadedCategories[i];
+
+                if (m_filterString.size() > 0)
+                {
+                    std::string filter(m_filterString);
+                    if (l_category.find(filter) == std::string::npos)
+                    {
+                        continue;
+                    }
+                }
+
+                bool l_selected = (m_selectedCategory == i);
+                if(ImGui::Selectable(l_category.c_str(), l_selected))
+                {
+                    SelectCategory(i);
+                };
+            }
+            
+            ImGui::EndChild();
+        }
+
+        ImGui::End();
+    }
 
     // Draw dialogs
     DrawCreateCategoryDialog();
     DrawLoadCategoryDialog();
+
+        // if(ImGui::BeginTable("Categories", 2, ImGuiTableFlags_BordersInnerV))
+        // {
+        //     ImGui::TableSetupColumn("Categories", ImGuiTableColumnFlags_WidthFixed, 300);
+        //     ImGui::TableSetupColumn("Properties", ImGuiTableColumnFlags_WidthStretch);
+
+        //     ImGui::TableNextRow();
+        //     ImGui::TableSetColumnIndex(0);
+
+
+        //     // Category list
+        //     if(ImGui::BeginChild("CategoryListPanel", ImVec2(0, 0), true))
+        //     {
+                
+
+        //     ImGui::TableSetColumnIndex(1);
+
+        //     // if(m_selectedCategory != -1 && ImGui::BeginChild("Properties", ImVec2(0, 0), true))
+        //     // {
+        //     //     if(m_selectedCategoryOrigin != nullptr)
+        //     //     {
+        //     //         if(m_selectedCategoryOrigin->GetReloaded())
+        //     //         {
+        //     //             ImGui::Text("%s *", m_loadedCategories[m_selectedCategory].c_str());
+        //     //             ImGui::SameLine();
+        //     //             if(ImGui::Button("Save"))
+        //     //             {
+        //     //                 SaveCategoryToFile();
+        //     //             }
+        //     //         }
+        //     //         else
+        //     //         {
+        //     //             ImGui::Text("%s", m_loadedCategories[m_selectedCategory].c_str());
+        //     //         }
+
+        //     //         m_textEditor->Render(m_loadedCategories[m_selectedCategory].c_str(), ImVec2(500, 500), true);
+        //     //     }
+
+        //     //     ImGui::EndChild();
+        //     }
+
+        //     ImGui::EndTable();
+        // }
 }
 
 void CategoryPanel::SelectCategory(int _idx)
 {
     m_selectedCategory = _idx;
-    m_textEditor->ClearText();
+}
 
-    auto l_category = m_editor.lock()
-                      ->GetEngineContents().core
-                      ->GetLuaContext()
-                      ->GetCategory(m_availableCategories[m_selectedCategory])
-                      .lock();
+std::string CategoryPanel::GetCategoryAt(int _idx)
+{
+    assert(_idx < m_loadedCategories.size());
 
-    m_selectedCategoryOrigin = l_category->GetOriginFile().lock();
-
-    if(m_selectedCategoryOrigin != nullptr)
-    {
-        m_textEditor->SetText(m_selectedCategoryOrigin->GetCode());
-    }
+    return m_loadedCategories[_idx];
 }
 
 void CategoryPanel::DrawCreateCategoryDialog()
@@ -258,13 +245,13 @@ void CategoryPanel::DrawLoadCategoryDialog()
     }
 }
 
-void CategoryPanel::CreateNewCategory(std::string _name)
+void CategoryPanel::CreateNewCategory(const std::string _name)
 {
     // Implement category creation logic
     RE::Log::Message("Creating new category: " + _name);
 }
 
-void CategoryPanel::LoadCategoryFromFile(std::string _path)
+void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 {
     RE::EngineContents l_engineContents = m_editor.lock()->GetEngineContents();
     auto l_luaContext = l_engineContents.core->GetLuaContext();
@@ -272,11 +259,11 @@ void CategoryPanel::LoadCategoryFromFile(std::string _path)
     auto l_categoryFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
     auto l_categoryWPtr = l_luaContext->CreateCategory(l_categoryFile);
     
-    m_availableCategories.push_back(l_categoryWPtr.lock()->GetName());
+    m_loadedCategories.push_back(l_categoryWPtr.lock()->GetName());
     RE::Log::Message("Category loaded from: " + _path);
 }
 
-void CategoryPanel::AssignCategoryToEntity(int _entityId, std::string _categoryName)
+void CategoryPanel::AssignCategoryToEntity(const int _entityId, const std::string _categoryName)
 {
     auto l_scene = m_editor.lock()->GetScene();
     auto l_luaContext = RE::Core::LuaContext::Instance().lock();
@@ -291,35 +278,35 @@ bool CategoryPanel::IsDialogOpen()
     return m_showCreateDialog;
 }
 
-void CategoryPanel::SaveCategoryToFile()
-{
-    if (m_selectedCategoryOrigin != nullptr)
-    {
-        // Get the text from the editor
-        std::string l_newCode = m_textEditor->GetText();
+// void CategoryPanel::SaveCategoryToFile()
+// {
+//     if (m_selectedCategoryOrigin != nullptr)
+//     {
+//         // Get the text from the editor
+//         std::string l_newCode = m_textEditor->GetText();
         
-        // Save to the file
-        m_selectedCategoryOrigin->SetCode(l_newCode);
-        m_selectedCategoryOrigin->Save();
+//         // Save to the file
+//         m_selectedCategoryOrigin->SetCode(l_newCode);
+//         m_selectedCategoryOrigin->Save();
         
-        // Clear the reload flag
-        m_selectedCategoryOrigin->Reload();
+//         // Clear the reload flag
+//         m_selectedCategoryOrigin->Reload();
 
-        auto l_newCategory = m_selectedCategoryOrigin->GetCategory().lock();
-        std::bitset<1024> l_catSignature = l_newCategory->GetSignature();
+//         auto l_newCategory = m_selectedCategoryOrigin->GetCategory().lock();
+//         std::bitset<1024> l_catSignature = l_newCategory->GetSignature();
 
-        auto l_scene = m_editor.lock()->GetScene();
-        auto l_registry = l_scene->GetRegistry();
+//         auto l_scene = m_editor.lock()->GetScene();
+//         auto l_registry = l_scene->GetRegistry();
 
-        // Remove category to delete all old data and readd category
-        std::vector<int> l_entitiesInCategory = l_registry->GetEntitiesWith(l_catSignature);
-        l_scene->RemoveCategory(l_catSignature);
+//         // Remove category to delete all old data and readd category
+//         std::vector<int> l_entitiesInCategory = l_registry.GetEntitiesWith(l_catSignature);
+//         l_scene->RemoveCategory(l_catSignature);
 
-        for(int l_entity : l_entitiesInCategory)
-        {
-            l_scene->AddEntityToCategory(l_entity, l_catSignature);
-        }
+//         for(int l_entity : l_entitiesInCategory)
+//         {
+//             l_scene->AddEntityToCategory(l_entity, l_catSignature);
+//         }
         
-        RE::Log::Message("Category saved to file: " + m_selectedCategoryOrigin->GetPath());
-    }
-}
+//         RE::Log::Message("Category saved to file: " + m_selectedCategoryOrigin->GetPath());
+//     }
+// }
