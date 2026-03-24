@@ -98,8 +98,8 @@ void RulesPanel::Draw()
                 ImGui::Text(l_ruleName.c_str());
 
                 // Remove button
-                ImGui::SameLine(ImGui::GetWindowWidth() - 30);
-                if (ImGui::Button("Toggle", ImVec2(25, 0)))
+                ImGui::SameLine(ImGui::GetWindowWidth() - 100);
+                if (ImGui::Button("Toggle", ImVec2(0, 0)))
                 {
                     // Set rule to not active
                     sol::table l_sceneTable = m_editor.lock()->GetScene()->GetSceneTable();
