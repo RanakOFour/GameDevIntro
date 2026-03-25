@@ -18,14 +18,17 @@
 #include <string>
 
 class SceneEditTab;
+class TextEditTab;
 class Editor : public std::enable_shared_from_this<Editor>
 {
     private:
-    RE::EngineContents m_engineContents;
-    ImFont* m_font;
     std::shared_ptr<SceneEditTab> m_sceneEdit;
-
-    bool m_running;
+    std::shared_ptr<TextEditTab> m_textEdit;
+    ImFont* m_font;
+    
+    RE::EngineContents m_engineContents;
+    
+    int m_tabIndex = 0;
 
     void InitImGui();
     void CleanupImGui();
@@ -39,7 +42,6 @@ class Editor : public std::enable_shared_from_this<Editor>
     static std::shared_ptr<Editor> Create();
 
     void Run();
-    void Update(float _deltaTime);
     void Draw();
     
     RE::EngineContents& GetEngineContents() { return m_engineContents; }

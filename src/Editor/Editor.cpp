@@ -1,6 +1,7 @@
 #include "Editor/Editor.h"
 
 #include "Editor/SceneEditTab.h"
+#include "Editor/TextEditTab.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -9,7 +10,7 @@
 #include <GL/gl.h>
 
 Editor::Editor()
-: m_running(true)
+: m_tabIndex(0)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
@@ -32,6 +33,7 @@ std::shared_ptr<Editor> Editor::Create()
     std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
     l_editor->m_sceneEdit = std::make_shared<SceneEditTab>(l_editorFromThis);
+    l_editor->m_textEdit = std::make_shared<TextEditTab>(l_editorFromThis);
 
     RE::Log::Message("Editor initialized with UI panels");
     
@@ -40,6 +42,9 @@ std::shared_ptr<Editor> Editor::Create()
 
 Editor::~Editor()
 {
+    m_sceneEdit.reset();
+    m_textEdit.reset();
+
     // Clean up ImGui
     CleanupImGui();
 
@@ -108,7 +113,14 @@ void Editor::Draw()
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
 
-    m_sceneEdit->Draw();
+    if(m_tabIndex % 2 == 0)
+    {
+        m_textEdit->Draw();
+    }
+    else
+    {
+        m_sceneEdit->Draw();
+    }
 
     // Rendering
     ImGui::PopFont();
@@ -194,6 +206,12 @@ void Editor::HandleInput()
             m_sceneEdit->m_entityPanel.SetShown(false);
             m_sceneEdit->m_rulesPanel.SetShown(false);
             m_sceneEdit->m_propertiesPanel.SetShown(false);
+        }
+
+        if(m_engineContents.io->GetKeyDownThisFrame('\t'))
+        {
+            m_tabIndex++;
+            RE::Log::Message("Tab pressed!");
         }
     }
 }

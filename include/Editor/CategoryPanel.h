@@ -4,6 +4,8 @@
 #include "RanakEngine/RanakEngine.h"
 #include "Editor/Panel.h"
 
+#include "imgui/imgui.h"
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -33,6 +35,7 @@ class CategoryPanel : public Panel
     ~CategoryPanel();
 
     void Draw();
+    void DrawAsChild(ImGuiChildFlags _flags);
     
     void SelectCategory(int _idx);
     std::string GetCategoryAt(int _idx);
@@ -40,6 +43,8 @@ class CategoryPanel : public Panel
     void CreateNewCategory(const std::string _name);
     void LoadCategoryFromFile(const std::string _path);
     void AssignCategoryToEntity(const int _entityId, const std::string _categoryName);
+
+    std::weak_ptr<RE::Asset::LuaFile> GetSelectedFile();
 
     bool IsDialogOpen();
 };
