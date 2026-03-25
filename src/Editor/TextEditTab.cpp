@@ -220,12 +220,15 @@ void TextEditTab::SaveCurrentFile()
         m_fileToEdit->SetCode(l_newCode);
         m_fileToEdit->Save();
         
-        // Clear the reload flag
-        m_fileToEdit->Reload();
 
         auto l_newCategory = m_fileToEdit->GetCategory()
                                          .lock();
 
+        std::string l_oldName = l_newCategory->GetName();
+
+        // Clear the reload flag
+        m_fileToEdit->Reload();
+        
         std::bitset<1024> l_catSignature = l_newCategory->GetSignature();
 
         auto l_scene = m_editor.lock()->GetEngineContents()
@@ -240,7 +243,29 @@ void TextEditTab::SaveCurrentFile()
 
         for(int l_entity : l_entitiesInCategory)
         {
+            sol::table l_cacheTable = RE::Core::LuaContext::Instance().lock()->CreateTable();
+            sol::table l_entityData = l_scene->GetSceneTable().traverse_raw_get<sol::table>("Entities", l_entity, "attributes");
+
+            auto l_dataPairs = l_entityData.raw_get<sol::table>(l_oldName).pairs();
+
+            // Store all category data
+            for(auto& l_pair : l_dataPairs)
+            {
+                l_cacheTable.raw_set(l_pair.first, l_pair.second);
+            }
+
             l_scene->AddEntityToCategory(l_entity, l_catSignature);
+            
+            // Reapply entity data if property still exists
+            for(auto& l_pair : l_dataPairs)
+            {
+                sol::optional<sol::object> l_entry = l_entityData.raw_get<sol::optional<sol::object>>(l_pair.first);
+                
+                if(l_entry.has_value())
+                {
+                    l_entityData.raw_set(l_pair.first,  l_pair.second);
+                }
+            }
         }
         
         RE::Log::Message("Category saved to file: " + m_fileToEdit->GetPath());
