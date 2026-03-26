@@ -5,9 +5,11 @@
 bool StartsWith(const std::string& str, const std::string& prefix)
 {
     if (prefix.length() > str.length()) return false;
-    return std::equal(prefix.begin(), prefix.end(), str.begin(), [](char c1, char c2) {
+    return std::equal(prefix.begin(), prefix.end(), str.begin(), 
+        [](char c1, char c2)
+        {
         return std::tolower(c1) == std::tolower(c2);
-    });
+        });
 }
 
 // Check if a string contains another string (case insensitive)
@@ -35,37 +37,47 @@ void AutoCompleteTree::transactionCallback(std::vector<TextEditor::Change>& _cha
 {
     std::string l_isInsert = _changes.back().insert ? "Insert" : "Remove";
 
-    TextEditor::Change l_lastChange = _changes.back();
-
-    if(l_lastChange.insert)
+    for(auto& l_lastChange : _changes)
     {
-        switch(l_lastChange.text[0])
+        if(l_lastChange.insert)
         {
-            // Reset suggestion on tab, newline, space
-            case '\t':
-            case '\n':
-            case ' ':
-            m_lastCompleteWord = "";
-            break;
+            if(l_lastChange.text.size() > 1)
+            {
+                m_lastCompleteWord = "";
+            }
+            else
+            {
+                switch(l_lastChange.text.back())
+                {
+                    // Reset suggestion on tab, newline, space
+                    case '\t':
+                    case '\n':
+                    case ' ':
+                    m_lastCompleteWord = "";
+                    break;
 
-            default:
-            m_lastCompleteWord += l_lastChange.text;
-        }
-    }
-    else
-    {
-        if(m_lastCompleteWord.size() >= l_lastChange.text.size())
-        {
-            m_lastCompleteWord = m_lastCompleteWord.substr(0, m_lastCompleteWord.size() - l_lastChange.text.size());
+                    default:
+                    m_lastCompleteWord += l_lastChange.text;
+                }
+            }
         }
         else
         {
-            m_lastCompleteWord = "";
+            if(m_lastCompleteWord.size() >= l_lastChange.text.size())
+            {
+                m_lastCompleteWord = m_lastCompleteWord.substr(0, m_lastCompleteWord.size() - l_lastChange.text.size());
+            }
+            else
+            {
+                m_lastCompleteWord = "";
+            }
+            
         }
-        
+
+
+        RE::Log::Message("Change callback text: " + l_isInsert + " " + l_lastChange.text + "\n     Current Word: " + m_lastCompleteWord);
     }
 
-    RE::Log::Message("Change callback text: " + l_isInsert + " " + _changes.back().text + "\nCurrent Word: " + m_lastCompleteWord);
 };
 
 void AutoCompleteTree::autocompleteCallback(TextEditor::AutoCompleteState& _state)
@@ -87,55 +99,95 @@ void AutoCompleteTree::autocompleteCallback(TextEditor::AutoCompleteState& _stat
         std::string searchTerm = _state.searchTerm;
         
         // Remove trailing dots or spaces for better matching
-        while (!searchTerm.empty() && (searchTerm.back() == '.' || searchTerm.back() == ' ')) {
+        while (!searchTerm.empty() && (searchTerm.back() == '.' || searchTerm.back() == ' '))
+        {
             searchTerm.pop_back();
         }
         
-        if (lastDot != std::string::npos) {
+        if (lastDot != std::string::npos)
+        {
             // We're looking for a specific library function
             std::string libraryName = searchTerm.substr(0, lastDot);
             std::string functionName = searchTerm.substr(lastDot + 1);
             
             // Find the library in our completion tree
             auto libraryIt = m_completionTree.find(libraryName);
-            if (libraryIt != m_completionTree.end()) {
+            if (libraryIt != m_completionTree.end())
+            {
                 // Filter functions in this library by the function name
-                for (const auto& func : libraryIt->second) {
-                    if (StartsWith(func, functionName)) {
+                for (const auto& func : libraryIt->second)
+                {
+                    if (StartsWith(func, functionName))
+                    {
                         _state.suggestions.push_back(libraryName + "." + func);
                     }
                 }
             }
-        } else {
-            // Simple search - look for functions that match the search term
-            // First, check if we're completing a library name
-            for (const auto& lib : m_completionTree) {
-                if (lib.first.empty()) continue; // Skip root level
-                
-                if (StartsWith(lib.first, searchTerm)) {
-                    _state.suggestions.push_back(lib.first);
+        }
+        else
+        {
+            // If we have a m_lastCompleteWord, check if it's a library name
+            if (!m_lastCompleteWord.empty())
+            {
+                int l_dotPos = m_lastCompleteWord.find_first_of('.');
+                if(l_dotPos == m_lastCompleteWord.npos)
+                {
+                    // Check if m_lastCompleteWord matches any library names
+                    for (const auto& lib : m_completionTree)
+                    {
+                        if (lib.first.empty()) continue; // Skip root level
+
+                        if (StartsWith(lib.first, m_lastCompleteWord))
+                        {
+                            // If we're completing a library name, show its functions
+                            for (const auto& funcName : lib.second)
+                            {
+                                _state.suggestions.push_back(lib.first + "." + funcName);
+                            }
+                            break;
+                        }
+                    }
                 }
-                
-                // Also check if any functions in this library match
-                for (const auto& func : lib.second) {
-                    if (StartsWith(func, searchTerm)) {
-                        _state.suggestions.push_back(lib.first + "." + func);
+                else
+                {
+                    std::string l_libName = m_lastCompleteWord.substr(0, l_dotPos);
+                    // Check if m_lastCompleteWord matches any library names
+                    for (const auto& lib : m_completionTree)
+                    {
+                        if (lib.first.empty()) continue; // Skip root level
+
+                        if (StartsWith(lib.first, l_libName))
+                        {
+                            // If we're completing a library name, show its functions
+                            for (const auto& funcName : lib.second)
+                            {
+                                _state.suggestions.push_back(funcName);
+                            }
+                            break;
+                        }
                     }
                 }
             }
-            
-            // If we have a m_lastCompleteWord, check if it's a library name
-            if (!m_lastCompleteWord.empty()) {
-                // Check if m_lastCompleteWord matches any library names
-                for (const auto& lib : m_completionTree) {
+            else
+            {
+                // Simple search - look for functions that match the search term
+                // First, check if we're completing a library name
+                for (const auto& lib : m_completionTree)
+                {
                     if (lib.first.empty()) continue; // Skip root level
                     
-                    if (lib.first == m_lastCompleteWord) {
-                        // If we're completing a library name, show its functions
-                        for (const auto& func : lib.second) {
-                            _state.suggestions.push_back(lib.first + "." + func);
+                    if (StartsWith(lib.first, searchTerm))
+                    {
+                        _state.suggestions.push_back(lib.first);
+                    }
+                    
+                    // Also check if any functions in this library match
+                    for (const auto& func : lib.second)
+                    {
+                        if (StartsWith(func, searchTerm))
+                        {
+                            _state.suggestions.push_back(func);
                         }
-                        break;
                     }
                 }
             }

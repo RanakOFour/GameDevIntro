@@ -38,59 +38,6 @@ TextEditTab::TextEditTab(std::weak_ptr<Editor> _editor)
     TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
     l_config->triggerOnTyping = true;
     l_config->triggerOnShortcut = true;
-    // std::function<void(TextEditor::AutoCompleteState&)> l_configCallback(
-    //     [](TextEditor::AutoCompleteState& _state)
-    //     {
-    //         // Clear previous suggestions
-    //         _state.suggestions.clear();
-            
-    //         // If search term is empty, show all functions
-    //         if (_state.searchTerm.empty()) {
-    //             for (const auto& func : l_allFunctions) {
-    //                 _state.suggestions.push_back(func);
-    //             }
-    //         } else {
-    //             // Filter functions based on search term
-    //             std::string searchTerm = _state.searchTerm;
-    //             // Remove trailing dots or spaces for better matching
-    //             while (!searchTerm.empty() && (searchTerm.back() == '.' || searchTerm.back() == ' ')) {
-    //                 searchTerm.pop_back();
-    //             }
-                
-    //             // If there's a dot, we're looking for a specific library function
-    //             size_t lastDot = searchTerm.find_last_of('.');
-    //             if (lastDot != std::string::npos) {
-    //                 // Extract library name
-    //                 std::string libraryName = searchTerm.substr(0, lastDot);
-    //                 std::string functionName = searchTerm.substr(lastDot + 1);
-                    
-    //                 // Filter functions by library
-    //                 for (const auto& func : l_allFunctions) {
-    //                     if (func.find(libraryName) == 0 && func.length() > libraryName.length() + 1) {
-    //                         // Check if function name matches the search term
-    //                         std::string funcName = func.substr(libraryName.length() + 1);
-    //                         if (StartsWith(funcName, functionName)) {
-    //                             _state.suggestions.push_back(func);
-    //                         }
-    //                     }
-    //                 }
-    //             } else {
-    //                 // Simple search - match any part of the function name
-    //                 for (const auto& func : l_allFunctions) {
-    //                     if (Contains(func, searchTerm)) {
-    //                         _state.suggestions.push_back(func);
-    //                     }
-    //                 }
-    //             }
-    //         }
-            
-    //         // Sort suggestions alphabetically
-    //         std::sort(_state.suggestions.begin(), _state.suggestions.end());
-        
-    //         // Search current word for keywords (lib names, functions, etc.)
-    //         RE::Log::Message("Current search term: " + _state.searchTerm);
-    //     }
-    // );
 
     l_config->callback = [this](TextEditor::AutoCompleteState& _state){ m_acTree.autocompleteCallback(_state); };
 
