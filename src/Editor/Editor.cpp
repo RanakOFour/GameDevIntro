@@ -2,6 +2,7 @@
 
 #include "Editor/SceneEditTab.h"
 #include "Editor/TextEditTab.h"
+#include "Editor/AutoCompleteTree.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -34,6 +35,7 @@ std::shared_ptr<Editor> Editor::Create()
     
     l_editor->m_sceneEdit = std::make_shared<SceneEditTab>(l_editorFromThis);
     l_editor->m_textEdit = std::make_shared<TextEditTab>(l_editorFromThis);
+    l_editor->m_textEdit->m_acTree.SetTextEdit(l_editor->m_textEdit);
 
     RE::Log::Message("Editor initialized with UI panels");
     

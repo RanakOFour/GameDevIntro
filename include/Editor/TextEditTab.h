@@ -4,6 +4,7 @@
 #include "RanakEngine/RanakEngine.h"
 
 #include "Editor/Editor.h"
+#include "Editor/AutoCompleteTree.h"
 #include "Editor/RulesPanel.h"
 #include "Editor/CategoryPanel.h"
 
@@ -14,13 +15,16 @@
 
 #include <memory>
 
-
+class AutoCompleteTree;
 class TextEditTab
 {
+    friend Editor;
+    friend AutoCompleteTree;
     private:
     std::weak_ptr<Editor> m_editor;
     std::shared_ptr<RE::Asset::LuaFile> m_fileToEdit;
 
+    AutoCompleteTree m_acTree;
     TextEditor m_textEditor;
     CategoryPanel m_categoryPanel;
     RulesPanel m_rulesPanel;
@@ -35,7 +39,6 @@ class TextEditTab
 
     void SetFile(std::weak_ptr<RE::Asset::LuaFile> _file);
     void SaveCurrentFile();
-
 };
 
 #endif

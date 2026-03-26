@@ -1,4 +1,5 @@
 #include "Editor/TextEditTab.h"
+#include "Editor/AutoCompleteTree.h"
 
 #include "RanakEngine/Log.h"
 
@@ -9,24 +10,89 @@ TextEditTab::TextEditTab(std::weak_ptr<Editor> _editor)
 , m_rulesPanel(_editor)
 , m_fileToEdit()
 , m_size(1920, 1080)
+, m_acTree()
 {
+    m_acTree = AutoCompleteTree::InitTree(_editor.lock()->GetEngineContents().core->GetLuaContext());
     m_categoryPanel.SetShown(true);
     // Set configs for text editor
 
-    std::function<void()> l_textCallback([this](){ m_fileToEdit->FlagReloaded(); });
+    std::function<void()> l_textCallback(
+        [this]()
+        {
+            m_fileToEdit->FlagReloaded();
+        }
+    );
 
-    m_textEditor.SetChangeCallback(l_textCallback);
+    static std::string l_lastChangeWord = "";
+    std::function<void(std::vector<TextEditor::Change>&)> l_changeCallback(
+        [this](std::vector<TextEditor::Change>& _changes)
+        {
+            std::string l_isInsert = _changes.back().insert ? "Insert" : "Not insert";
+            RE::Log::Message("Change callback text: " + l_isInsert + " " + _changes.back().text);
+        }
+    );
+
+    m_textEditor.SetTransactionCallback([this](std::vector<TextEditor::Change>& _changes){ m_acTree.transactionCallback(_changes); });
+    m_textEditor.SetChangeCallback([this](){ m_acTree.textCallback();});
     m_textEditor.SetLanguage(TextEditor::Language::Lua());
     TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
     l_config->triggerOnTyping = true;
     l_config->triggerOnShortcut = true;
-    std::function<void(TextEditor::AutoCompleteState&)> l_configCallback([](TextEditor::AutoCompleteState& _state)
-    {
-        // Search current word for keywords (lib names, functions, etc.)
-        RE::Log::Message("Current search term: " + _state.searchTerm);
-    });
+    // std::function<void(TextEditor::AutoCompleteState&)> l_configCallback(
+    //     [](TextEditor::AutoCompleteState& _state)
+    //     {
+    //         // Clear previous suggestions
+    //         _state.suggestions.clear();
+            
+    //         // If search term is empty, show all functions
+    //         if (_state.searchTerm.empty()) {
+    //             for (const auto& func : l_allFunctions) {
+    //                 _state.suggestions.push_back(func);
+    //             }
+    //         } else {
+    //             // Filter functions based on search term
+    //             std::string searchTerm = _state.searchTerm;
+    //             // Remove trailing dots or spaces for better matching
+    //             while (!searchTerm.empty() && (searchTerm.back() == '.' || searchTerm.back() == ' ')) {
+    //                 searchTerm.pop_back();
+    //             }
+                
+    //             // If there's a dot, we're looking for a specific library function
+    //             size_t lastDot = searchTerm.find_last_of('.');
+    //             if (lastDot != std::string::npos) {
+    //                 // Extract library name
+    //                 std::string libraryName = searchTerm.substr(0, lastDot);
+    //                 std::string functionName = searchTerm.substr(lastDot + 1);
+                    
+    //                 // Filter functions by library
+    //                 for (const auto& func : l_allFunctions) {
+    //                     if (func.find(libraryName) == 0 && func.length() > libraryName.length() + 1) {
+    //                         // Check if function name matches the search term
+    //                         std::string funcName = func.substr(libraryName.length() + 1);
+    //                         if (StartsWith(funcName, functionName)) {
+    //                             _state.suggestions.push_back(func);
+    //                         }
+    //                     }
+    //                 }
+    //             } else {
+    //                 // Simple search - match any part of the function name
+    //                 for (const auto& func : l_allFunctions) {
+    //                     if (Contains(func, searchTerm)) {
+    //                         _state.suggestions.push_back(func);
+    //                     }
+    //                 }
+    //             }
+    //         }
+            
+    //         // Sort suggestions alphabetically
+    //         std::sort(_state.suggestions.begin(), _state.suggestions.end());
+        
+    //         // Search current word for keywords (lib names, functions, etc.)
+    //         RE::Log::Message("Current search term: " + _state.searchTerm);
+    //     }
+    // );
 
-    l_config->callback = l_configCallback;
+    l_config->callback = [this](TextEditor::AutoCompleteState& _state){ m_acTree.autocompleteCallback(_state); };
 
     m_textEditor.SetAutoCompleteConfig(l_config);
 }
