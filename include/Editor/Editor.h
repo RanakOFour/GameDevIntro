@@ -19,32 +19,52 @@
 
 class SceneEditTab;
 class TextEditTab;
+
+/**
+ * @class Editor
+ * @brief Top-level application object owning the engine, ImGui context, and all editor tabs.
+ *
+ * Must be created via Editor::Create() (factory pattern enforced so that
+ * shared_from_this() is valid during construction).  Drives the main loop
+ * in Run(), calling Draw() each frame which dispatches to SceneEditTab or
+ * TextEditTab depending on the active tab index.
+ */
 class Editor : public std::enable_shared_from_this<Editor>
 {
-    private:
-    std::shared_ptr<SceneEditTab> m_sceneEdit;
-    std::shared_ptr<TextEditTab> m_textEdit;
-    ImFont* m_font;
-    
-    RE::EngineContents m_engineContents;
-    
-    int m_tabIndex = 0;
+private:
+    std::shared_ptr<SceneEditTab> m_sceneEdit; ///< The 3D scene-editing tab.
+    std::shared_ptr<TextEditTab>  m_textEdit;  ///< The Lua source-file editing tab.
+    ImFont* m_font;                            ///< Custom font loaded for the editor UI.
 
+    RE::EngineContents m_engineContents; ///< Aggregated engine sub-systems.
+
+    int m_tabIndex = 0; ///< Even = TextEdit tab, odd = SceneEdit tab.
+
+    /** @brief Initialises Dear ImGui (context, style, SDL3/OpenGL backends). */
     void InitImGui();
+    /** @brief Tears down Dear ImGui and releases its resources. */
     void CleanupImGui();
+    /** @brief Polls SDL events and forwards them to ImGui and the scene camera. */
     void HandleInput();
 
     Editor();
     public:
     ~Editor();
 
-    // Factory method to create Editor as shared_ptr
+    /**
+     * @brief Factory method — creates and fully initialises an Editor as a shared_ptr.
+     * @return Shared pointer to the new Editor.
+     */
     static std::shared_ptr<Editor> Create();
 
+    /** @brief Enters the main loop; returns when the user closes the editor. */
     void Run();
+    /** @brief Renders one complete frame (clear, ImGui, swap). */
     void Draw();
-    
+
+    /** @brief Returns a reference to the engine sub-system bundle. */
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
+    /** @brief Returns a weak pointer to the SceneEditTab. */
     std::weak_ptr<SceneEditTab> GetSceneEdit();
 };
 

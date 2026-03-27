@@ -13,17 +13,46 @@
 #include <functional>
 
 class TextEditTab;
+
+/**
+ * @class AutoCompleteTree
+ * @brief Provides Lua-aware autocomplete suggestions for the code editor.
+ *
+ * On construction via InitTree() it introspects the live sol2 Lua state and
+ * builds a two-level completion map:  top-level global identifiers map to
+ * the list of their table members.  Three callbacks are wired into the
+ * imguiTextEdit TextEditor delegate system:
+ *
+ *   - textCallback()         - called on every keystroke.
+ *   - transactionCallback()  - called with a batch of change records.
+ *   - autocompleteCallback() - called when the user triggers autocomplete
+ *                              (Ctrl+Space) and fills the suggestion list.
+ *
+ * The autocomplete logic uses m_lastCompleteWord (the last fully typed
+ * identifier before the cursor) as context, splitting on '.' to determine
+ * a namespace prefix.
+ */
 class AutoCompleteTree
 {
     private:
-    std::map<std::string, std::vector<std::string>> m_completionTree;
-    std::string m_lastCompleteWord;
-    std::weak_ptr<TextEditTab> m_editTab;
+    std::map<std::string, std::vector<std::string>> m_completionTree; ///< Two-level completion map: namespace -> member list.
+    std::string m_lastCompleteWord; ///< Last complete identifier before the cursor (updated by textCallback).
+    std::weak_ptr<TextEditTab> m_editTab; ///< Back-reference to the owning TextEditTab.
 
     public:
     AutoCompleteTree() : m_completionTree(), m_lastCompleteWord("") {};
     ~AutoCompleteTree() {};
 
+    /**
+     * @brief Builds an AutoCompleteTree by interrogating all globals in the Lua state.
+     *
+     * Iterates the global table; for each non-sol global that is itself a table,
+     * it records the table's member names as completions under the global's name.
+     * Globals that start with "sol" are skipped.
+     *
+     * @param _context Weak pointer to the engine's live LuaContext.
+     * @return A fully populated AutoCompleteTree ready for use.
+     */
     static AutoCompleteTree InitTree(std::weak_ptr<RE::Core::LuaContext> _context)
     {
         //Take global table
@@ -70,12 +99,30 @@ class AutoCompleteTree
         return l_toReturn;
     };
 
+    /**
+     * @brief Binds this tree to a TextEditTab so callbacks can access the editor state.
+     * @param _editTab Weak pointer to the owning TextEditTab.
+     */
     void SetTextEdit(std::weak_ptr<TextEditTab> _editTab);
 
+    /** @brief Keystroke callback - updates m_lastCompleteWord each time text changes. */
     void textCallback();
 
+    /**
+     * @brief Batch-change callback called after a group of edits is committed.
+     * @param _changes List of TextEditor change records describing what was altered.
+     */
     void transactionCallback(std::vector<TextEditor::Change>& _changes);
 
+    /**
+     * @brief Autocomplete callback that populates the suggestion list.
+     *
+     * Uses m_lastCompleteWord as context.  If the word contains '.' it looks
+     * up completions for the namespace prefix; otherwise it suggests top-level
+     * globals.  Results are written into _state.
+     *
+     * @param _state ImGuiTextEdit state object; completion candidates are appended here.
+     */
     void autocompleteCallback(TextEditor::AutoCompleteState&);
 };
 
