@@ -115,6 +115,9 @@ void Editor::Draw()
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
 
+    // Menu bar is drawn universally regardless of which tab is active
+    m_sceneEdit->DrawMenuBar();
+
     if(m_tabIndex % 2 == 0)
     {
         m_textEdit->Draw();

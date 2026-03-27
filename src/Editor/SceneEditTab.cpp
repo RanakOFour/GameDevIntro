@@ -6,6 +6,7 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 , m_propertiesPanel(m_editor)
 , m_categoryPanel(m_editor)
 , m_rulesPanel(m_editor)
+, m_tutorialPanel(m_editor)
 , m_selectedEntityId(-1)
 , m_isEditorRunning(false)
 , m_isGameRunning(false)
@@ -87,19 +88,48 @@ void SceneEditTab::DrawMenuBar()
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Tutorials"))
+        {
+            if (ImGui::MenuItem("Getting Started"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/GettingStarted.lua");
+            if (ImGui::MenuItem("Creating Categories"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Categories.lua");
+            if (ImGui::MenuItem("Writing Rules"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Rules.lua");
+            ImGui::EndMenu();
+        }
+
         ImGui::EndMainMenuBar();
     }
 }
 
 void SceneEditTab::DrawEditorUI()
 {
-	DrawContextMenu();
-    // Draw panels
+    // When a non-interactive tutorial step is active, suppress the context menu
+    // and disable all editor panel widgets so the user can only interact with
+    // the tutorial window itself.
+    const bool l_tutLocked = m_tutorialPanel.IsActive() && !m_tutorialPanel.IsStepInteractive();
+
+    if (!l_tutLocked)
+        DrawContextMenu();
+
+    // If the current tutorial step highlights a specific panel, ensure it is
+    // visible before Draw() is called so FindWindowByName can locate it.
+    const std::string& l_highlightKey = m_tutorialPanel.GetCurrentHighlightKey();
+    if (l_highlightKey == "Categories")  m_categoryPanel.SetShown(true);
+    else if (l_highlightKey == "Rules")  m_rulesPanel.SetShown(true);
+
+    if (l_tutLocked)
+        ImGui::BeginDisabled();
+
     m_entityPanel.Draw();
     m_categoryPanel.Draw();
     m_rulesPanel.Draw();
     m_cameraPanel.Draw();
     m_propertiesPanel.Draw();
+
+    if (l_tutLocked)
+        ImGui::EndDisabled();
 }
 
 void SceneEditTab::DrawContextMenu()
@@ -179,6 +209,9 @@ void SceneEditTab::DrawContextMenu()
 
 void SceneEditTab::Draw()
 {
+	// Clear highlight regions from last frame before any panel registers new ones
+    m_tutorialPanel.ClearRegions();
+
 	// Draw grid
 
     // Render the infinite grid first (before ImGui)
@@ -218,8 +251,8 @@ void SceneEditTab::Draw()
     // Draw scene with EditorRenderer
     m_scene->Draw();
 
-	DrawMenuBar();
 	DrawEditorUI();
+	m_tutorialPanel.Draw();
 }
 
 void SceneEditTab::SelectEntity(int _id)

@@ -76,7 +76,7 @@ void RulesPanel::Draw()
         ImGui::Separator();
 
         // Search/Filter
-        ImGui::InputTextWithHint("RuleFilter", "Search rules...", &m_filterString);
+        ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
 
         ImGui::Separator();
 
@@ -138,7 +138,7 @@ void RulesPanel::DrawAsChild(ImGuiChildFlags _flags)
     if (ImGui::BeginChild("Rules", ImVec2(0, 0)))
     {
         // Create and Load buttons
-        if (ImGui::Button("+ Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
+        if (ImGui::Button("Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
         {
             m_showCreateDialog = true;
         }
@@ -151,7 +151,7 @@ void RulesPanel::DrawAsChild(ImGuiChildFlags _flags)
         ImGui::Separator();
 
         // Search/Filter
-        ImGui::InputTextWithHint("##", "Search rules...", &m_filterString);
+        ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
 
         ImGui::Separator();
 

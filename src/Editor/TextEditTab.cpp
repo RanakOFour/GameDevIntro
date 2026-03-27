@@ -142,10 +142,16 @@ void DrawCategoryAttributes(std::string _categoryName, sol::table _attributes)
 
 void TextEditTab::Draw()
 {
-    ImGui::SetNextWindowPos(ImVec2(0, 0));
-    ImGui::SetNextWindowSize(m_size);
+    // Pin the window below the main menu bar every frame so the menu bar
+    // is always visible and clickable above the text editor.
+    ImGuiIO& l_io = ImGui::GetIO();
+    float l_menuH = ImGui::GetFrameHeight();
+    m_size = ImVec2(l_io.DisplaySize.x, l_io.DisplaySize.y - l_menuH);
+    ImGui::SetNextWindowPos(ImVec2(0.0f, l_menuH), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(m_size, ImGuiCond_Always);
+
     bool l_showTab = true;
-    if(ImGui::Begin("TextEdit", &l_showTab, ImGuiWindowFlags_NoTitleBar))
+    if(ImGui::Begin("TextEdit", &l_showTab, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
     {
         if(ImGui::BeginTable("TabTable", 3, ImGuiTableFlags_SizingFixedFit))
         {

@@ -9,6 +9,7 @@
 #include "Editor/RulesPanel.h"
 #include "Editor/PropertiesPanel.h"
 #include "Editor/CameraPanel.h"
+#include "Editor/TutorialPanel.h"
 
 #include "imgui/imgui.h"
 
@@ -34,6 +35,7 @@ private:
     RulesPanel m_rulesPanel;
     CameraPanel m_cameraPanel;
     PropertiesPanel m_propertiesPanel;
+    TutorialPanel m_tutorialPanel;
 
     int m_selectedEntityId = -1;
 
@@ -42,7 +44,6 @@ private:
 
     bool m_showContext = false;
 
-    void DrawMenuBar();
     void DrawEditorUI();
     void DrawContextMenu();
     void HandleInput();
@@ -52,6 +53,7 @@ public:
     ~SceneEditTab();
 
     void Draw();
+    void DrawMenuBar();
 
     void Run();
 

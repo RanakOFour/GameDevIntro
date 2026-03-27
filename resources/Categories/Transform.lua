@@ -3,5 +3,5 @@ return Category {
     Layer    = 0,
     Rotation = 0.0,
     Scale    = Vector2.new(1),
-    Test = 6
+    Blingo = true
 }
