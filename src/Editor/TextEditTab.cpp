@@ -241,6 +241,8 @@ void TextEditTab::SaveCurrentFile()
 
         // Clear the reload flag
         m_fileToEdit->Reload();
+
+        std::string l_newName = l_newCategory->GetName();
         
         std::bitset<1024> l_catSignature = l_newCategory->GetSignature();
 
@@ -267,7 +269,7 @@ void TextEditTab::SaveCurrentFile()
                 l_cacheTable.raw_set(l_pair.first, l_pair.second);
             }
 
-            l_scene->AddEntityToCategory(l_entity, l_catSignature);
+            l_scene->AddToCategory(l_entity, l_newName);
             
             // Reapply entity data if property still exists
             for(auto& l_pair : l_dataPairs)

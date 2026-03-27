@@ -272,10 +272,8 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 void CategoryPanel::AssignCategoryToEntity(const int _entityId, const std::string _categoryName)
 {
     auto l_scene = m_editor.lock()->GetEngineContents().core->GetScene().lock();
-    auto l_luaContext = RE::Core::LuaContext::Instance().lock();
-    auto l_category = l_luaContext->GetCategory(_categoryName);
     
-    l_scene->AddEntityToCategory(_entityId, l_category.lock()->GetSignature());
+    l_scene->AddToCategory(_entityId, _categoryName);
     RE::Log::Message("Category '" + _categoryName + "' assigned to entity " + std::to_string(_entityId));
 }
 

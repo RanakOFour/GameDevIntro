@@ -19,7 +19,7 @@ int main()
     auto l_context = RE::Core::LuaContext::Instance().lock();
     auto l_category = l_context->CreateCategory(l_categoryFile);
 
-    l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
+    l_scene->AddToCategory(l_testEntity, l_category.lock()->GetName());
 
     l_categoryFile = l_contents.resources->Load<RE::Asset::LuaFile>("./resources/Categories/Drawable.lua");
     l_category = l_context->CreateCategory(l_categoryFile);
@@ -27,7 +27,7 @@ int main()
     RE::Log::Message("Adding entity to category");
 
     // Add new entity to category
-    l_scene->AddEntityToCategory(l_testEntity, l_category.lock()->GetSignature());
+    l_scene->AddToCategory(l_testEntity, l_category.lock()->GetName());
 
     sol::table l_entityData = l_scene->GetRegistry().GetEntityAttributes(l_testEntity);
 
