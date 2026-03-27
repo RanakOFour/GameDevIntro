@@ -1,8 +1,8 @@
-local NewRule = Rule.new()
-NewRule.name = "TestRule"
-NewRule.categories = {"TestCategory"}
+local Test = Rule {
+    categories = {"TestCategory"}
+}
 
-function NewRule:Update(_entityData)
+function Test:Update(_entityData)
     --Log.Message("Test message")
 
     local msgY = "Nil"
@@ -23,4 +23,4 @@ function NewRule:Update(_entityData)
     Log.Message(message)
 end
 
-return NewRule
+return Test

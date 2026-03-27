@@ -1,6 +1,6 @@
-Rendering = Rule.new()
-Rendering.name = "Rendering"
-Rendering.categories = {"Transform", "Drawable"}
+local Rendering = Rule {
+    categories = {"Transform", "Drawable"}
+}
 
 function Rendering:Update(_entityData)
     

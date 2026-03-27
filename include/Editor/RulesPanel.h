@@ -4,6 +4,8 @@
 #include "RanakEngine/RanakEngine.h"
 #include "Editor/Panel.h"
 
+#include "imgui/imgui.h"
+
 #include <vector>
 #include <string>
 #include <memory>
@@ -32,6 +34,7 @@ class RulesPanel : public Panel
     ~RulesPanel();
 
     void Draw();
+    void DrawAsChild(ImGuiChildFlags _flags);
 
     void SelectRule(int _idx);
     std::string GetRuleAt(int _idx);

@@ -1,12 +1,12 @@
-local NewRule = Rule.new()
-NewRule.name = "ControlCamera"
-NewRule.categories = {"Transform"}
+local ControlCamera = Rule {
+    categories = {"Transform"}
+}
 
-function NewRule:Init(_entityData)
+function ControlCamera:Init(_entityData)
     Log.Message("Started controlling camera")
 end
 
-function NewRule:Update(_entityData)
+function ControlCamera:Update(_entityData)
     local position = Core.Camera:getPosition()
 
     if(IO.GetKeyDown('w')) then
@@ -46,4 +46,4 @@ function NewRule:Update(_entityData)
     Log.Message(message)
 end
 
-return NewRule
+return ControlCamera

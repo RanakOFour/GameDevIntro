@@ -112,6 +112,8 @@ void CategoryPanel::Draw()
 
 void CategoryPanel::DrawAsChild(ImGuiChildFlags _flags)
 {
+    if (!m_showPanel) return;
+    
     RefreshCategoryList();
     
     if (ImGui::BeginChild("Categories", ImVec2(0, 0), _flags))

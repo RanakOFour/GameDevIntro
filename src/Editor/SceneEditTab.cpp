@@ -21,7 +21,7 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
     glGenVertexArrays(1, &m_dummyGridVAO);
     
     auto l_renderRuleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = l_engineContents.core->GetLuaContext()->RunScript<RE::Core::Rule>(l_renderRuleFile);
+    RE::Core::Rule l_renderRule = l_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
 
     m_scene->AddRule(l_renderRule);
 }

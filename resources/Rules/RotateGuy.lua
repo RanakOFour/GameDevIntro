@@ -1,22 +1,22 @@
-local NewRule = Rule.new()
-NewRule.name = "CameraSchenanigans"
-NewRule.categories = {"Transform", "Drawable"}
-NewRule.attributes = {
-    audio = Asset.Audio("./resources/Audio/collect.wav"),
-    orthoSize = Vector2.new(5.0, 5.0)
+local RotateGuy = Rule {
+    categories = {"Transform", "Drawable"},
+    fields = {
+        audio = Asset.Audio("./resources/Audio/collect.wav"),
+        orthoSize = Vector2.new(5.0, 5.0)
+    }
 }
 
-function NewRule:Init(_entityData)
+function RotateGuy:Init(_entityData)
     _entityData["Drawable"].texturePath = "./resources/Textures/triangle.png"
     _entityData["Drawable"].modelPath = "./resources/Models/FlatTexture.obj"
 end
 
-function NewRule:Update(_entityData)
-    local orthoSize = self.attributes.orthoSize
+function RotateGuy:Update(_entityData)
+    local orthoSize = self.fields.orthoSize
     local guyScale = _entityData["Transform"].scale
 
     if(IO.GetKeyDown('p')) then
-        IO.PlayAudio(self.attributes.audio, false)
+        IO.PlayAudio(self.fields.audio, false)
     end
 
     if(IO.GetKeyDown('k')) then
@@ -46,7 +46,7 @@ function NewRule:Update(_entityData)
     end
 
     if(IO.GetKeyDown('i')) then
-        Core.Camera:setCameraSize(self.attributes.orthoSize)
+        Core.Camera:setCameraSize(self.fields.orthoSize)
         Core.Camera:setOrthographic()
     end
 
@@ -56,4 +56,4 @@ function NewRule:Update(_entityData)
     end
 end
 
-return NewRule
+return RotateGuy

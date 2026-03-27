@@ -82,118 +82,47 @@ void AutoCompleteTree::transactionCallback(std::vector<TextEditor::Change>& _cha
 
 void AutoCompleteTree::autocompleteCallback(TextEditor::AutoCompleteState& _state)
 {
-    RE::Log::Message("Current search term: " + _state.searchTerm);
-    
-    // Clear previous suggestions
+    RE::Log::Message("Current search term: " + _state.searchTerm + " | Last word: " + m_lastCompleteWord);
+
     _state.suggestions.clear();
-    
-    if(_state.searchTerm.empty())
+
+    // m_lastCompleteWord is the source of truth: it accumulates the full token including dots
+    // (e.g. "Vector2.ne") because transactionCallback only resets it on whitespace/tab/newline.
+    // _state.searchTerm resets whenever '.' is typed, so it is only used as a fallback for
+    // manual triggers (Ctrl+Space) where m_lastCompleteWord may still be empty.
+    const std::string& context = m_lastCompleteWord.empty() ? _state.searchTerm : m_lastCompleteWord;
+
+    size_t lastDot = context.find_last_of('.');
+
+    if (lastDot == std::string::npos)
     {
-        // Show all top-level completions
-        _state.suggestions = m_completionTree[""];
+        // No dot — complete against top-level names.
+        for (const auto& name : m_completionTree[""])
+        {
+            if (context.empty() || StartsWith(name, context))
+            {
+                _state.suggestions.push_back(name);
+            }
+        }
     }
     else
     {
-        // Check if we're looking for a specific library (contains a dot)
-        size_t lastDot = _state.searchTerm.find_last_of('.');
-        std::string searchTerm = _state.searchTerm;
-        
-        // Remove trailing dots or spaces for better matching
-        while (!searchTerm.empty() && (searchTerm.back() == '.' || searchTerm.back() == ' '))
-        {
-            searchTerm.pop_back();
-        }
-        
-        if (lastDot != std::string::npos)
-        {
-            // We're looking for a specific library function
-            std::string libraryName = searchTerm.substr(0, lastDot);
-            std::string functionName = searchTerm.substr(lastDot + 1);
-            
-            // Find the library in our completion tree
-            auto libraryIt = m_completionTree.find(libraryName);
-            if (libraryIt != m_completionTree.end())
-            {
-                // Filter functions in this library by the function name
-                for (const auto& func : libraryIt->second)
-                {
-                    if (StartsWith(func, functionName))
-                    {
-                        _state.suggestions.push_back(libraryName + "." + func);
-                    }
-                }
-            }
-        }
-        else
-        {
-            // If we have a m_lastCompleteWord, check if it's a library name
-            if (!m_lastCompleteWord.empty())
-            {
-                int l_dotPos = m_lastCompleteWord.find_first_of('.');
-                if(l_dotPos == m_lastCompleteWord.npos)
-                {
-                    // Check if m_lastCompleteWord matches any library names
-                    for (const auto& lib : m_completionTree)
-                    {
-                        if (lib.first.empty()) continue; // Skip root level
+        // Dot present — split into namespace and the fragment typed after the last dot.
+        std::string namespaceName = context.substr(0, lastDot);
+        std::string fragment      = context.substr(lastDot + 1);
 
-                        if (StartsWith(lib.first, m_lastCompleteWord))
-                        {
-                            // If we're completing a library name, show its functions
-                            for (const auto& funcName : lib.second)
-                            {
-                                _state.suggestions.push_back(lib.first + "." + funcName);
-                            }
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    std::string l_libName = m_lastCompleteWord.substr(0, l_dotPos);
-                    // Check if m_lastCompleteWord matches any library names
-                    for (const auto& lib : m_completionTree)
-                    {
-                        if (lib.first.empty()) continue; // Skip root level
-
-                        if (StartsWith(lib.first, l_libName))
-                        {
-                            // If we're completing a library name, show its functions
-                            for (const auto& funcName : lib.second)
-                            {
-                                _state.suggestions.push_back(funcName);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-            else
+        auto it = m_completionTree.find(namespaceName);
+        if (it != m_completionTree.end())
+        {
+            for (const auto& member : it->second)
             {
-                // Simple search - look for functions that match the search term
-                // First, check if we're completing a library name
-                for (const auto& lib : m_completionTree)
+                if (fragment.empty() || StartsWith(member, fragment))
                 {
-                    if (lib.first.empty()) continue; // Skip root level
-                    
-                    if (StartsWith(lib.first, searchTerm))
-                    {
-                        _state.suggestions.push_back(lib.first);
-                    }
-                    
-                    // Also check if any functions in this library match
-                    for (const auto& func : lib.second)
-                    {
-                        if (StartsWith(func, searchTerm))
-                        {
-                            _state.suggestions.push_back(func);
-                        }
-                    }
+                    _state.suggestions.push_back(member);
                 }
             }
         }
     }
-    
-    // Sort suggestions alphabetically
+
     std::sort(_state.suggestions.begin(), _state.suggestions.end());
 }
