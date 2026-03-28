@@ -120,11 +120,11 @@ void Editor::Draw()
 
     if(m_tabIndex % 2 == 0)
     {
-        m_textEdit->Draw();
+        m_sceneEdit->Draw();
     }
     else
     {
-        m_sceneEdit->Draw();
+        m_textEdit->Draw();
     }
 
     // Rendering
