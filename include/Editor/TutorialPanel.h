@@ -46,11 +46,11 @@ struct TutorialStep
 class TutorialPanel : public Panel
 {
 private:
-    std::string m_tutorialTitle; ///< Top-level title of the loaded tutorial.
-    std::vector<TutorialStep> m_steps; ///< Ordered list of tutorial steps.
-    int m_currentStep = 0; ///< Zero-based index of the currently displayed step.
+    std::string m_tutorialTitle; ///< Main title of the loaded tutorial.
+    std::vector<TutorialStep> m_steps; ///< Chronological list of tutorial steps.
+    int m_currentStep = 0; ///< Index of the currently displayed step.
 
-    /// Keeps loaded textures alive for the duration of the tutorial.
+    /// Loaded textures for the tutorial steps.
     std::map<std::string, std::shared_ptr<RE::Asset::Texture>> m_imageCache;
 
     /// Named screen regions registered by other panels each frame.
@@ -62,7 +62,7 @@ private:
 public:
     TutorialPanel() {};
     /**
-     * @brief Constructs the panel (initially hidden).
+     * @brief Panel constructor.
      * @param _editor Weak pointer to the owning Editor.
      */
     TutorialPanel(std::weak_ptr<Editor> _editor);
@@ -71,15 +71,15 @@ public:
      * @brief Loads and starts a tutorial from a Lua data file.
      *
      * The file must return a table with an optional "title" string and a
-     * "steps" array of step tables.  All step images are pre-loaded into
-     * m_imageCache to avoid mid-tutorial hitching.
+     * "steps" array of step tables.  All step images are loaded into
+     * m_imageCache.
      *
      * @param _path Asset path to the .lua tutorial file.
      */
     void LoadTutorial(const std::string& _path);
 
     /**
-     * @brief Registers a fine-grained widget rect for highlighting by key.
+     * @brief Registers a widget rect for highlighting by key.
      *
      * Call this after ImGui::GetItemRectMin/Max() for the widget you want
      * highlighted.  The registration is frame-scoped; ClearRegions() is
@@ -115,7 +115,7 @@ public:
      * Used by SceneEditTab::DrawEditorUI() to force the target panel open
      * before Draw() is called so FindWindowByName() can locate it.
      */
-    const std::string& GetCurrentHighlightKey() const;
+    std::string GetCurrentHighlightKey() const;
 
     /** @brief Renders the tutorial window, dim overlay (if applicable), and highlight. */
     void Draw() override;

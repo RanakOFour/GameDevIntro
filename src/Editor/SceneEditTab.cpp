@@ -6,9 +6,7 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 , m_propertiesPanel(m_editor)
 , m_categoryPanel(m_editor)
 , m_rulesPanel(m_editor)
-, m_tutorialPanel(m_editor)
 , m_selectedEntityId(-1)
-, m_isEditorRunning(false)
 , m_isGameRunning(false)
 {
 	auto l_editor = _editor.lock();
@@ -36,86 +34,20 @@ SceneEditTab::~SceneEditTab()
     m_gridShader.reset();
 }
 
-void SceneEditTab::DrawMenuBar()
-{
-	if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-            {
-                // TODO: Implement new scene
-            }
-            if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
-            {
-                // TODO: Implement load scene
-            }
-            if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-            {
-                // TODO: Implement save scene
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Exit", "Ctrl+Q"))
-            {
-                m_isEditorRunning = false;
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-            {
-                // TODO: Implement undo
-            }
-            if (ImGui::MenuItem("Redo", "Ctrl+Y"))
-            {
-                // TODO: Implement redo
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("View"))
-        {
-            ImGui::MenuItem("Show Grid");
-            ImGui::MenuItem("Show Gizmos");
-
-            if(ImGui::MenuItem("Camera Settings"))
-            {
-                m_cameraPanel.SetShown(true);
-            }
-
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Tutorials"))
-        {
-            if (ImGui::MenuItem("Getting Started"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/GettingStarted.lua");
-            if (ImGui::MenuItem("Creating Categories"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Categories.lua");
-            if (ImGui::MenuItem("Writing Rules"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Rules.lua");
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMainMenuBar();
-    }
-}
-
 void SceneEditTab::DrawEditorUI()
 {
     // When a non-interactive tutorial step is active, suppress the context menu
     // and disable all editor panel widgets so the user can only interact with
     // the tutorial window itself.
-    const bool l_tutLocked = m_tutorialPanel.IsActive() && !m_tutorialPanel.IsStepInteractive();
+    TutorialPanel& l_tutorial = m_editor.lock()->GetTutorialPanel();
+    const bool l_tutLocked = l_tutorial.IsActive() && !l_tutorial.IsStepInteractive();
 
     if (!l_tutLocked)
         DrawContextMenu();
 
     // If the current tutorial step highlights a specific panel, ensure it is
     // visible before Draw() is called so FindWindowByName can locate it.
-    const std::string& l_highlightKey = m_tutorialPanel.GetCurrentHighlightKey();
+    const std::string& l_highlightKey = l_tutorial.GetCurrentHighlightKey();
     if (l_highlightKey == "Categories")  m_categoryPanel.SetShown(true);
     else if (l_highlightKey == "Rules")  m_rulesPanel.SetShown(true);
 
@@ -209,9 +141,6 @@ void SceneEditTab::DrawContextMenu()
 
 void SceneEditTab::Draw()
 {
-	// Clear highlight regions from last frame before any panel registers new ones
-    m_tutorialPanel.ClearRegions();
-
 	// Draw grid
 
     // Render the infinite grid first (before ImGui)
@@ -252,7 +181,6 @@ void SceneEditTab::Draw()
     m_scene->Draw();
 
 	DrawEditorUI();
-	m_tutorialPanel.Draw();
 }
 
 void SceneEditTab::SelectEntity(int _id)

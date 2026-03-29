@@ -4,6 +4,8 @@
 #include "Editor/TextEditTab.h"
 #include "Editor/AutoCompleteTree.h"
 
+#include "Editor/SceneSerializer.h"
+
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
 
@@ -33,6 +35,7 @@ std::shared_ptr<Editor> Editor::Create()
 
     std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
+    l_editor->m_tutorialPanel = TutorialPanel(l_editorFromThis);
     l_editor->m_sceneEdit = std::make_shared<SceneEditTab>(l_editorFromThis);
     l_editor->m_textEdit = std::make_shared<TextEditTab>(l_editorFromThis);
     l_editor->m_textEdit->m_acTree.SetTextEdit(l_editor->m_textEdit);
@@ -103,6 +106,77 @@ void Editor::Run()
     printf("Editor no longer running\n");
 }
 
+void Editor::DrawMenuBar()
+{
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("New Scene", "Ctrl+N"))
+            {
+                
+            }
+            if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
+            {
+                //Open file dialog
+
+                SceneSerializer::LoadFromFile("./SavedScenes/Scene1.lua", m_engineContents);
+            }
+            if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+            {
+                SceneSerializer::SaveToFile(m_engineContents, "./SavedScenes/Scene1.lua");
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Exit", "Ctrl+Q"))
+            {
+                SDL_Event l_quitEvent;
+                l_quitEvent.type = SDL_EVENT_QUIT;
+                SDL_PushEvent(&l_quitEvent);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Edit"))
+        {
+            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
+            {
+                // TODO: Implement undo
+            }
+            if (ImGui::MenuItem("Redo", "Ctrl+Y"))
+            {
+                // TODO: Implement redo
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("View"))
+        {
+            ImGui::MenuItem("Show Grid");
+            ImGui::MenuItem("Show Gizmos");
+
+            if (ImGui::MenuItem("Camera Settings"))
+            {
+                m_sceneEdit->m_cameraPanel.SetShown(true);
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Tutorials"))
+        {
+            if (ImGui::MenuItem("Getting Started"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/GettingStarted.lua");
+            if (ImGui::MenuItem("Creating Categories"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Categories.lua");
+            if (ImGui::MenuItem("Writing Rules"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Rules.lua");
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+}
+
 void Editor::Draw()
 {
     // Clear the screen
@@ -115,8 +189,11 @@ void Editor::Draw()
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
 
-    // Menu bar is drawn universally regardless of which tab is active
-    m_sceneEdit->DrawMenuBar();
+    // Clear tutorial highlight regions registered last frame
+    m_tutorialPanel.ClearRegions();
+
+    // Menu bar and tutorial panel are universal across all tabs
+    DrawMenuBar();
 
     if(m_tabIndex % 2 == 0)
     {
@@ -126,6 +203,9 @@ void Editor::Draw()
     {
         m_textEdit->Draw();
     }
+
+    // Tutorial panel drawn last so it appears above all tab content
+    m_tutorialPanel.Draw();
 
     // Rendering
     ImGui::PopFont();

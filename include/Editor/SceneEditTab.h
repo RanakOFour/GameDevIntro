@@ -9,7 +9,6 @@
 #include "Editor/RulesPanel.h"
 #include "Editor/PropertiesPanel.h"
 #include "Editor/CameraPanel.h"
-#include "Editor/TutorialPanel.h"
 
 #include "imgui/imgui.h"
 
@@ -22,10 +21,10 @@
  * @brief The main 3D scene-editing tab of the editor.
  *
  * Owns the live RE::Core::Scene, the orthographic Camera, an infinite-grid
- * shader, and all editor panels (Entity, Category, Rules, Camera, Properties,
- * Tutorial).  Each frame it renders the OpenGL grid, runs scene Draw(), then
- * draws the menu bar and all ImGui panels on top.  Entity selection is
- * performed via raycasting from HandleInput() in Editor.
+ * shader, and all scene editor panels (Entity, Category, Rules, Camera,
+ * Properties).  Each frame it renders the OpenGL grid, runs scene Draw(),
+ * then draws the ImGui panels on top.  Entity selection is performed via
+ * raycasting from HandleInput() in Editor.
  */
 class SceneEditTab
 {
@@ -45,12 +44,10 @@ private:
     RulesPanel      m_rulesPanel;      ///< Rule management.
     CameraPanel     m_cameraPanel;     ///< Camera settings.
     PropertiesPanel m_propertiesPanel; ///< Selected-entity field editor.
-    TutorialPanel   m_tutorialPanel;   ///< In-editor guided tutorial overlay.
 
     int  m_selectedEntityId = -1; ///< ID of the currently selected entity, or -1 for none.
 
-    bool m_isEditorRunning = true;  ///< Set to false by the File > Exit menu item.
-    bool m_isGameRunning   = false; ///< True while the scene simulation is playing.
+    bool m_isGameRunning = false; ///< True while the scene simulation is playing.
 
     bool m_showContext = false; ///< Whether the right-click context menu is showing.
 
@@ -69,15 +66,8 @@ public:
     SceneEditTab(std::weak_ptr<Editor> _editor);
     ~SceneEditTab();
 
-    /** @brief Renders one complete frame: grid, scene, menu bar, panels, tutorial overlay. */
+    /** @brief Renders one complete frame: grid, scene, panels. */
     void Draw();
-    /**
-     * @brief Renders the application menu bar.
-     *
-     * Exposed as public so Editor::Draw() can call it regardless of which tab is active,
-     * giving the menu bar a universal presence.
-     */
-    void DrawMenuBar();
 
     /** @brief Starts (or resumes) scene simulation. */
     void Run();

@@ -36,12 +36,11 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
         return;
     }
 
-    // Optional top-level title for the whole tutorial
+    // Optional title for the whole tutorial
     sol::optional<std::string> l_tutTitle = l_table.get<sol::optional<std::string>>("title");
     if (l_tutTitle.has_value())
         m_tutorialTitle = *l_tutTitle;
 
-    // Steps are stored in the array part (integer keys) of the returned table
     sol::optional<sol::table> l_stepsTable = l_table.get<sol::optional<sol::table>>("steps");
     sol::table l_source = l_stepsTable.has_value() ? *l_stepsTable : l_table;
 
@@ -59,17 +58,21 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
         l_step.event        = l_stepTable.get_or("event",      std::string{});
         m_steps.push_back(l_step);
 
-        // Pre-load any images so there is no hitch mid-tutorial
+        // Pre-load any images
         if (!l_step.imagePath.empty() && m_imageCache.find(l_step.imagePath) == m_imageCache.end())
         {
             auto l_tex = RE::Asset::Load<RE::Asset::Texture>(l_step.imagePath).lock();
             if (l_tex)
+            {
                 m_imageCache[l_step.imagePath] = l_tex;
+            }
         }
     }
 
     if (!m_steps.empty())
+    {
         m_showPanel = true;
+    }
 
     RE::Log::Message("TutorialPanel: loaded " + std::to_string(m_steps.size()) + " steps from " + _path);
 }
@@ -83,14 +86,15 @@ bool TutorialPanel::IsStepInteractive() const
 {
     if (!IsActive())
         return false;
+
     return m_steps[m_currentStep].event == "click_region";
 }
 
-const std::string& TutorialPanel::GetCurrentHighlightKey() const
+std::string TutorialPanel::GetCurrentHighlightKey() const
 {
-    static const std::string s_empty;
     if (!IsActive() || m_currentStep >= (int)m_steps.size())
-        return s_empty;
+        return "";
+    
     return m_steps[m_currentStep].highlightKey;
 }
 
@@ -151,11 +155,11 @@ void TutorialPanel::Draw()
     if (!m_showPanel || m_steps.empty())
         return;
 
-    const TutorialStep& l_step     = m_steps[m_currentStep];
-    const bool l_isClickRegion     = (l_step.event == "click_region" && !l_step.highlightKey.empty());
-    const bool l_isLast            = (m_currentStep == (int)m_steps.size() - 1);
+    const TutorialStep& l_step = m_steps[m_currentStep];
+    const bool l_isClickRegion = (l_step.event == "click_region" && !l_step.highlightKey.empty());
+    const bool l_isLast = (m_currentStep == (int)m_steps.size() - 1);
 
-    // --- Auto-advance: detect a click inside the highlighted region ---
+    // Auto-advance: detect a click inside the highlighted region
     if (l_isClickRegion)
     {
         ImRect l_rect;
@@ -171,8 +175,8 @@ void TutorialPanel::Draw()
         }
     }
 
-    // --- Full-screen dim window for "next" steps ---
-    // Rendered before the tutorial window so it sits below it in ImGui's z-order
+    // Full-screen dim window for "next" steps
+    // Rendered before the tutorial window so it sits below it
     // but above the editor panels (which were drawn in DrawEditorUI before this call).
     // Because it captures mouse input, editor panels behind it cannot be clicked.
     if (!l_isClickRegion)
@@ -192,10 +196,39 @@ void TutorialPanel::Draw()
         ImGui::PopStyleColor();
     }
 
-    // --- Highlight overlay (drawn above all windows via foreground draw list) ---
+    // Highlight overlay (drawn above all windows via foreground draw list)
     DrawHighlightOverlay();
 
-    ImGui::SetNextWindowSize(ImVec2(460, 540), ImGuiCond_FirstUseEver);
+    // Calculate dynamic window size based on content
+    ImVec2 l_windowSize = ImGui::GetIO().DisplaySize;
+    float l_maxWidth = l_windowSize.x * 0.35f;  // Use up to 35% of screen width
+    float l_maxHeight = l_windowSize.y * 0.6f;  // Use up to 60% of screen height
+    ImVec2 l_contentSize = ImGui::CalcTextSize(l_step.title.c_str(), nullptr, false, l_maxWidth);
+    l_contentSize.y += 60.0f;  // Add space for title styling, separator, and buttons
+
+    // Add space for image if present
+    if (!l_step.imagePath.empty())
+    {
+        auto l_imgIt = m_imageCache.find(l_step.imagePath);
+        if (l_imgIt != m_imageCache.end() && l_imgIt->second)
+        {
+            auto& l_tex = l_imgIt->second;
+            glm::ivec2 l_texSize = l_tex->Size();
+            float l_scale = std::min(l_maxWidth / (float)l_texSize.x,
+                                     (l_maxHeight * 0.4f) / (float)l_texSize.y);
+            l_contentSize.y += (l_texSize.y * l_scale) + 20.0f;
+        }
+    }
+
+    // Add space for body text (estimate based on text length and width)
+    size_t l_bodyLines = std::max(3, (int)(l_step.body.length() / 40));
+    l_contentSize.y += (l_bodyLines * 20.0f) + 20.0f;
+
+    // Clamp to max size
+    l_contentSize.x = std::min(l_maxWidth, std::max(460.0f, l_contentSize.x + 40.0f));
+    l_contentSize.y = std::min(l_maxHeight, l_contentSize.y + 40.0f);
+
+    ImGui::SetNextWindowSize(l_contentSize, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowPos(ImVec2(30, 80), ImGuiCond_FirstUseEver);
 
     if (!ImGui::Begin(m_tutorialTitle.empty() ? "Tutorial" : m_tutorialTitle.c_str(), &m_showPanel))
@@ -204,18 +237,18 @@ void TutorialPanel::Draw()
         return;
     }
 
-    // ---- Step title ----
+    // Step title
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.85f, 0.35f, 1.0f));
     ImGui::TextWrapped("%s", l_step.title.c_str());
     ImGui::PopStyleColor();
 
-    // ---- Step counter ----
+    // Step counter
     ImGui::SameLine(ImGui::GetContentRegionAvail().x - 70);
     ImGui::TextDisabled("Step %d / %d", m_currentStep + 1, (int)m_steps.size());
 
     ImGui::Separator();
 
-    // ---- Optional image ----
+    // Optional image
     float l_bodyHeight = ImGui::GetContentRegionAvail().y - 40.0f; // reserve room for nav buttons
 
     if (!l_step.imagePath.empty())
@@ -244,7 +277,7 @@ void TutorialPanel::Draw()
         }
     }
 
-    // ---- Scrollable body text ----
+    // Scrollable body text
     ImGui::InputTextMultiline("##body",
                               &m_steps[m_currentStep].body,
                               ImVec2(-1.0f, l_bodyHeight - 40.0f),
@@ -252,7 +285,7 @@ void TutorialPanel::Draw()
 
     ImGui::Separator();
 
-    // ---- Navigation buttons ----
+    // Navigation buttons
     bool l_isFirst = (m_currentStep == 0);
 
     if (l_isClickRegion)

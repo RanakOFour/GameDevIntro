@@ -19,9 +19,9 @@ file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
 add_subdirectory(extern/pugixml)
 add_subdirectory(extern/RanakEngine2)
 
-add_executable(TestRun "src/main.cpp" ${IMGUI_SOURCES})
+add_executable(TestRun "src/test_main.cpp" ${IMGUI_SOURCES})
 
-add_executable(GameEditor "src/editor_main.cpp" ${IMGUI_SOURCES})
+add_executable(GameDevIntro "src/editor_main.cpp" ${IMGUI_SOURCES})
 
 add_subdirectory(src)
 
@@ -34,25 +34,25 @@ target_include_directories(TestRun PUBLIC include extern
 target_link_libraries(TestRun PUBLIC RanakEngine)
 
 
-target_include_directories(GameEditor PUBLIC include extern
+target_include_directories(GameDevIntro PUBLIC include extern
                                                      extern/imgui
                                                      extern/imgui/backends
                                                      extern/imguiTextEdit
                                                      extern/pugixml)
 
-target_link_libraries(GameEditor PUBLIC RanakEngine)
+target_link_libraries(GameDevIntro PUBLIC RanakEngine)
 
 if(UNIX)
     target_link_directories(TestRun PUBLIC lib/unix)
     target_link_libraries(TestRun PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES} )
     
-    target_link_directories(GameEditor PUBLIC lib/unix)
-    target_link_libraries(GameEditor PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
+    target_link_directories(GameDevIntro PUBLIC lib/unix)
+    target_link_libraries(GameDevIntro PUBLIC GL GLEW SDL3 pugixml ${LUA_LIBRARIES})
 elseif(WIN32)
     target_link_directories(TestRun PUBLIC lib/win/release)
     target_link_libraries(TestRun PUBLIC opengl32 glew32 SDL3 lua)
-    target_link_directories(GameEditor PUBLIC lib/win/release)
-    target_link_libraries(GameEditor PUBLIC opengl32 glew32 SDL3 lua)
+    target_link_directories(GameDevIntro PUBLIC lib/win/release)
+    target_link_libraries(GameDevIntro PUBLIC opengl32 glew32 SDL3 lua)
 
     
     add_custom_command(TARGET TestRun POST_BUILD
@@ -61,15 +61,15 @@ elseif(WIN32)
                        $<TARGET_FILE_DIR:TestRun>)
 
     
-    add_custom_command(TARGET GameEditor POST_BUILD
+    add_custom_command(TARGET GameDevIntro POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
-                       $<TARGET_FILE_DIR:GameEditor>)
+                       $<TARGET_FILE_DIR:GameDevIntro>)
 
-    add_custom_command(TARGET GameEditor POST_BUILD
+    add_custom_command(TARGET GameDevIntro POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/resources"
-                       $<TARGET_FILE_DIR:GameEditor>/resources)
+                       $<TARGET_FILE_DIR:GameDevIntro>/resources)
 endif()
 
 #endif()

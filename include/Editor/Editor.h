@@ -3,11 +3,7 @@
 
 #include "RanakEngine/RanakEngine.h"
 
-#include "Editor/EntityPanel.h"
-#include "Editor/CategoryPanel.h"
-#include "Editor/RulesPanel.h"
-#include "Editor/PropertiesPanel.h"
-#include "Editor/CameraPanel.h"
+#include "Editor/TutorialPanel.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
@@ -27,7 +23,8 @@ class TextEditTab;
  * Must be created via Editor::Create() (factory pattern enforced so that
  * shared_from_this() is valid during construction).  Drives the main loop
  * in Run(), calling Draw() each frame which dispatches to SceneEditTab or
- * TextEditTab depending on the active tab index.
+ * TextEditTab depending on the active tab index.  The menu bar and tutorial
+ * panel are owned here so they persist across tab switches.
  */
 class Editor : public std::enable_shared_from_this<Editor>
 {
@@ -38,7 +35,9 @@ private:
 
     RE::EngineContents m_engineContents; ///< Aggregated engine sub-systems.
 
-    int m_tabIndex = 0; ///< Even = TextEdit tab, odd = SceneEdit tab.
+    int m_tabIndex = 0; ///< Even = SceneEdit tab, odd = TextEdit tab.
+
+    TutorialPanel m_tutorialPanel; ///< In-editor guided tutorial overlay (universal across tabs).
 
     /** @brief Initialises Dear ImGui (context, style, SDL3/OpenGL backends). */
     void InitImGui();
@@ -46,6 +45,8 @@ private:
     void CleanupImGui();
     /** @brief Polls SDL events and forwards them to ImGui and the scene camera. */
     void HandleInput();
+    /** @brief Renders the application menu bar (universal across tabs). */
+    void DrawMenuBar();
 
     Editor();
     public:
@@ -66,6 +67,8 @@ private:
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     /** @brief Returns a weak pointer to the SceneEditTab. */
     std::weak_ptr<SceneEditTab> GetSceneEdit();
+    /** @brief Returns a reference to the tutorial panel. */
+    TutorialPanel& GetTutorialPanel() { return m_tutorialPanel; }
 };
 
 #endif

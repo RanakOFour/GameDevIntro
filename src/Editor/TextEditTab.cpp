@@ -222,14 +222,21 @@ void TextEditTab::Draw()
 
             if(m_fileToEdit != nullptr && ImGui::BeginChild("Properties", ImVec2(0, 0)))
             {
-                auto l_category = m_fileToEdit->GetCategory().lock();
-                std::string l_categoryName = l_category->GetName();
-                sol::table l_categoryData = l_category->GetBaseData();
-                
-                ImGui::Text(l_categoryName.c_str());
-                ImGui::Indent();
-                DrawCategoryAttributes(l_categoryName, l_categoryData);
-                ImGui::Unindent();
+                // Resolve the category by name from the LuaContext rather than
+                // via a forward pointer stored on the file itself.
+                auto l_category = RE::Core::LuaContext::Instance().lock()
+                                    ->GetCategory(m_fileToEdit->GetName()).lock();
+
+                if (l_category)
+                {
+                    std::string l_categoryName = l_category->GetName();
+                    sol::table l_categoryData = l_category->GetBaseData();
+
+                    ImGui::Text(l_categoryName.c_str());
+                    ImGui::Indent();
+                    DrawCategoryAttributes(l_categoryName, l_categoryData);
+                    ImGui::Unindent();
+                }
 
                 ImGui::EndChild();
             }
@@ -258,7 +265,8 @@ void TextEditTab::SaveCurrentFile()
     m_fileToEdit->SetCode(l_newCode);
     m_fileToEdit->Save();
 
-    auto l_category = m_fileToEdit->GetCategory().lock();
+    auto l_category = RE::Core::LuaContext::Instance().lock()
+                        ->GetCategory(m_fileToEdit->GetName()).lock();
     if (!l_category) return;
 
     std::string l_catName      = l_category->GetName();
