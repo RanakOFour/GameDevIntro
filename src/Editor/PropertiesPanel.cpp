@@ -51,6 +51,16 @@ void PropertiesPanel::DrawEntityProperties(int _id)
 
 void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categoryName, sol::table _attributes)
 {
+    // Fetch base category fields once so hidden metadata can be checked per property.
+    sol::table l_baseFields;
+    auto l_category = m_editor.lock()->GetEngineContents()
+                               .core->GetLuaContext()
+                               ->GetCategory(_categoryName).lock();
+    if (l_category)
+    {
+        l_baseFields = l_category->GetBaseData();
+    }
+
     std::vector<std::string> l_properties;
 
     for (auto& l_pair : _attributes)
@@ -63,6 +73,27 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 
     for (auto& l_property : l_properties)
     {
+        // Skip properties marked hidden via Field(default, { hidden = true }) in the category definition.
+        if (l_baseFields.valid())
+        {
+            sol::object l_baseMeta = l_baseFields.raw_get<sol::object>(l_property.c_str());
+            if (l_baseMeta.get_type() == sol::type::table)
+            {
+                sol::table l_metaTable = l_baseMeta.as<sol::table>();
+                sol::optional<bool> l_isField = l_metaTable["__isField"];
+                if (l_isField.has_value() && *l_isField)
+                {
+                    sol::optional<sol::table> l_opts = l_metaTable["opts"];
+                    if (l_opts.has_value())
+                    {
+                        sol::optional<bool> l_hidden = (*l_opts)["hidden"];
+                        if (l_hidden.has_value() && *l_hidden)
+                            continue;
+                    }
+                }
+            }
+        }
+
         // Create a unique ID for this property
         ImGui::PushID((_categoryName + "::" + l_property).c_str());
 

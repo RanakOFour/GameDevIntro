@@ -3,4 +3,5 @@
 .vs/
 build/
 debug/
+resources/SavedScenes/
 output.txt

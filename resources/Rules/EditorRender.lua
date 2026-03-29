@@ -2,11 +2,8 @@ local EditorRender = Rule {
     categories = {"Transform"},
     fields = {
         templateDrawable = {
-            shaderPath = "",
             shader = Asset.Shader("./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs"),
-            texturePath = "",
-            texture = Asset.Texture("./resources/Textures/NoDrawable.png"),
-            modelPath = "",
+            texture = Asset.Texture("./resources/Textures/EditorTexture.png"),
             model = Asset.Model("./resources/Models/FlatTexture.obj")
         },
 
@@ -31,9 +28,7 @@ function EditorRender:Update(_entityData)
 end
 
 function EditorRender:Draw(_entityData)
-    if(_entityData["Drawable"] ~= nil) then
-        Core.Camera:Draw(_entityData["Transform"], _entityData["Drawable"])
-    end
+    Core.Camera:Draw(_entityData)
 
     if(self.fields.currentInput and not self.fields.lastFrameInput) then
         self.fields.drawOutline = not self.fields.drawOutline
@@ -44,8 +39,12 @@ function EditorRender:Draw(_entityData)
     if(self.fields.drawOutline) then
         local _entityLayer = _entityData["Transform"].Layer
         _entityData["Transform"].Layer = Core.Camera:getPosition().z - 0.5
-        
-        Core.Camera:Draw(_entityData["Transform"], self.fields.templateDrawable)
+
+        local _model = self.fields.templateDrawable.model
+        local _shader = self.fields.templateDrawable.shader
+        local _texture = self.fields.templateDrawable.texture
+
+        Core.Camera:Draw(_entityData["Transform"], _model, _texture, _shader)
 
         _entityData.Transform.Layer = _entityLayer
     end

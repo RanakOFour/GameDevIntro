@@ -15,7 +15,7 @@
 #include <GL/gl.h>
 
 Editor::Editor()
-: m_tabIndex(0)
+: m_showTextEdit(false)
 , m_showLoadDialog(false)
 , m_showSaveDialog(false)
 {
@@ -180,11 +180,11 @@ void Editor::DrawMenuBar()
                 std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
                 if (m_showLoadDialog)
                 {
-                    SceneSerializer::LoadFromFile(l_filePathDir, m_engineContents);
+                    SceneSerializer::LoadFromFile(l_filePathName, m_engineContents);
                 }
                 else
                 {
-                    SceneSerializer::SaveToFile(l_filePathDir, m_engineContents);
+                    SceneSerializer::SaveToFile(l_filePathName, m_engineContents);
                 }
                 
                 m_showLoadDialog = false;
@@ -217,15 +217,19 @@ void Editor::Draw()
     // Menu bar and tutorial panel are universal across all tabs
     DrawMenuBar();
 
-    if(m_tabIndex % 2 == 0)
+    if (m_showTextEdit)
     {
-        m_sceneEdit->Draw();
-    }
-    else
-    {
-        m_textEdit->Draw();
+        ImGui::BeginDisabled();
     }
 
+    m_sceneEdit->Draw();
+
+    if (m_showTextEdit)
+    {
+        ImGui::EndDisabled();
+        m_textEdit->Draw();
+    }
+        
     // Tutorial panel drawn last so it appears above all tab content
     m_tutorialPanel.DrawAsWindow();
 
@@ -317,7 +321,7 @@ void Editor::HandleInput()
 
         if(m_engineContents.io->GetKeyDownThisFrame('\t'))
         {
-            m_tabIndex++;
+            m_showTextEdit = !m_showTextEdit;
             RE::Log::Message("Tab pressed!");
         }
     }

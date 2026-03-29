@@ -69,6 +69,29 @@ void DrawCategoryAttributes(std::string _categoryName, sol::table _attributes)
         // Determine the type and display accordingly
         sol::object l_value = _attributes.raw_get<sol::object>(l_property.c_str());
 
+        // In the base-fields table, Field(default, opts) produces a wrapper table.
+        // If the field is marked hidden, skip it; otherwise unwrap to the default value for display.
+        if (l_value.get_type() == sol::type::table)
+        {
+            sol::table l_tbl = l_value.as<sol::table>();
+            sol::optional<bool> l_isField = l_tbl["__isField"];
+            if (l_isField.has_value() && *l_isField)
+            {
+                sol::optional<sol::table> l_opts = l_tbl["opts"];
+                if (l_opts.has_value())
+                {
+                    sol::optional<bool> l_hidden = (*l_opts)["hidden"];
+                    if (l_hidden.has_value() && *l_hidden)
+                    {
+                        ImGui::PopID();
+                        continue;
+                    }
+                }
+                // Not hidden — unwrap to the default value so normal display works.
+                l_value = l_tbl["default"];
+            }
+        }
+
         switch (l_value.get_type())
         {
         case sol::type::number:

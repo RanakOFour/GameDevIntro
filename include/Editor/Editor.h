@@ -35,7 +35,7 @@ private:
 
     RE::EngineContents m_engineContents; ///< Aggregated engine sub-systems.
 
-    int m_tabIndex = 0; ///< Even = SceneEdit tab, odd = TextEdit tab.
+    bool m_showTextEdit; ///< True when the TextEditTab is active.
 
     bool m_showLoadDialog = false;   ///< True when the "Load Category" file dialog is open.
     bool m_showSaveDialog = false;   ///< True when the "Create Category" dialog is open.
