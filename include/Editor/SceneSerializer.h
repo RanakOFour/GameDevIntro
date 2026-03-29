@@ -59,8 +59,8 @@ public:
      * @param _contents Engine contents (provides LuaContext + AssetManager).
      * @param _filePath Destination file path (created / overwritten).
      */
-    static void SaveToFile(RE::EngineContents& _contents,
-                           const std::string& _filePath);
+    static void SaveToFile(const std::string& _filePath,
+                           RE::EngineContents& _contents);
 
     /**
      * @brief Reconstructs a scene by executing a Lua script file on disk.

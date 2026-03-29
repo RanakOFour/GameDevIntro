@@ -37,6 +37,9 @@ private:
 
     int m_tabIndex = 0; ///< Even = SceneEdit tab, odd = TextEdit tab.
 
+    bool m_showLoadDialog = false;   ///< True when the "Load Category" file dialog is open.
+    bool m_showSaveDialog = false;   ///< True when the "Create Category" dialog is open.
+
     TutorialPanel m_tutorialPanel; ///< In-editor guided tutorial overlay (universal across tabs).
 
     /** @brief Initialises Dear ImGui (context, style, SDL3/OpenGL backends). */

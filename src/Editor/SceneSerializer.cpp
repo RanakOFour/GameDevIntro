@@ -343,8 +343,8 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
 }
 
 
-void SceneSerializer::SaveToFile(RE::EngineContents& _contents,
-                                 const std::string& _filePath)
+void SceneSerializer::SaveToFile(const std::string& _filePath,
+                                 RE::EngineContents& _contents)
 {
     std::shared_ptr<RE::Core::Scene> l_scenePtr = _contents.core->GetScene().lock();
     if (!l_scenePtr)

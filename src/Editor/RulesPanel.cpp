@@ -47,7 +47,6 @@ void RulesPanel::RefreshRuleList()
         if(l_rulePtr->GetActive())
         {
             m_activeRules.push_back(l_ruleName);
-            RE::Log::Message("Active rule found: " + l_ruleName);
         }
     }
 }
@@ -83,7 +82,7 @@ void RulesPanel::Draw()
         // Active rules list
         if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
         {
-            for (auto& l_ruleName : m_activeRules)
+            for (auto& l_ruleName : m_loadedRules)
             {
                 if (m_filterString.size() > 0)
                 {
@@ -158,7 +157,7 @@ void RulesPanel::DrawAsChild(ImGuiChildFlags _flags)
         // Active rules list
         if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
         {
-            for (auto& l_ruleName : m_activeRules)
+            for (auto& l_ruleName : m_loadedRules)
             {
                 if (m_filterString.size() > 0)
                 {

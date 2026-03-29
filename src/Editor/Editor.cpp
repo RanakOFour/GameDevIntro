@@ -9,11 +9,15 @@
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
 
+#include "imguiFileDialog/ImGuiFileDialog.h"
+
 #include "SDL3/SDL.h"
 #include <GL/gl.h>
 
 Editor::Editor()
 : m_tabIndex(0)
+, m_showLoadDialog(false)
+, m_showSaveDialog(false)
 {
     // Initialize the engine (this creates the SDL window and GL context)
     m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
@@ -118,13 +122,11 @@ void Editor::DrawMenuBar()
             }
             if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
             {
-                //Open file dialog
-
-                SceneSerializer::LoadFromFile("./SavedScenes/Scene1.lua", m_engineContents);
+                m_showLoadDialog = true;
             }
             if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
             {
-                SceneSerializer::SaveToFile(m_engineContents, "./SavedScenes/Scene1.lua");
+                m_showSaveDialog = true;
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Ctrl+Q"))
@@ -132,19 +134,6 @@ void Editor::DrawMenuBar()
                 SDL_Event l_quitEvent;
                 l_quitEvent.type = SDL_EVENT_QUIT;
                 SDL_PushEvent(&l_quitEvent);
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Edit"))
-        {
-            if (ImGui::MenuItem("Undo", "Ctrl+Z"))
-            {
-                // TODO: Implement undo
-            }
-            if (ImGui::MenuItem("Redo", "Ctrl+Y"))
-            {
-                // TODO: Implement redo
             }
             ImGui::EndMenu();
         }
@@ -174,6 +163,39 @@ void Editor::DrawMenuBar()
         }
 
         ImGui::EndMainMenuBar();
+    }
+
+    if(m_showLoadDialog || m_showSaveDialog)
+    {
+        IGFD::FileDialogConfig config;
+        config.path = ".";
+        ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
+
+
+        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+        {
+            if (ImGuiFileDialog::Instance()->IsOk())
+            {
+                std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+                std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
+                if (m_showLoadDialog)
+                {
+                    SceneSerializer::LoadFromFile(l_filePathDir, m_engineContents);
+                }
+                else
+                {
+                    SceneSerializer::SaveToFile(l_filePathDir, m_engineContents);
+                }
+                
+                m_showLoadDialog = false;
+                m_showSaveDialog = false;
+            }
+
+
+            ImGuiFileDialog::Instance()->Close();
+            m_showLoadDialog = false;
+            m_showSaveDialog = false;
+        }
     }
 }
 
