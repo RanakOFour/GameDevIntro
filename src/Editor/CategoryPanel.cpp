@@ -14,7 +14,7 @@
 #include <string>
 
 CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
-: Panel(_editor)
+: Panel("Categories", _editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newCategoryName("")
@@ -50,120 +50,52 @@ void CategoryPanel::RefreshCategoryList()
 
 void CategoryPanel::Draw()
 {
-    if (!m_showPanel) return;
-
     RefreshCategoryList();
     
-    if (ImGui::Begin("Categories", &m_showPanel))
+    float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+    // Create and Load buttons
+    if (ImGui::Button("Create", ImVec2(buttonWidth, 0)))
     {
-        float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-        // Create and Load buttons
-        if (ImGui::Button("Create", ImVec2(buttonWidth, 0)))
-        {
-            m_showCreateDialog = true;
-        }
-
-        ImGui::SameLine();
-
-        if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
-        {
-            m_showLoadDialog = true;
-        }
-
-        ImGui::Separator();
-
-        // Search/Filter
-        ImGui::InputTextWithHint("##CategoryFilter", "Search categories...", &m_filterString);
-
-        ImGui::Separator();
-
-        // Category list
-        if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
-        {
-            for (int i = 0; i < m_loadedCategories.size(); i++)
-            {
-                auto& l_category = m_loadedCategories[i];
-
-                if (m_filterString.size() > 0)
-                {
-                    std::string filter(m_filterString);
-                    if (l_category.find(filter) == std::string::npos)
-                    {
-                        continue;
-                    }
-                }
-
-                bool l_selected = (m_selectedCategory == i);
-                if(ImGui::Selectable(l_category.c_str(), l_selected))
-                {
-                    SelectCategory(i);
-                };
-            }
-        }
-
-        ImGui::EndChild();
-        ImGui::End();
+        m_showCreateDialog = true;
     }
 
-    // Draw dialogs
-    DrawCreateCategoryDialog();
-    DrawLoadCategoryDialog();
-}
+    ImGui::SameLine();
 
-void CategoryPanel::DrawAsChild(ImGuiChildFlags _flags)
-{
-    if (!m_showPanel) return;
-
-    RefreshCategoryList();
-    
-    if (ImGui::BeginChild("Categories", ImVec2(0, 0), _flags))
+    if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
     {
-        float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-        // Create and Load buttons
-        if (ImGui::Button("Create", ImVec2(buttonWidth, 0)))
+        m_showLoadDialog = true;
+    }
+
+    ImGui::Separator();
+
+    // Search/Filter
+    ImGui::InputTextWithHint("##CategoryFilter", "Search categories...", &m_filterString);
+
+    ImGui::Separator();
+
+    // Category list
+    if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
+    {
+        for (int i = 0; i < m_loadedCategories.size(); i++)
         {
-            m_showCreateDialog = true;
-        }
+            auto& l_category = m_loadedCategories[i];
 
-        ImGui::SameLine();
-
-        if (ImGui::Button("Load", ImVec2(buttonWidth, 0)))
-        {
-            m_showLoadDialog = true;
-        }
-
-        ImGui::Separator();
-
-        // Search/Filter
-        ImGui::InputTextWithHint("##CategoryFilter", "Search categories...", &m_filterString);
-
-        ImGui::Separator();
-
-        // Category list
-        if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
-        {
-            for (int i = 0; i < m_loadedCategories.size(); i++)
+            if (m_filterString.size() > 0)
             {
-                auto& l_category = m_loadedCategories[i];
-
-                if (m_filterString.size() > 0)
+                std::string filter(m_filterString);
+                if (l_category.find(filter) == std::string::npos)
                 {
-                    std::string filter(m_filterString);
-                    if (l_category.find(filter) == std::string::npos)
-                    {
-                        continue;
-                    }
+                    continue;
                 }
-
-                bool l_selected = (m_selectedCategory == i);
-                if(ImGui::Selectable(l_category.c_str(), l_selected))
-                {
-                    SelectCategory(i);
-                };
             }
+
+            bool l_selected = (m_selectedCategory == i);
+            if(ImGui::Selectable(l_category.c_str(), l_selected))
+            {
+                SelectCategory(i);
+            };
         }
 
-        ImGui::EndChild();
         ImGui::EndChild();
     }
 

@@ -13,7 +13,7 @@
 #include <memory>
 
 PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
-: Panel(_editor)
+: Panel("Entity Properties", _editor)
 , m_stringValueMap()
 , m_entityNameMap()
 , m_showAddToCategory(false)
@@ -154,94 +154,85 @@ void PropertiesPanel::Draw()
     auto l_editor = m_editor.lock();
     int l_selectedEntity = l_editor->GetSceneEdit().lock()->GetSelectedEntity();
 
-    if (!m_showPanel || l_selectedEntity == -1)
-        return;
-
     // Only set position initially to prevent locking the panel
     if(m_setPosition)
     {
-        ImGui::SetNextWindowPos(m_position);
+        ImGui::SetWindowPos(m_position);
         m_setPosition = false;
     }
 
-    ImGui::SetNextWindowSize(m_size);
-    if (ImGui::Begin("Entity Properties", &m_showPanel))
+    ImGui::SetWindowSize(m_size);
+    if (l_selectedEntity > -1)
     {
-        if (l_selectedEntity > -1)
+        ImGui::Text("Entity ID: %d", l_selectedEntity);
+        ImGui::Separator();
+
+        if (m_entityNameMap.find(l_selectedEntity) == m_entityNameMap.end())
         {
-            ImGui::Text("Entity ID: %d", l_selectedEntity);
+            m_entityNameMap[l_selectedEntity] = m_registry.value().get().GetEntityName(l_selectedEntity);
+        }
+
+        if (ImGui::InputText("Name", &m_entityNameMap[l_selectedEntity], ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            sol::table l_entityTable = m_registry.value().get().GetEntityTable().raw_get<sol::table>(l_selectedEntity);
+            l_entityTable["name"] = m_entityNameMap[l_selectedEntity];
+        }
+
+        ImGui::Separator();
+
+        DrawEntityProperties(l_selectedEntity);
+
+        if (ImGui::Button("Add to Category", ImVec2(-1, 0)))
+        {
+            m_showAddToCategory = !m_showAddToCategory;
+        }
+
+        if (m_showAddToCategory)
+        {
             ImGui::Separator();
 
-            if (m_entityNameMap.find(l_selectedEntity) == m_entityNameMap.end())
+            // I love cache!!! Bleh :3
+            std::stringstream l_categories(l_editor->GetEngineContents()
+                .core->GetLuaContext()
+                ->GetCategoryNames());
+            std::string l_categoryName;
+
+            sol::table l_entityData = m_registry.value().get().GetEntityAttributes(l_selectedEntity);
+
+            while (std::getline(l_categories, l_categoryName, ';'))
             {
-                m_entityNameMap[l_selectedEntity] = m_registry.value().get().GetEntityName(l_selectedEntity);
-            }
+                bool l_showCategory = true;
 
-            if (ImGui::InputText("Name", &m_entityNameMap[l_selectedEntity], ImGuiInputTextFlags_EnterReturnsTrue))
-            {
-                sol::table l_entityTable = m_registry.value().get().GetEntityTable().raw_get<sol::table>(l_selectedEntity);
-                l_entityTable["name"] = m_entityNameMap[l_selectedEntity];
-            }
-
-            ImGui::Separator();
-
-            DrawEntityProperties(l_selectedEntity);
-
-            if (ImGui::Button("Add to Category", ImVec2(-1, 0)))
-            {
-                m_showAddToCategory = !m_showAddToCategory;
-            }
-
-            if (m_showAddToCategory)
-            {
-                ImGui::Separator();
-
-                // I love cache!!! Bleh :3
-                std::stringstream l_categories(l_editor->GetEngineContents()
-                    .core->GetLuaContext()
-                    ->GetCategoryNames());
-                std::string l_categoryName;
-
-                sol::table l_entityData = m_registry.value().get().GetEntityAttributes(l_selectedEntity);
-
-                while (std::getline(l_categories, l_categoryName, ';'))
+                // Rule out categories that are already on the entity
+                for (auto& l_pair : l_entityData)
                 {
-                    bool l_showCategory = true;
-
-                    // Rule out categories that are already on the entity
-                    for (auto& l_pair : l_entityData)
+                    std::string l_entityCatName = l_pair.first.as<std::string>();
+                    if (l_entityCatName == l_categoryName)
                     {
-                        std::string l_entityCatName = l_pair.first.as<std::string>();
-                        if (l_entityCatName == l_categoryName)
-                        {
-                            l_showCategory = false;
-                        }
+                        l_showCategory = false;
                     }
+                }
 
-                    //Only show unknown categories
-                    if (l_showCategory)
+                //Only show unknown categories
+                if (l_showCategory)
+                {
+                    if (ImGui::MenuItem(l_categoryName.c_str()))
                     {
-                        if (ImGui::MenuItem(l_categoryName.c_str()))
-                        {
-                            // Peak cache optimisation. A s_ptr<LuaContext> would probably be best
-                            auto l_category = l_editor->GetEngineContents()
-                                .core->GetLuaContext()
-                                ->GetCategory(l_categoryName).lock();
+                        // Peak cache optimisation. A s_ptr<LuaContext> would probably be best
+                        auto l_category = l_editor->GetEngineContents()
+                            .core->GetLuaContext()
+                            ->GetCategory(l_categoryName).lock();
 
-                            m_registry.value().get().AddToCategory(l_selectedEntity, l_category->GetSignature());
-                            m_showAddToCategory = false;
-                        }
+                        m_registry.value().get().AddToCategory(l_selectedEntity, l_category->GetSignature());
+                        m_showAddToCategory = false;
                     }
                 }
             }
         }
-        else
-        {
-            ImGui::Text("No entity selected");
-        }
-
-
-        ImGui::End();
+    }
+    else
+    {
+        ImGui::Text("No entity selected");
     }
 }
 

@@ -41,6 +41,8 @@ class CategoryPanel : public Panel
     /** @brief Renders the file-chooser dialog for loading a category .lua file. */
     void DrawLoadCategoryDialog();
 
+    void Draw() override;
+
     public:
     CategoryPanel() {};
     /**
@@ -49,14 +51,6 @@ class CategoryPanel : public Panel
      */
     CategoryPanel(std::weak_ptr<Editor> _editor);
     ~CategoryPanel();
-
-    /** @brief Renders the standalone "Categories" window. */
-    void Draw();
-    /**
-     * @brief Renders the panel as an ImGui child region (used inside TextEditTab).
-     * @param _flags Child-window flags forwarded to ImGui::BeginChild.
-     */
-    void DrawAsChild(ImGuiChildFlags _flags);
 
     /**
      * @brief Selects the category at the given list index.

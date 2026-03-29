@@ -10,7 +10,7 @@
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
 TutorialPanel::TutorialPanel(std::weak_ptr<Editor> _editor)
-: Panel(_editor)
+: Panel("Tutorial", _editor)
 {
     m_showPanel = false;
 }
@@ -152,9 +152,6 @@ void TutorialPanel::DrawHighlightOverlay()
 
 void TutorialPanel::Draw()
 {
-    if (!m_showPanel || m_steps.empty())
-        return;
-
     const TutorialStep& l_step = m_steps[m_currentStep];
     const bool l_isClickRegion = (l_step.event == "click_region" && !l_step.highlightKey.empty());
     const bool l_isLast = (m_currentStep == (int)m_steps.size() - 1);
@@ -228,12 +225,12 @@ void TutorialPanel::Draw()
     l_contentSize.x = std::min(l_maxWidth, std::max(460.0f, l_contentSize.x + 40.0f));
     l_contentSize.y = std::min(l_maxHeight, l_contentSize.y + 40.0f);
 
-    ImGui::SetNextWindowSize(l_contentSize, ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowPos(ImVec2(30, 80), ImGuiCond_FirstUseEver);
+    ImGui::SetWindowSize(l_contentSize, ImGuiCond_FirstUseEver);
+    ImGui::SetWindowPos(ImVec2(30, 80), ImGuiCond_FirstUseEver);
 
-    if (!ImGui::Begin(m_tutorialTitle.empty() ? "Tutorial" : m_tutorialTitle.c_str(), &m_showPanel))
+    if (!ImGui::BeginChild(m_tutorialTitle.empty() ? "Tutorial" : m_tutorialTitle.c_str(), ImVec2(0, 0), true))
     {
-        ImGui::End();
+        ImGui::EndChild();
         return;
     }
 
@@ -329,5 +326,5 @@ void TutorialPanel::Draw()
         }
     }
 
-    ImGui::End();
+    ImGui::EndChild();
 }

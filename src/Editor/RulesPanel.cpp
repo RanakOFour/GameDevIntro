@@ -12,7 +12,7 @@
 #include <algorithm>
 
 RulesPanel::RulesPanel(std::weak_ptr<Editor> _editor)
-: Panel(_editor)
+: Panel("Rules", _editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
 , m_newRuleName("")
@@ -53,151 +53,71 @@ void RulesPanel::RefreshRuleList()
 
 void RulesPanel::Draw()
 {
-    if (!m_showPanel) return;
+    RefreshRuleList();
 
-    ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
-    if (ImGui::Begin("Rules", &m_showPanel))
+    // Create and Load buttons
+    if (ImGui::Button("Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
     {
-        ImGui::Text("Active Rules:");
-        ImGui::Separator();
-
-        // Create and Load buttons
-        if (ImGui::Button("+ Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
-        {
-            m_showCreateDialog = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Load", ImVec2((ImGui::GetContentRegionAvail().x), 0)))
-        {
-            m_showLoadDialog = true;
-        }
-
-        ImGui::Separator();
-
-        // Search/Filter
-        ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
-
-        ImGui::Separator();
-
-        // Active rules list
-        if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
-        {
-            for (auto& l_ruleName : m_loadedRules)
-            {
-                if (m_filterString.size() > 0)
-                {
-                    std::string filter(m_filterString);
-                    if (l_ruleName.find(filter) == std::string::npos)
-                    {
-                        continue;
-                    }
-                }
-
-                ImGui::PushID(l_ruleName.c_str());
-                
-                ImGui::Text(l_ruleName.c_str());
-
-                // Remove button
-                ImGui::SameLine(ImGui::GetWindowWidth() - 100);
-                if (ImGui::Button("Toggle", ImVec2(0, 0)))
-                {
-                    // Set rule to not active
-                    sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
-                    std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
-                    l_rulePtr->SetActive(!l_rulePtr->GetActive());
-                    
-                    std::string l_logMessage = "Set " + l_ruleName + " to ";
-
-                    if(!l_rulePtr->GetActive())
-                    {
-                        l_logMessage += "not ";
-                    }
-
-                    RE::Log::Message(l_logMessage + "active!");
-                }
-
-                ImGui::PopID();
-            }
-            ImGui::EndChild();
-        }
+        m_showCreateDialog = true;
     }
-    ImGui::End();
+    ImGui::SameLine();
+    if (ImGui::Button("Load", ImVec2((ImGui::GetContentRegionAvail().x), 0)))
+    {
+        m_showLoadDialog = true;
+    }
+
+    ImGui::Separator();
+
+    // Search/Filter
+    ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
+
+    ImGui::Separator();
+
+    // Active rules list
+    if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
+    {
+        for (auto& l_ruleName : m_loadedRules)
+        {
+            if (m_filterString.size() > 0)
+            {
+                std::string filter(m_filterString);
+                if (l_ruleName.find(filter) == std::string::npos)
+                {
+                    continue;
+                }
+            }
+
+            ImGui::PushID(l_ruleName.c_str());
+            
+            ImGui::Text(l_ruleName.c_str());
+
+            // Remove button
+            ImGui::SameLine(ImGui::GetWindowWidth() - 100);
+            if (ImGui::Button("Toggle", ImVec2(0, 0)))
+            {
+                // Set rule to not active
+                sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
+                std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
+                l_rulePtr->SetActive(!l_rulePtr->GetActive());
+                
+                std::string l_logMessage = "Set " + l_ruleName + " to ";
+
+                if(!l_rulePtr->GetActive())
+                {
+                    l_logMessage += "not ";
+                }
+
+                RE::Log::Message(l_logMessage + "active!");
+            }
+
+            ImGui::PopID();
+        }
+        ImGui::EndChild();
+    }
 
     // Draw dialogs
     DrawCreateRuleDialog();
     DrawLoadRuleDialog();
-}
-
-void RulesPanel::DrawAsChild(ImGuiChildFlags _flags)
-{
-    if (!m_showPanel) return;
-
-    RefreshRuleList();
-
-    if (ImGui::BeginChild("Rules", ImVec2(0, 0)))
-    {
-        // Create and Load buttons
-        if (ImGui::Button("Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
-        {
-            m_showCreateDialog = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Load", ImVec2((ImGui::GetContentRegionAvail().x), 0)))
-        {
-            m_showLoadDialog = true;
-        }
-
-        ImGui::Separator();
-
-        // Search/Filter
-        ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
-
-        ImGui::Separator();
-
-        // Active rules list
-        if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
-        {
-            for (auto& l_ruleName : m_loadedRules)
-            {
-                if (m_filterString.size() > 0)
-                {
-                    std::string filter(m_filterString);
-                    if (l_ruleName.find(filter) == std::string::npos)
-                    {
-                        continue;
-                    }
-                }
-
-                ImGui::PushID(l_ruleName.c_str());
-                
-                ImGui::Text(l_ruleName.c_str());
-
-                // Remove button
-                ImGui::SameLine(ImGui::GetWindowWidth() - 100);
-                if (ImGui::Button("Toggle", ImVec2(0, 0)))
-                {
-                    // Set rule to not active
-                    sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
-                    std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
-                    l_rulePtr->SetActive(!l_rulePtr->GetActive());
-                    
-                    std::string l_logMessage = "Set " + l_ruleName + " to ";
-
-                    if(!l_rulePtr->GetActive())
-                    {
-                        l_logMessage += "not ";
-                    }
-
-                    RE::Log::Message(l_logMessage + "active!");
-                }
-
-                ImGui::PopID();
-            }
-            ImGui::EndChild();
-        }
-
-        ImGui::EndChild();
-    }
 }
 
 void RulesPanel::DrawCreateRuleDialog()

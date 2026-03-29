@@ -54,11 +54,11 @@ void SceneEditTab::DrawEditorUI()
     if (l_tutLocked)
         ImGui::BeginDisabled();
 
-    m_entityPanel.Draw();
-    m_categoryPanel.Draw();
-    m_rulesPanel.Draw();
-    m_cameraPanel.Draw();
-    m_propertiesPanel.Draw();
+    m_entityPanel.DrawAsWindow();
+    m_categoryPanel.DrawAsWindow();
+    m_rulesPanel.DrawAsWindow();
+    m_cameraPanel.DrawAsWindow();
+    m_propertiesPanel.DrawAsWindow();
 
     if (l_tutLocked)
         ImGui::EndDisabled();

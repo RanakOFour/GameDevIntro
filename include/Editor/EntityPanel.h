@@ -30,6 +30,9 @@ class EntityPanel : public Panel
     /** @brief Refreshes m_cachedEntities from the live EntityRegistry. */
     void RefreshEntityList();
 
+    /** @brief Renders the entity list window. */
+    void Draw() override;
+
     public:
     EntityPanel() : m_registry() {};
     /**
@@ -38,9 +41,6 @@ class EntityPanel : public Panel
      */
     EntityPanel(std::weak_ptr<Editor> _editor);
     ~EntityPanel();
-
-    /** @brief Renders the entity list window. */
-    void Draw();
 
     /** @brief Adds a new empty entity to the scene and selects it. */
     void AddEntity();

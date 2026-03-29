@@ -38,6 +38,8 @@ class RulesPanel : public Panel
     /** @brief Renders the file-chooser dialog for loading a rule .lua file. */
     void DrawLoadRuleDialog();
 
+    void Draw() override;
+
     public:
     RulesPanel() {};
     /**
@@ -46,14 +48,6 @@ class RulesPanel : public Panel
      */
     RulesPanel(std::weak_ptr<Editor> _editor);
     ~RulesPanel();
-
-    /** @brief Renders the standalone "Rules" window. */
-    void Draw();
-    /**
-     * @brief Renders the panel as an ImGui child region (used inside TextEditTab).
-     * @param _flags Child-window flags forwarded to ImGui::BeginChild.
-     */
-    void DrawAsChild(ImGuiChildFlags _flags);
 
     /**
      * @brief Selects the rule at the given list index.

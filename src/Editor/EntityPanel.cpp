@@ -8,7 +8,7 @@
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
 EntityPanel::EntityPanel(std::weak_ptr<Editor> _editor)
-: Panel(_editor)
+: Panel("Entity List", _editor)
 , m_cachedEntities()
 , m_registry(_editor.lock()->GetEngineContents().core->GetScene().lock()->GetRegistry())
 {
@@ -40,59 +40,52 @@ void EntityPanel::RefreshEntityList()
 
 void EntityPanel::Draw()
 {
-    if (!m_showPanel) return;
+    ImGui::SetWindowSize(ImVec2(300, 600));
+    auto l_editor = m_editor.lock();
+    auto l_sceneEdit = l_editor->GetSceneEdit().lock();
+    int l_selectedEntity = l_sceneEdit->GetSelectedEntity();
 
-    ImGui::SetNextWindowSize(ImVec2(300, 600));
-    if (ImGui::Begin("Entities", &m_showPanel))
+    if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
     {
-        auto l_editor = m_editor.lock();
-        auto l_sceneEdit = l_editor->GetSceneEdit().lock();
-        int l_selectedEntity = l_sceneEdit->GetSelectedEntity();
+        // Button row: Add Entity and conditionally Remove Selected
+        float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
 
-        if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
+        if (ImGui::Button("+ Add Entity", ImVec2(buttonWidth, 0)))
         {
-            // Button row: Add Entity and conditionally Remove Selected
-            float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
+            AddEntity();
+        }
 
-            if (ImGui::Button("+ Add Entity", ImVec2(buttonWidth, 0)))
+        // Only show Remove button when an entity is selected
+        if (l_selectedEntity >= 0)
+        {
+            ImGui::SameLine();
+            if (ImGui::Button("- Remove Entity", ImVec2(buttonWidth, 0)))
             {
-                AddEntity();
+                RemoveEntity(l_selectedEntity);
             }
+        }
 
-            // Only show Remove button when an entity is selected
-            if (l_selectedEntity >= 0)
+        ImGui::Separator();
+
+        // Entity list
+        if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true))
+        {
+            for (int l_entityId : m_cachedEntities)
             {
-                ImGui::SameLine();
-                if (ImGui::Button("- Remove Entity", ImVec2(buttonWidth, 0)))
+                bool selected = (l_selectedEntity == l_entityId);
+                std::string l_entityName = m_registry.value()
+                                                        .get()
+                                                        .GetEntityName(l_entityId);
+
+                if (ImGui::Selectable(l_entityName.c_str(), selected))
                 {
-                    RemoveEntity(l_selectedEntity);
+                    l_sceneEdit->SelectEntity(l_entityId);
                 }
             }
-
-            ImGui::Separator();
-
-            // Entity list
-            if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true))
-            {
-                for (int l_entityId : m_cachedEntities)
-                {
-                    bool selected = (l_selectedEntity == l_entityId);
-                    std::string l_entityName = m_registry.value()
-                                                         .get()
-                                                         .GetEntityName(l_entityId);
-
-                    if (ImGui::Selectable(l_entityName.c_str(), selected))
-                    {
-                        l_sceneEdit->SelectEntity(l_entityId);
-                    }
-                }
-                ImGui::EndChild();
-            }
-
             ImGui::EndChild();
         }
 
-        ImGui::End();
+        ImGui::EndChild();
     }
 }
 

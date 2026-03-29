@@ -21,6 +21,9 @@ class CameraPanel : public Panel
     private:
     std::weak_ptr<RE::Core::Camera> m_camera; ///< The camera being configured.
 
+    /** @brief Renders the "Camera Options" window. */
+    void Draw() override;
+
     public:
     CameraPanel() {};
     /**
@@ -29,9 +32,6 @@ class CameraPanel : public Panel
      */
     CameraPanel(std::weak_ptr<Editor> _editor);
     ~CameraPanel();
-
-    /** @brief Renders the "Camera Options" window. */
-    void Draw();
 };
 
 #endif

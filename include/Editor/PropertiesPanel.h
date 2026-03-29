@@ -45,6 +45,9 @@ class PropertiesPanel : public Panel
 	 */
 	void DrawCategoryAttributes(int _entityId, std::string _categoryName, sol::table _attributes);
 
+	/** @brief Renders the floating properties window. */
+	void Draw() override;
+
 	public:
 	PropertiesPanel() {};
 	/**
@@ -53,9 +56,6 @@ class PropertiesPanel : public Panel
 	 */
 	PropertiesPanel(std::weak_ptr<Editor> _editor);
 	~PropertiesPanel();
-
-	/** @brief Renders the floating properties window. */
-	void Draw();
 
 	/**
 	 * @brief Requests that the panel move to a new screen position next frame.

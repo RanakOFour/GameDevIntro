@@ -227,7 +227,7 @@ void Editor::Draw()
     }
 
     // Tutorial panel drawn last so it appears above all tab content
-    m_tutorialPanel.Draw();
+    m_tutorialPanel.DrawAsWindow();
 
     // Rendering
     ImGui::PopFont();

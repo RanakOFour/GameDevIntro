@@ -59,6 +59,9 @@ private:
     /** @brief Draws the pulsing highlight rect over the current step's target region. */
     void DrawHighlightOverlay();
 
+    /** @brief Renders the tutorial window, dim overlay (if applicable), and highlight. */
+    void Draw() override;
+
 public:
     TutorialPanel() {};
     /**
@@ -116,9 +119,6 @@ public:
      * before Draw() is called so FindWindowByName() can locate it.
      */
     std::string GetCurrentHighlightKey() const;
-
-    /** @brief Renders the tutorial window, dim overlay (if applicable), and highlight. */
-    void Draw() override;
 };
 
 #endif
