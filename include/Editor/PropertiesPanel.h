@@ -26,6 +26,11 @@ class PropertiesPanel : public Panel
 
 	bool m_showAddToCategory; ///< Whether the "Assign to Category" sub-panel is expanded.
 
+	bool        m_showPathDialog;      ///< Whether the path file-chooser dialog is in progress.
+	std::string m_pendingPathKey;      ///< Key into m_stringValueMap for the field awaiting a path.
+	std::string m_pendingPathProperty; ///< Attribute name to write the chosen path back into.
+	sol::table  m_pendingPathTable;    ///< The entity's category attribute table to update on confirm.
+
 	bool   m_setPosition; ///< True when SetPosition() has been called and not yet consumed.
 	ImVec2 m_position;    ///< Requested next-frame window position.
 	ImVec2 m_size;        ///< Last rendered window size (reported back by ImGui).
@@ -44,6 +49,9 @@ class PropertiesPanel : public Panel
 	 * @param _attributes   Lua table of field name → value pairs.
 	 */
 	void DrawCategoryAttributes(int _entityId, std::string _categoryName, sol::table _attributes);
+
+	/** @brief Renders the file-chooser dialog for path properties and applies the result. */
+	void DrawPathDialog();
 
 	/** @brief Renders the floating properties window. */
 	void Draw() override;

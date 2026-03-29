@@ -8,8 +8,12 @@
 
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
+#define USE_STD_FILESYSTEM 1
+#include "imguiFileDialog/ImGuiFileDialog.h"
+
 #include "sol/sol.hpp"
 
+#include <algorithm>
 #include <memory>
 
 PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
@@ -17,6 +21,10 @@ PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 , m_stringValueMap()
 , m_entityNameMap()
 , m_showAddToCategory(false)
+, m_showPathDialog(false)
+, m_pendingPathKey()
+, m_pendingPathProperty()
+, m_pendingPathTable()
 , m_setPosition(false)
 , m_position(0, 0)
 , m_size(400.0f, 500.0f)
@@ -139,6 +147,26 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
                 m_stringValueMap[l_key] = l_value.as<std::string>();
             }
 
+            // Properties with "Path" in their name get a browse button that opens a file dialog.
+            bool l_isPath = l_property.find("Path") != std::string::npos ||
+                            l_property.find("path") != std::string::npos;
+
+            if (l_isPath)
+            {
+                // Reserve space for the "Select File" button to the right.
+                float l_buttonWidth = ImGui::CalcTextSize("Select File").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+                ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - l_buttonWidth - ImGui::GetStyle().ItemSpacing.x);
+                if (ImGui::Button("Select File", ImVec2(l_buttonWidth, 0)))
+                {
+                    m_pendingPathKey      = l_key;
+                    m_pendingPathProperty = l_property;
+                    m_pendingPathTable    = _attributes;
+                    m_showPathDialog      = true;
+                }
+
+                ImGui::SameLine();
+            }
+            
             if (ImGui::InputText(l_property.c_str(), &m_stringValueMap[l_key], ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 _attributes[l_property] = m_stringValueMap[l_key];
@@ -264,6 +292,43 @@ void PropertiesPanel::Draw()
     else
     {
         ImGui::Text("No entity selected");
+    }
+
+    DrawPathDialog();
+}
+
+void PropertiesPanel::DrawPathDialog()
+{
+    if (!m_showPathDialog)
+        return;
+
+    // Derive a sensible file filter from the property name.
+    std::string l_prop = m_pendingPathProperty;
+    std::transform(l_prop.begin(), l_prop.end(), l_prop.begin(), ::tolower);
+
+    const char* l_filter = ".*";
+    if      (l_prop.find("model")   != std::string::npos) l_filter = ".obj";
+    else if (l_prop.find("texture") != std::string::npos) l_filter = ".png,.jpg,.jpeg,.bmp,.tga";
+    else if (l_prop.find("shader")  != std::string::npos) l_filter = ".vs,.fs,.vert,.frag";
+
+    IGFD::FileDialogConfig config;
+    config.path = ".";
+    ImGuiFileDialog::Instance()->OpenDialog("PropPathFileDlg", "Choose File", l_filter, config);
+
+    if (ImGuiFileDialog::Instance()->Display("PropPathFileDlg"))
+    {
+        if (ImGuiFileDialog::Instance()->IsOk())
+        {
+            std::string l_chosen = ImGuiFileDialog::Instance()->GetFilePathName();
+            m_stringValueMap[m_pendingPathKey] = l_chosen;
+            if (m_pendingPathTable.valid())
+            {
+                m_pendingPathTable[m_pendingPathProperty] = l_chosen;
+            }
+        }
+
+        ImGuiFileDialog::Instance()->Close();
+        m_showPathDialog = false;
     }
 }
 
