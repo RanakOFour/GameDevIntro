@@ -12,17 +12,12 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 	auto l_editor = _editor.lock();
 	auto l_engineContents = l_editor->GetEngineContents();
 
-	m_scene = l_engineContents.core->GetScene().lock();
+	m_scene = l_engineContents.core->GetScene();
 	m_camera = l_engineContents.core->GetCamera().lock();
 	m_window = l_engineContents.io->GetWindow().lock();
 
 	m_gridShader = l_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
     glGenVertexArrays(1, &m_dummyGridVAO);
-    
-    auto l_renderRuleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = l_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
-
-    m_scene->AddRule(l_renderRule);
 }
 
 SceneEditTab::~SceneEditTab()
@@ -30,7 +25,6 @@ SceneEditTab::~SceneEditTab()
 	glDeleteVertexArrays(1, &m_dummyGridVAO);
 
 	m_camera.reset();
-    m_scene.reset();
     m_gridShader.reset();
 }
 
@@ -66,6 +60,7 @@ void SceneEditTab::DrawEditorUI()
 
 void SceneEditTab::DrawContextMenu()
 {
+    auto l_scene = m_scene.lock();
 	// Context menu
     if(ImGui::BeginPopupContextVoid("ContextMenu", ImGuiPopupFlags_MouseButtonRight))
     {
@@ -79,7 +74,7 @@ void SceneEditTab::DrawContextMenu()
             m_entityPanel.AddEntity();
 
             // Awful fucking sentence
-            sol::table l_entityTransform = m_scene->GetRegistry()
+            sol::table l_entityTransform = l_scene->GetRegistry()
                                             .GetEntityAttributes(m_selectedEntityId)
                                             .raw_get<sol::table>("Transform");
 
@@ -95,7 +90,7 @@ void SceneEditTab::DrawContextMenu()
         {
             if(ImGui::Button("Delete Entity", l_buttonSize))
             {
-                m_scene->RemoveEntity(m_selectedEntityId);
+                l_scene->RemoveEntity(m_selectedEntityId);
                 m_selectedEntityId = -1;
 
                 m_propertiesPanel.SetShown(false);
@@ -178,7 +173,12 @@ void SceneEditTab::Draw()
     }
 
     // Draw scene with EditorRenderer
-    m_scene->Draw();
+    auto l_scene = m_scene.lock();
+    
+    if (l_scene)
+    {
+        l_scene->Draw();
+    }
 
 	DrawEditorUI();
 }

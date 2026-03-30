@@ -28,6 +28,12 @@ Editor::Editor()
 
     m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
 
+
+    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+
+    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+
     RE::Log::Message("Editor constructed");
 }
 
@@ -181,6 +187,14 @@ void Editor::DrawMenuBar()
                 if (m_showLoadDialog)
                 {
                     SceneSerializer::LoadFromFile(l_filePathName, m_engineContents);
+
+                    // Re-add EditorRender rule, since it is ignored during scene serialisation
+                    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+                    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+
+                    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+                    m_sceneEdit->m_scene = m_engineContents.core->GetScene();
+                    m_sceneEdit->m_entityPanel.RefreshEntityList();
                 }
                 else
                 {
@@ -190,7 +204,6 @@ void Editor::DrawMenuBar()
                 m_showLoadDialog = false;
                 m_showSaveDialog = false;
             }
-
 
             ImGuiFileDialog::Instance()->Close();
             m_showLoadDialog = false;
@@ -267,14 +280,16 @@ void Editor::HandleInput()
 
             RE::Core::RaycastHit l_hitInfo;
 
-            int l_hitEntity = m_sceneEdit->m_scene->Raycast(l_ray, l_hitInfo);
+            auto l_scene = m_engineContents.core->GetScene().lock();
+
+            int l_hitEntity = l_scene->Raycast(l_ray, l_hitInfo);
             
             if (l_hitEntity > -1)
             {
                 m_sceneEdit->SelectEntity(l_hitEntity);
                 ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
 
-                RE::Core::EntityRegistry& l_registry = m_sceneEdit->m_scene->GetRegistry();
+                RE::Core::EntityRegistry& l_registry = l_scene->GetRegistry();
 
                 Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
 

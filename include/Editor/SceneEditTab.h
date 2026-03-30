@@ -31,8 +31,8 @@ class SceneEditTab
     friend Editor;
 private:
 	std::weak_ptr<Editor> m_editor;           ///< Back-reference to the owning Editor.
+	std::weak_ptr<RE::Core::Scene>  m_scene;  ///< The active scene.
 	std::shared_ptr<RE::IO::Window>   m_window; ///< SDL/OpenGL window handle.
-	std::shared_ptr<RE::Core::Scene>  m_scene;  ///< The active scene.
 	std::shared_ptr<RE::Core::Camera> m_camera; ///< The scene camera.
 
     std::shared_ptr<RE::Asset::Shader> m_gridShader; ///< Infinite-grid GLSL shader.
@@ -77,6 +77,7 @@ public:
      * @param _id Entity ID to select.
      */
     void SelectEntity(int _id);
+    
     /** @brief Returns the ID of the currently selected entity, or -1. */
     int GetSelectedEntity();
 };

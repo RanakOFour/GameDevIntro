@@ -134,7 +134,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
 
         fs::remove(l_tmpPath);
 
-        RE::Log::Message("[SceneSerializer] Embedded category registered: " + _name);
+        RE::Log::Message("Category registered: " + _name);
     };
 
     // LoadRule(name, code)
@@ -155,7 +155,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
 
         fs::remove(l_tmpPath);
 
-        RE::Log::Message("[SceneSerializer] Embedded rule registered: " + _name);
+        RE::Log::Message("Embedded rule registered: " + _name);
     };
 }
 
@@ -164,11 +164,12 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
     std::shared_ptr<RE::Core::Scene> l_scenePtr = _contents.core->GetScene().lock();
     if (!l_scenePtr)
     {
-        RE::Log::Message("[SceneSerializer] ERROR: No active scene to serialize.");
+        RE::Log::Message("ERROR: No active scene to serialize.");
         return "";
     }
 
     auto l_context = _contents.core->GetLuaContext();
+    auto l_entityRegistry = l_scenePtr->GetRegistry();
 
     std::ostringstream out;
     out << "-- ========================================\n";
@@ -178,12 +179,12 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
 
     // Collect all category names referenced by live entities.
     std::set<std::string> l_usedCategories;
-    sol::table l_entityTable = l_scenePtr->GetRegistry().GetEntityTable();
+    sol::table l_entityTable = l_entityRegistry.GetEntityTable();
 
     for (auto& l_entityPair : l_entityTable.pairs())
     {
         int l_id = l_entityPair.first.as<int>();
-        sol::table l_attributes = l_scenePtr->GetRegistry().GetEntityAttributes(l_id);
+        sol::table l_attributes = l_entityRegistry.GetEntityAttributes(l_id);
         for (auto& l_catPair : l_attributes.pairs())
         {
             if (l_catPair.first.get_type() == sol::type::string)
@@ -215,7 +216,7 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
         }
         else
         {
-            RE::Log::Message("[SceneSerializer] No origin file for category \""
+            RE::Log::Message("No origin file for category \""
                              + catName + "\"; generating from base fields.");
             l_code = GenerateCategoryCode(*l_category);
         }
@@ -249,7 +250,7 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
 
                 std::string l_ruleName = rulePair.first.as<std::string>();
 
-                // The EditorRender rule is added by SceneEditTab; skip it.
+                // TODO: Replace EditorRender with regular renderer
                 if (l_ruleName == "EditorRender")
                     continue;
 
@@ -265,7 +266,7 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
                 {
                     out << "-- WARNING: no origin file recorded for rule \""
                         << l_ruleName << "\"; rule skipped.\n\n";
-                    RE::Log::Message("[SceneSerializer] WARNING: rule \""
+                    RE::Log::Message("WARNING: rule \""
                                      + l_ruleName + "\" has no origin file.");
                     continue;
                 }
@@ -284,17 +285,20 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
     out << "-- ENTITIES\n";
     out << "-- ========================================\n\n";
 
-    for (auto& l_entityPair : l_entityTable.pairs())
+    std::vector<int> l_entityIds = l_entityRegistry.GetAllRegisteredIds();
+
+    for (int i = 0; i < l_entityIds.size(); i++)
     {
-        int l_id = l_entityPair.first.as<int>();
+        int l_id = l_entityIds[i];
+        sol::table l_currentEntityTable = l_entityTable.raw_get<sol::table>(l_id);
         std::string l_eVar = "e" + std::to_string(l_id);
-        std::string l_entityName = l_scenePtr->GetRegistry().GetEntityName(l_id);
+        std::string l_entityName = l_entityRegistry.GetEntityName(l_id);
 
         out << "-- " << l_entityName << " (id=" << l_id << ")\n";
         out << "print(\"[Scene] Creating entity: " << l_entityName << "\")\n";
-        out << "local " << l_eVar << " = scene:addEntity()\n";
+        out << "local " << l_eVar << " = Scene:addEntity()\n";
 
-        sol::table l_attrs = l_scenePtr->GetRegistry().GetEntityAttributes(l_id);
+        sol::table l_attrs = l_entityRegistry.GetEntityAttributes(l_id);
 
         for (auto& l_catPair : l_attrs.pairs())
         {
@@ -304,11 +308,11 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
             std::string l_catName  = l_catPair.first.as<std::string>();
             sol::table l_catFields = l_catPair.second.as<sol::table>();
 
-            out << "scene:addToCategory(" << l_eVar << ", \"" << l_catName << "\")\n";
+            out << "Scene:addToCategory(" << l_eVar << ", \"" << l_catName << "\")\n";
 
             std::string l_attrVar = l_eVar + "_" + l_catName;
             out << "local " << l_attrVar
-                << " = scene:getAttributesOf(" << l_eVar
+                << " = Scene:getAttributesOf(" << l_eVar
                 << ")[\"" << l_catName << "\"]\n";
             out << "if " << l_attrVar << " then\n";
 
@@ -349,7 +353,7 @@ void SceneSerializer::SaveToFile(const std::string& _filePath,
     std::shared_ptr<RE::Core::Scene> l_scenePtr = _contents.core->GetScene().lock();
     if (!l_scenePtr)
     {
-        RE::Log::Message("[SceneSerializer] ERROR: No active scene to save.");
+        RE::Log::Message("ERROR: No active scene to save.");
         return;
     }
 
@@ -360,14 +364,14 @@ void SceneSerializer::SaveToFile(const std::string& _filePath,
 
     if(!l_file)
     {
-        RE::Log::Message("[SceneSerializer] Could not open file for writing: " + _filePath + "\nAttempting to create new file.");
+        RE::Log::Message("Could not open file for writing: " + _filePath + "\nAttempting to create new file.");
         l_file.clear();
         l_file.open(_filePath, std::ios::out);
     }
 
     if (!l_file.is_open())
     {
-        RE::Log::Message("[SceneSerializer] ERROR: Could not open file for writing: "
+        RE::Log::Message("ERROR: Could not open file for writing: "
                          + _filePath);
         return;
     }
@@ -375,7 +379,7 @@ void SceneSerializer::SaveToFile(const std::string& _filePath,
     l_file << l_script;
     l_file.close();
 
-    RE::Log::Message("[SceneSerializer] Scene saved to: " + _filePath);
+    RE::Log::Message("Scene saved to: " + _filePath);
 }
 
 
@@ -385,7 +389,7 @@ void SceneSerializer::LoadFromFile(const std::string& _filePath,
     std::ifstream l_file(_filePath);
     if (!l_file.is_open())
     {
-        RE::Log::Message("[SceneSerializer] ERROR: Could not open scene file: "
+        RE::Log::Message("ERROR: Could not open scene file: "
                          + _filePath);
         return;
     }
@@ -394,7 +398,7 @@ void SceneSerializer::LoadFromFile(const std::string& _filePath,
                            std::istreambuf_iterator<char>());
     l_file.close();
 
-    RE::Log::Message("[SceneSerializer] Loading scene from: " + _filePath);
+    RE::Log::Message("Loading scene from: " + _filePath);
     LoadFromString(l_script, _contents);
 }
 
@@ -403,23 +407,28 @@ void SceneSerializer::LoadFromString(const std::string& _script,
 {
     sol::state* l_state = _contents.core->GetLuaContext()->GetState();
 
-    // Register C++ helpers that the embedded script will call.
+    // Register helper functions.
     RegisterConstructorHelpers(_contents);
 
-    // Expose the active scene so entities can be created and populated.
-    auto l_scene = _contents.core->GetScene().lock();
-    if (!l_scene)
+    // Create new scene
+    auto l_newScene = std::make_shared<RE::Core::Scene>();
+    _contents.core->SetScene(l_newScene);
+    
+    if (!l_newScene)
     {
-        RE::Log::Message("[SceneSerializer] ERROR: No active scene to construct into.");
+        RE::Log::Message("ERROR: No active scene to construct into.");
         return;
     }
-    (*l_state)["scene"] = l_scene.get();
+
+    l_state->set("Scene", l_newScene);
 
     auto l_result = l_state->safe_script(_script, sol::script_pass_on_error);
     if (!l_result.valid())
     {
         sol::error l_err = l_result;
-        RE::Log::Message(std::string("[SceneSerializer] ERROR running scene script:\n")
+        RE::Log::Message(std::string("ERROR running scene script:\n")
                          + l_err.what());
     }
+
+    l_state->set("Scene", sol::nil);
 }

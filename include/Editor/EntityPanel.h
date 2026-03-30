@@ -27,9 +27,6 @@ class EntityPanel : public Panel
     // Reference wrapper because optional does not like type& reference
     std::optional<std::reference_wrapper<RE::Core::EntityRegistry>> m_registry; ///< Ref to the scene's entity registry.
 
-    /** @brief Refreshes m_cachedEntities from the live EntityRegistry. */
-    void RefreshEntityList();
-
     /** @brief Renders the entity list window. */
     void Draw() override;
 
@@ -49,6 +46,9 @@ class EntityPanel : public Panel
      * @param _id ID of the entity to remove.
      */
     void RemoveEntity(int _id);
+
+    /** @brief Refreshes m_cachedEntities from the live EntityRegistry. */
+    void RefreshEntityList();
 };
 
 #endif

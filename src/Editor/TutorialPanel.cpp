@@ -51,11 +51,11 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
 
         sol::table l_stepTable = l_pair.second.as<sol::table>();
         TutorialStep l_step;
-        l_step.title        = l_stepTable.get_or("title",     std::string{});
-        l_step.body         = l_stepTable.get_or("body",       std::string{});
-        l_step.imagePath    = l_stepTable.get_or("image",      std::string{});
+        l_step.title = l_stepTable.get_or("title",     std::string{});
+        l_step.body = l_stepTable.get_or("body",       std::string{});
+        l_step.imagePath = l_stepTable.get_or("image",      std::string{});
         l_step.highlightKey = l_stepTable.get_or("highlight",  std::string{});
-        l_step.event        = l_stepTable.get_or("event",      std::string{});
+        l_step.event = l_stepTable.get_or("event",      std::string{});
         m_steps.push_back(l_step);
 
         // Pre-load any images
