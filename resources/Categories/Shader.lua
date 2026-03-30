@@ -1,5 +1,5 @@
-return Category{
-    vertshaderPath = "",
-    fragshaderPath = "",
-    asset = Field(nil, { hidden = true })
+return Category {
+       vertexshaderPath = "",
+       fragmentshaderPath = "",
+       asset = Field(nil, { hidden = true })
 }

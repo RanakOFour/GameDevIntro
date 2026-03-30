@@ -1,4 +1,4 @@
-return Category{
-    texturePath = "",
-    asset = Field(nil, { hidden = true })
+return Category {
+       texturePath = "",
+       asset = Field(nil, { hidden = true })
 }

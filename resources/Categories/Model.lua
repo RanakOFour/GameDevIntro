@@ -1,4 +1,4 @@
-return Category{
-    modelPath = "",
-    asset = Field(nil, { hidden = true })
+return Category {
+       modelPath = "",
+       asset = Field(nil, { hidden = true })
 }
