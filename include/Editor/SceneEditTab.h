@@ -12,6 +12,8 @@
 
 #include "imgui/imgui.h"
 
+#include <SDL3/SDL.h>
+
 #include <memory>
 #include <vector>
 #include <string>
@@ -48,6 +50,8 @@ private:
     int  m_selectedEntityId = -1; ///< ID of the currently selected entity, or -1 for none.
 
     bool m_isGameRunning = false; ///< True while the scene simulation is playing.
+    Uint64 m_lastFrameTime = 0;   ///< SDL performance counter value at the previous frame.
+    std::string m_savedSceneState; ///< Serialized scene snapshot taken when Play is pressed.
 
     bool m_showContext = false; ///< Whether the right-click context menu is showing.
 
@@ -69,8 +73,10 @@ public:
     /** @brief Renders one complete frame: grid, scene, panels. */
     void Draw();
 
-    /** @brief Starts (or resumes) scene simulation. */
+    /** @brief Starts scene simulation: calls Init on all rules then begins Update each frame. */
     void Run();
+    /** @brief Stops scene simulation. */
+    void Stop();
 
     /**
      * @brief Selects the given entity and shows the PropertiesPanel.

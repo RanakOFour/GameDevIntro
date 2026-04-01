@@ -21,6 +21,11 @@ EntityPanel::~EntityPanel()
 
 void EntityPanel::RefreshEntityList()
 {
+    // Update the registry reference to whatever the active scene's registry is.
+    auto l_editor = m_editor.lock();
+    auto l_scene = l_editor->GetEngineContents().core->GetScene().lock();
+    m_registry = l_scene->GetRegistry();
+
     if(!m_registry.has_value())
         return;
     
@@ -44,6 +49,14 @@ void EntityPanel::Draw()
     auto l_editor = m_editor.lock();
     auto l_sceneEdit = l_editor->GetSceneEdit().lock();
     int l_selectedEntity = l_sceneEdit->GetSelectedEntity();
+
+    // Keep registry reference up-to-date with the current scene.
+    if (l_editor)
+    {
+        auto l_scene = l_editor->GetEngineContents().core->GetScene().lock();
+        if (l_scene)
+            m_registry = l_scene->GetRegistry();
+    }
 
     if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
     {

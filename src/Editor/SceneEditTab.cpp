@@ -1,4 +1,9 @@
 #include "Editor/SceneEditTab.h"
+#include "Editor/SceneSerializer.h"
+
+#include "RanakEngine/Physics/PhysicsManager.h"
+
+#include "SDL3/SDL.h"
 
 SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 : m_editor(_editor)
@@ -8,6 +13,7 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 , m_rulesPanel(m_editor)
 , m_selectedEntityId(-1)
 , m_isGameRunning(false)
+, m_lastFrameTime(SDL_GetPerformanceCounter())
 {
 	auto l_editor = _editor.lock();
 	auto l_engineContents = l_editor->GetEngineContents();
@@ -136,11 +142,54 @@ void SceneEditTab::DrawContextMenu()
 
 void SceneEditTab::Draw()
 {
-	// Draw grid
+    // Compute delta time
+    Uint64 l_now = SDL_GetPerformanceCounter();
+    float l_dt = (float)(l_now - m_lastFrameTime) / (float)SDL_GetPerformanceFrequency();
+    m_lastFrameTime = l_now;
+
+    ImGuiIO& l_io = ImGui::GetIO();
+    float l_btnWidth = 80.0f;
+    ImGui::SetNextWindowPos(ImVec2((l_io.DisplaySize.x - l_btnWidth) * 0.5f, 24.0f));
+    ImGui::SetNextWindowSize(ImVec2(l_btnWidth, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.75f);
+    if(ImGui::Begin("##PlayToolbar", nullptr,
+        ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoBringToFrontOnFocus))
+    {
+        if (m_isGameRunning)
+        {
+            if (ImGui::Button("Stop", ImVec2(l_btnWidth - 16.0f, 0.0f)))
+            {
+                Stop();
+            }
+        }
+        else
+        {
+            if (ImGui::Button("Play", ImVec2(l_btnWidth - 16.0f, 0.0f)))
+            {
+                Run();
+            }
+        }
+
+        ImGui::End();   
+    }
+
+    auto l_scene = m_scene.lock();
+
+    // Update scene rules if simulation is running
+    if (m_isGameRunning)
+    {
+        auto l_physics = RE::Physics::Manager::Get().lock();
+        l_physics->Step(l_dt);
+
+        l_scene->Update(l_dt);
+    }
 
     // Render the infinite grid first (before ImGui)
-    if (m_gridShader)
-    //if(false)
+    if (!m_isGameRunning)
     {
         glBindVertexArray(m_dummyGridVAO);
 
@@ -171,9 +220,6 @@ void SceneEditTab::Draw()
         glBindVertexArray(0);
         glUseProgram(0);
     }
-
-    // Draw scene with EditorRenderer
-    auto l_scene = m_scene.lock();
     
     if (l_scene)
     {
@@ -181,6 +227,47 @@ void SceneEditTab::Draw()
     }
 
 	DrawEditorUI();
+}
+
+void SceneEditTab::Run()
+{
+    // Snapshot scene state before simulation begins so we can restore it on Stop.
+    m_savedSceneState = SceneSerializer::Serialize(m_editor.lock()->GetEngineContents());
+
+    auto l_scene = m_scene.lock();
+    l_scene->Init();
+
+    m_lastFrameTime = SDL_GetPerformanceCounter();
+    m_isGameRunning = true;
+}
+
+void SceneEditTab::Stop()
+{
+    m_isGameRunning = false;
+
+    if (m_savedSceneState.empty())
+    {
+        return;
+    }
+
+    auto& l_engineContents = m_editor.lock()->GetEngineContents();
+
+    l_engineContents.physics->Reset();
+
+    // Restore the scene to its pre-play state.
+    SceneSerializer::LoadFromString(m_savedSceneState, l_engineContents);
+    m_savedSceneState.clear();
+
+    // Re-add the EditorRender rule (it is skipped during serialization).
+    auto l_renderRuleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+    RE::Core::Rule l_renderRule = l_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+    l_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+
+    // Update local scene reference and refresh panels.
+    m_scene = l_engineContents.core->GetScene();
+    m_entityPanel.RefreshEntityList();
+    m_selectedEntityId = -1;
+    m_propertiesPanel.SetShown(false);
 }
 
 void SceneEditTab::SelectEntity(int _id)

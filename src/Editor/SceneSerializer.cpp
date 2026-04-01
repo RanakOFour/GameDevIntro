@@ -6,9 +6,7 @@
 #include "RanakEngine/Core/Rule.h"
 #include "RanakEngine/Core/Category.h"
 #include "RanakEngine/Asset/LuaFile.h"
-#include "RanakEngine/Math/Vector2.h"
-#include "RanakEngine/Math/Vector3.h"
-#include "RanakEngine/Math/Vector4.h"
+#include "RanakEngine/Math.h"
 
 #include "sol/sol.hpp"
 
@@ -17,8 +15,6 @@
 #include <filesystem>
 #include <set>
 #include <iomanip>
-
-namespace fs = std::filesystem;
 
 std::string SceneSerializer::SolObjectToLua(const sol::object& _value)
 {
@@ -122,7 +118,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
     {
         // Use the category name as the filename stem so GetName() returns the
         // correct name without any prefix/suffix mangling.
-        fs::path l_tmpPath = fs::temp_directory_path() / (_name + ".lua");
+        std::filesystem::path l_tmpPath = std::filesystem::temp_directory_path() / (_name + ".lua");
 
         {
             std::ofstream l_out(l_tmpPath);
@@ -132,7 +128,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_tmpPath.string());
         _contents.core->GetLuaContext()->CreateCategory(l_file);
 
-        fs::remove(l_tmpPath);
+        std::filesystem::remove(l_tmpPath);
 
         RE::Log::Message("Category registered: " + _name);
     };
@@ -142,7 +138,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
     (*l_state)["LoadRule"] =
         [&_contents](const std::string& _name, const std::string& _code)
     {
-        fs::path l_tmpPath = fs::temp_directory_path() / (_name + ".lua");
+        std::filesystem::path l_tmpPath = std::filesystem::temp_directory_path() / (_name + ".lua");
 
         {
             std::ofstream l_out(l_tmpPath);
@@ -153,7 +149,7 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
         RE::Core::Rule l_rule = _contents.core->GetLuaContext()->CreateRule(l_file);
         _contents.core->GetScene().lock()->AddRule(l_rule);
 
-        fs::remove(l_tmpPath);
+        std::filesystem::remove(l_tmpPath);
 
         RE::Log::Message("Embedded rule registered: " + _name);
     };
@@ -308,7 +304,9 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
             std::string l_catName  = l_catPair.first.as<std::string>();
             sol::table l_catFields = l_catPair.second.as<sol::table>();
 
-            out << "Scene:addToCategory(" << l_eVar << ", \"" << l_catName << "\")\n";
+            // Transform is automatically added by Scene:addEntity(), so skip the explicit call.
+            if (l_catName != "Transform")
+                out << "Scene:addToCategory(" << l_eVar << ", \"" << l_catName << "\")\n";
 
             std::string l_attrVar = l_eVar + "_" + l_catName;
             out << "local " << l_attrVar
