@@ -1,5 +1,6 @@
 #include "Editor/CategoryPanel.h"
 #include "Editor/Editor.h"
+#include "Editor/BuiltinCategories.h"
 
 #include "imgui/imgui.h"
 
@@ -76,7 +77,7 @@ void CategoryPanel::Draw()
     // Category list
     if (ImGui::BeginChild("CategoryList", ImVec2(0, 0), true))
     {
-        for (int i = 0; i < m_loadedCategories.size(); i++)
+        for (int i = 0; i < (int)m_loadedCategories.size(); i++)
         {
             auto& l_category = m_loadedCategories[i];
 
@@ -84,16 +85,26 @@ void CategoryPanel::Draw()
             {
                 std::string filter(m_filterString);
                 if (l_category.find(filter) == std::string::npos)
-                {
                     continue;
-                }
             }
 
-            bool l_selected = (m_selectedCategory == i);
-            if(ImGui::Selectable(l_category.c_str(), l_selected))
+            bool l_isBuiltin = BuiltinCategories::IsBuiltin(l_category);
+
+            if (l_isBuiltin)
             {
-                SelectCategory(i);
-            };
+                // Built-in: show greyed out with a lock marker, not selectable
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.55f, 0.55f, 1.0f));
+                ImGui::TextUnformatted((l_category + "  [built-in]").c_str());
+                ImGui::PopStyleColor();
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Read-only built-in category");
+            }
+            else
+            {
+                bool l_selected = (m_selectedCategory == i);
+                if (ImGui::Selectable(l_category.c_str(), l_selected))
+                    SelectCategory(i);
+            }
         }
 
         ImGui::EndChild();
@@ -165,8 +176,13 @@ void CategoryPanel::DrawLoadCategoryDialog()
     if (!m_showLoadDialog)
         return;
 
+    auto l_editor = m_editor.lock();
+    std::string l_defaultPath = l_editor->GetProject().IsOpen()
+                              ? l_editor->GetProject().GetCategoriesDir()
+                              : ".";
+
     IGFD::FileDialogConfig config;
-    config.path = ".";
+    config.path = l_defaultPath;
     ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
 
 

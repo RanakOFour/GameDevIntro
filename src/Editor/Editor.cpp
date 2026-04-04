@@ -5,6 +5,7 @@
 #include "Editor/AutoCompleteTree.h"
 
 #include "Editor/SceneSerializer.h"
+#include "Editor/BuiltinCategories.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
@@ -14,20 +15,22 @@
 #include "SDL3/SDL.h"
 #include <GL/gl.h>
 
-Editor::Editor()
+Editor::Editor(RE::EngineContents engineContents, Project project)
 : m_showTextEdit(false)
 , m_showLoadDialog(false)
 , m_showSaveDialog(false)
+, m_engineContents(std::move(engineContents))
+, m_project(std::move(project))
 {
-    // Initialize the engine (this creates the SDL window and GL context)
-    m_engineContents = RE::Initialise(true, Vector2(1920, 1080));
-    RE::Log::Message("Engine Initialised for Editor");
+    RE::Log::Message("Engine already initialised; Editor taking ownership");
+
+    // Load built-in (read-only) categories from the platform data directory.
+    BuiltinCategories::Load(m_engineContents);
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
 
     m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
-
 
     auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
     RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
@@ -37,11 +40,10 @@ Editor::Editor()
     RE::Log::Message("Editor constructed");
 }
 
-std::shared_ptr<Editor> Editor::Create()
+std::shared_ptr<Editor> Editor::Create(RE::EngineContents engineContents, Project project)
 {
-    std::shared_ptr<Editor> l_editor = std::shared_ptr<Editor>();
-    Editor* l_editorRaw = new Editor();
-    l_editor.reset(l_editorRaw);
+    std::shared_ptr<Editor> l_editor;
+    l_editor.reset(new Editor(std::move(engineContents), std::move(project)));
 
     std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
     
@@ -174,7 +176,7 @@ void Editor::DrawMenuBar()
     if(m_showLoadDialog || m_showSaveDialog)
     {
         IGFD::FileDialogConfig config;
-        config.path = ".";
+        config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
         ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
 
 
@@ -242,7 +244,7 @@ void Editor::Draw()
         ImGui::EndDisabled();
         m_textEdit->Draw();
     }
-        
+
     // Tutorial panel drawn last so it appears above all tab content
     m_tutorialPanel.DrawAsWindow();
 

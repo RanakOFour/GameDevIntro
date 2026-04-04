@@ -3,6 +3,7 @@
 
 #include "RanakEngine/RanakEngine.h"
 
+#include "Editor/Project.h"
 #include "Editor/TutorialPanel.h"
 
 #include "imgui/imgui.h"
@@ -34,6 +35,7 @@ private:
     ImFont* m_font;                            ///< Custom font loaded for the editor UI.
 
     RE::EngineContents m_engineContents; ///< Aggregated engine sub-systems.
+    Project            m_project;        ///< The currently open project (path + subdir helpers).
 
     bool m_showTextEdit; ///< True when the TextEditTab is active.
 
@@ -51,15 +53,17 @@ private:
     /** @brief Renders the application menu bar (universal across tabs). */
     void DrawMenuBar();
 
-    Editor();
+    Editor(RE::EngineContents engineContents, Project project);
     public:
     ~Editor();
 
     /**
      * @brief Factory method — creates and fully initialises an Editor as a shared_ptr.
+     * @param engineContents  Pre-initialised engine bundle (window, GL, etc.).
+     * @param project         The project selected on the project-selection screen.
      * @return Shared pointer to the new Editor.
      */
-    static std::shared_ptr<Editor> Create();
+    static std::shared_ptr<Editor> Create(RE::EngineContents engineContents, Project project);
 
     /** @brief Enters the main loop; returns when the user closes the editor. */
     void Run();
@@ -68,6 +72,8 @@ private:
 
     /** @brief Returns a reference to the engine sub-system bundle. */
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
+    /** @brief Returns a reference to the current project. */
+    Project& GetProject() { return m_project; }
     /** @brief Returns a weak pointer to the SceneEditTab. */
     std::weak_ptr<SceneEditTab> GetSceneEdit();
     /** @brief Returns a reference to the tutorial panel. */
