@@ -58,16 +58,19 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
 std::string BuiltinCategories::GetDataDir()
 {
 #if defined(_WIN32)
-    const char* l_appData = std::getenv("APPDATA");
-    std::filesystem::path    l_base    = l_appData ? std::filesystem::path(l_appData) : std::filesystem::path(".");
+    const char* l_appDataRaw = std::getenv("APPDATA");
+    const std::string l_appData = l_appDataRaw ? l_appDataRaw : "";
+    std::filesystem::path l_base = l_appData.empty() ? std::filesystem::path(".") : std::filesystem::path(l_appData);
 #else
     // Prefer XDG_DATA_HOME, fall back to ~/.local/share
-    const char* l_xdg  = std::getenv("XDG_DATA_HOME");
-    const char* l_home = std::getenv("HOME");
+    const char* l_xdgRaw  = std::getenv("XDG_DATA_HOME");
+    const char* l_homeRaw = std::getenv("HOME");
+    const std::string l_xdg  = l_xdgRaw  ? l_xdgRaw  : "";
+    const std::string l_home = l_homeRaw ? l_homeRaw : "";
     std::filesystem::path    l_base;
-    if (l_xdg && l_xdg[0] != '\0')
+    if (!l_xdg.empty())
         l_base = std::filesystem::path(l_xdg);
-    else if (l_home && l_home[0] != '\0')
+    else if (!l_home.empty())
         l_base = std::filesystem::path(l_home) / ".local" / "share";
     else
         l_base = std::filesystem::path(".");

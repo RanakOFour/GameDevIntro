@@ -72,6 +72,9 @@ class PropertiesPanel : public Panel
 	void SetPosition(ImVec2 _pos);
 	/** @brief Returns the last rendered size of the panel window. */
 	ImVec2 GetSize();
+
+	/** @brief Clears cached entity data (call after scene reload to prevent stale entries). */
+	void Reset();
 };
 
 #endif

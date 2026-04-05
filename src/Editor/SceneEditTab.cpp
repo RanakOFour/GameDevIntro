@@ -173,9 +173,8 @@ void SceneEditTab::Draw()
                 Run();
             }
         }
-
-        ImGui::End();   
     }
+    ImGui::End();
 
     auto l_scene = m_scene.lock();
 
@@ -267,6 +266,7 @@ void SceneEditTab::Stop()
     m_scene = l_engineContents.core->GetScene();
     m_entityPanel.RefreshEntityList();
     m_selectedEntityId = -1;
+    m_propertiesPanel.Reset();
     m_propertiesPanel.SetShown(false);
 }
 

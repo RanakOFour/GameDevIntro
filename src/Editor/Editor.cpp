@@ -130,10 +130,18 @@ void Editor::DrawMenuBar()
             }
             if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
             {
+                IGFD::FileDialogConfig config;
+                config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
+                ImGuiFileDialog::Instance()->OpenDialog("SceneFileDlgKey", "Choose File", ".lua", config);
                 m_showLoadDialog = true;
+                m_showSaveDialog = false;
             }
             if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
             {
+                IGFD::FileDialogConfig config;
+                config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
+                ImGuiFileDialog::Instance()->OpenDialog("SceneFileDlgKey", "Choose File", ".lua", config);
+                m_showLoadDialog = false;
                 m_showSaveDialog = true;
             }
             ImGui::Separator();
@@ -173,44 +181,33 @@ void Editor::DrawMenuBar()
         ImGui::EndMainMenuBar();
     }
 
-    if(m_showLoadDialog || m_showSaveDialog)
+    if (ImGuiFileDialog::Instance()->Display("SceneFileDlgKey"))
     {
-        IGFD::FileDialogConfig config;
-        config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
-        ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
-
-
-        if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+        if (ImGuiFileDialog::Instance()->IsOk())
         {
-            if (ImGuiFileDialog::Instance()->IsOk())
+            std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+            std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
+            if (m_showLoadDialog)
             {
-                std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-                std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
-                if (m_showLoadDialog)
-                {
-                    SceneSerializer::LoadFromFile(l_filePathName, m_engineContents);
+                SceneSerializer::LoadFromFile(l_filePathName, m_engineContents);
 
-                    // Re-add EditorRender rule, since it is ignored during scene serialisation
-                    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-                    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+                // Re-add EditorRender rule, since it is ignored during scene serialisation
+                auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+                RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
 
-                    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
-                    m_sceneEdit->m_scene = m_engineContents.core->GetScene();
-                    m_sceneEdit->m_entityPanel.RefreshEntityList();
-                }
-                else
-                {
-                    SceneSerializer::SaveToFile(l_filePathName, m_engineContents);
-                }
-                
-                m_showLoadDialog = false;
-                m_showSaveDialog = false;
+                m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+                m_sceneEdit->m_scene = m_engineContents.core->GetScene();
+                m_sceneEdit->m_entityPanel.RefreshEntityList();
             }
-
-            ImGuiFileDialog::Instance()->Close();
-            m_showLoadDialog = false;
-            m_showSaveDialog = false;
+            else
+            {
+                SceneSerializer::SaveToFile(l_filePathName, m_engineContents);
+            }
         }
+
+        ImGuiFileDialog::Instance()->Close();
+        m_showLoadDialog = false;
+        m_showSaveDialog = false;
     }
 }
 

@@ -172,12 +172,17 @@ void RulesPanel::DrawLoadRuleDialog()
         return;
     }
 
+    auto l_editor = m_editor.lock();
+    std::string l_defaultPath = l_editor->GetProject().IsOpen()
+                              ? l_editor->GetProject().GetRulesDir()
+                              : ".";
+
     IGFD::FileDialogConfig config;
-    config.path = ".";
-    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
+    config.path = l_defaultPath;
+    ImGuiFileDialog::Instance()->OpenDialog("RuleFileDlgKey", "Choose File", ".lua", config);
 
 
-    if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+    if (ImGuiFileDialog::Instance()->Display("RuleFileDlgKey"))
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {

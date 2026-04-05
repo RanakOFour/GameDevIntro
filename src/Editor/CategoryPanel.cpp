@@ -183,10 +183,10 @@ void CategoryPanel::DrawLoadCategoryDialog()
 
     IGFD::FileDialogConfig config;
     config.path = l_defaultPath;
-    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".lua", config);
+    ImGuiFileDialog::Instance()->OpenDialog("CategoryFileDlgKey", "Choose File", ".lua", config);
 
 
-    if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+    if (ImGuiFileDialog::Instance()->Display("CategoryFileDlgKey"))
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {

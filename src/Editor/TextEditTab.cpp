@@ -237,30 +237,31 @@ void TextEditTab::Draw()
 
                     m_textEditor.Render(m_fileToEdit->GetName().c_str(), ImVec2((3 * m_size.x) / 5, 900), true);
                 }
-
-                ImGui::EndChild();
             }
+            ImGui::EndChild();
 
             ImGui::TableSetColumnIndex(2);
 
-            if(m_fileToEdit != nullptr && ImGui::BeginChild("Properties", ImVec2(0, 0)))
+            if(m_fileToEdit != nullptr)
             {
-                // Resolve the category by name from the LuaContext rather than
-                // via a forward pointer stored on the file itself.
-                auto l_category = RE::Core::LuaContext::Instance().lock()
-                                    ->GetCategory(m_fileToEdit->GetName()).lock();
-
-                if (l_category)
+                if(ImGui::BeginChild("Properties", ImVec2(0, 0)))
                 {
-                    std::string l_categoryName = l_category->GetName();
-                    sol::table l_categoryData = l_category->GetBaseData();
+                    // Resolve the category by name from the LuaContext rather than
+                    // via a forward pointer stored on the file itself.
+                    auto l_category = RE::Core::LuaContext::Instance().lock()
+                                        ->GetCategory(m_fileToEdit->GetName()).lock();
 
-                    ImGui::Text(l_categoryName.c_str());
-                    ImGui::Indent();
-                    DrawCategoryAttributes(l_categoryName, l_categoryData);
-                    ImGui::Unindent();
+                    if (l_category)
+                    {
+                        std::string l_categoryName = l_category->GetName();
+                        sol::table l_categoryData = l_category->GetBaseData();
+
+                        ImGui::Text(l_categoryName.c_str());
+                        ImGui::Indent();
+                        DrawCategoryAttributes(l_categoryName, l_categoryData);
+                        ImGui::Unindent();
+                    }
                 }
-
                 ImGui::EndChild();
             }
 

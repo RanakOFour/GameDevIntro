@@ -213,6 +213,15 @@ void PropertiesPanel::Draw()
     auto l_editor = m_editor.lock();
     int l_selectedEntity = l_editor->GetSceneEdit().lock()->GetSelectedEntity();
 
+    // Keep registry reference up-to-date with the current scene (it may change
+    // after a Load or Stop that rebuilds the scene).
+    if (l_editor)
+    {
+        auto l_scene = l_editor->GetEngineContents().core->GetScene().lock();
+        if (l_scene)
+            m_registry = l_scene->GetRegistry();
+    }
+
     // Only set position initially to prevent locking the panel
     if(m_setPosition)
     {
@@ -341,4 +350,11 @@ void PropertiesPanel::SetPosition(ImVec2 _pos)
 ImVec2 PropertiesPanel::GetSize()
 {
     return m_size;
+}
+
+void PropertiesPanel::Reset()
+{
+    m_stringValueMap.clear();
+    m_entityNameMap.clear();
+    m_showAddToCategory = false;
 }

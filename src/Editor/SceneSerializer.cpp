@@ -153,6 +153,65 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents)
 
         RE::Log::Message("Embedded rule registered: " + _name);
     };
+
+    // LoadCategoryFromFile(path)
+    // Loads a category directly from its source file on disk.
+    // If a category with the derived name is already registered, skip creation
+    // to avoid a nested Lua execution that may fail.
+    (*l_state)["LoadCategoryFromFile"] =
+        [&_contents](const std::string& _path)
+    {
+        auto l_luaContext = _contents.core->GetLuaContext();
+
+        // Derive the expected category name from the filename stem.
+        std::string l_name;
+        {
+            auto l_slash = _path.find_last_of("/\\");
+            auto l_dot   = _path.find_last_of('.');
+            std::size_t l_start = (l_slash == std::string::npos) ? 0 : l_slash + 1;
+            l_name = _path.substr(l_start, (l_dot == std::string::npos || l_dot < l_start)
+                                           ? std::string::npos : l_dot - l_start);
+        }
+
+        // If already registered, nothing to do.
+        if (!l_luaContext->GetCategory(l_name).expired())
+        {
+            RE::Log::Message("Category already registered, skipping: " + l_name);
+            return;
+        }
+
+        auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(_path);
+        if (l_file.expired())
+        {
+            RE::Log::Message("ERROR: Could not load category file: " + _path);
+            return;
+        }
+        l_luaContext->CreateCategory(l_file);
+        RE::Log::Message("Category loaded from file: " + _path);
+    };
+
+    // LoadRuleFromFile(path)
+    // Loads a rule directly from its source file on disk.
+    (*l_state)["LoadRuleFromFile"] =
+        [&_contents](const std::string& _path)
+    {
+        try
+        {
+            auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(_path);
+            if (l_file.expired())
+            {
+                RE::Log::Message("ERROR: Could not load rule file: " + _path);
+                return;
+            }
+            RE::Core::Rule l_rule = _contents.core->GetLuaContext()->CreateRule(l_file);
+            _contents.core->GetScene().lock()->AddRule(l_rule);
+            RE::Log::Message("Rule loaded from file: " + _path);
+        }
+        catch (const std::exception& e)
+        {
+            RE::Log::Message("ERROR: Exception loading rule from " + _path + ": " + e.what());
+        }
+    };
 }
 
 std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
@@ -203,26 +262,43 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
             continue;
         }
 
-        // Prefer the actual source file; fall back to construction from fields.
-        std::string l_code;
         auto l_originFile = l_category->GetOriginFile().lock();
-        if (l_originFile)
-        {
-            l_code = l_originFile->GetCode();
-        }
-        else
-        {
-            RE::Log::Message("No origin file for category \""
-                             + catName + "\"; generating from base fields.");
-            l_code = GenerateCategoryCode(*l_category);
-        }
 
         out << "-- Category: " << catName << "\n";
         out << "print(\"[Scene] Defining category: " << catName << "\")\n";
-        // Lua long-bracket strings: no escaping needed for embedded Lua code.
-        out << "LoadCategory(\"" << catName << "\", [[\n";
-        out << l_code;
-        out << "]])\n\n";
+
+        if (l_originFile && !l_originFile->GetPath().empty())
+        {
+            // Load directly from the source file on disk.
+            std::string l_path = l_originFile->GetPath();
+            std::string l_escaped;
+            for (char c : l_path)
+            {
+                if      (c == '\\') l_escaped += "\\\\";
+                else if (c == '"')  l_escaped += "\\\"";
+                else                l_escaped += c;
+            }
+            out << "LoadCategoryFromFile(\"" << l_escaped << "\")\n\n";
+        }
+        else
+        {
+            // Fall back to inline code.
+            std::string l_code;
+            if (l_originFile)
+            {
+                l_code = l_originFile->GetCode();
+            }
+            else
+            {
+                RE::Log::Message("No origin file for category \""
+                                 + catName + "\"; generating from base fields.");
+                l_code = GenerateCategoryCode(*l_category);
+            }
+            // Lua long-bracket strings: no escaping needed for embedded Lua code.
+            out << "LoadCategory(\"" << catName << "\", [[\n";
+            out << l_code;
+            out << "]])\n\n";
+        }
     }
 
     // ------------------------------------------------------------------
@@ -269,9 +345,26 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents)
 
                 out << "-- Rule: " << l_ruleName << "\n";
                 out << "print(\"[Scene] Defining rule: " << l_ruleName << "\")\n";
-                out << "LoadRule(\"" << l_ruleName << "\", [[\n";
-                out << l_file->GetCode();
-                out << "]])\n\n";
+
+                std::string l_filePath = l_file->GetPath();
+                if (!l_filePath.empty())
+                {
+                    // Load directly from the source file on disk.
+                    std::string l_escaped;
+                    for (char c : l_filePath)
+                    {
+                        if      (c == '\\') l_escaped += "\\\\";
+                        else if (c == '"')  l_escaped += "\\\"";
+                        else                l_escaped += c;
+                    }
+                    out << "LoadRuleFromFile(\"" << l_escaped << "\")\n\n";
+                }
+                else
+                {
+                    out << "LoadRule(\"" << l_ruleName << "\", [[\n";
+                    out << l_file->GetCode();
+                    out << "]])\n\n";
+                }
             }
         }
     }

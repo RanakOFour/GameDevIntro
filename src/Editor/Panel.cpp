@@ -17,8 +17,8 @@ void Panel::DrawAsWindow(ImGuiWindowFlags _flags)
     if (ImGui::Begin(m_panelTitle.c_str(), &m_showPanel, _flags))
     {
         Draw();
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 void Panel::DrawAsChild(ImGuiChildFlags _flags)
@@ -28,6 +28,6 @@ void Panel::DrawAsChild(ImGuiChildFlags _flags)
     if (ImGui::BeginChild(m_panelTitle.c_str(), ImVec2(0, 0), true, _flags))
     {
         Draw();
-        ImGui::EndChild();
     }
+    ImGui::EndChild();
 }
