@@ -12,8 +12,13 @@
 
 #include "imguiFileDialog/ImGuiFileDialog.h"
 
+#include "json/json.hpp"
+using json = nlohmann::json;
+
 #include "SDL3/SDL.h"
 #include <GL/gl.h>
+#include <fstream>
+#include <filesystem>
 
 Editor::Editor(RE::EngineContents engineContents, Project project)
 : m_showTextEdit(false)
@@ -53,12 +58,16 @@ std::shared_ptr<Editor> Editor::Create(RE::EngineContents engineContents, Projec
     l_editor->m_textEdit->m_acTree.SetTextEdit(l_editor->m_textEdit);
 
     RE::Log::Message("Editor initialized with UI panels");
-    
+
+    l_editor->LoadProjectInfo();
+
     return l_editor;
 }
 
 Editor::~Editor()
 {
+    SaveProjectInfo();
+
     m_sceneEdit.reset();
     m_textEdit.reset();
 
@@ -198,10 +207,15 @@ void Editor::DrawMenuBar()
                 m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
                 m_sceneEdit->m_scene = m_engineContents.core->GetScene();
                 m_sceneEdit->m_entityPanel.RefreshEntityList();
+
+                m_currentScenePath = l_filePathName;
+                SaveProjectInfo();
             }
             else
             {
                 SceneSerializer::SaveToFile(l_filePathName, m_engineContents);
+                m_currentScenePath = l_filePathName;
+                SaveProjectInfo();
             }
         }
 
@@ -209,6 +223,69 @@ void Editor::DrawMenuBar()
         m_showLoadDialog = false;
         m_showSaveDialog = false;
     }
+}
+
+void Editor::SaveProjectInfo()
+{
+    if (!m_project.IsOpen())
+        return;
+
+    json l_projectInfo;
+    l_projectInfo["currentScene"] = m_currentScenePath;
+
+    std::ofstream l_file(m_project.GetProjectInfoPath());
+    if (!l_file.is_open())
+    {
+        printf("[Editor] Failed to write ProjectInfo.json\n");
+        return;
+    }
+
+    l_file << l_projectInfo.dump(4);
+
+    l_file.close();
+}
+
+void Editor::LoadProjectInfo()
+{
+    if (!m_project.IsOpen())
+        return;
+
+    std::string l_infoPath = m_project.GetProjectInfoPath();
+    std::ifstream l_file(l_infoPath);
+    if (!l_file.is_open())
+    {
+        // Fresh project — create and select a default empty scene.
+        std::string l_defaultScene = (std::filesystem::path(m_project.GetScenesDir()) / "Default.lua").string();
+        SceneSerializer::SaveToFile(l_defaultScene, m_engineContents);
+        m_currentScenePath = l_defaultScene;
+        printf("[Editor] Created default scene: %s\n", l_defaultScene.c_str());
+        SaveProjectInfo();
+        return;
+    }
+
+    json l_projectInfo;
+    try { l_file >> l_projectInfo; }
+    catch (...) { printf("[Editor] Failed to parse ProjectInfo.json\n"); return; }
+
+    if (!l_projectInfo.contains("currentScene") || l_projectInfo["currentScene"].is_null())
+        return;
+
+    std::string l_scenePath = l_projectInfo["currentScene"].get<std::string>();
+
+    if (l_scenePath.empty() || !std::filesystem::exists(l_scenePath))
+        return;
+
+    SceneSerializer::LoadFromFile(l_scenePath, m_engineContents);
+
+    // Re-add EditorRender rule, since it is ignored during scene serialisation
+    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
+    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+    m_sceneEdit->m_scene = m_engineContents.core->GetScene();
+    m_sceneEdit->m_entityPanel.RefreshEntityList();
+
+    m_currentScenePath = l_scenePath;
+    printf("[Editor] Restored scene from ProjectInfo: %s\n", l_scenePath.c_str());
 }
 
 void Editor::Draw()

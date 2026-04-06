@@ -42,6 +42,8 @@ private:
     bool m_showLoadDialog = false;   ///< True when the "Load Category" file dialog is open.
     bool m_showSaveDialog = false;   ///< True when the "Create Category" dialog is open.
 
+    std::string m_currentScenePath; ///< Absolute path to the currently loaded scene file, or empty.
+
     TutorialPanel m_tutorialPanel; ///< In-editor guided tutorial overlay (universal across tabs).
 
     /** @brief Initialises Dear ImGui (context, style, SDL3/OpenGL backends). */
@@ -52,6 +54,10 @@ private:
     void HandleInput();
     /** @brief Renders the application menu bar (universal across tabs). */
     void DrawMenuBar();
+    /** @brief Writes ProjectInfo.lua at the project root with the current editor state. */
+    void SaveProjectInfo();
+    /** @brief Reads ProjectInfo.lua from the project root and restores editor state. */
+    void LoadProjectInfo();
 
     Editor(RE::EngineContents engineContents, Project project);
     public:

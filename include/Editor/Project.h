@@ -36,6 +36,8 @@ class Project
     std::string GetAudioDir()      const { return (std::filesystem::path(m_rootPath) / "Audio").string(); }
     /** @brief Returns e.g. <root>/Models */
     std::string GetModelsDir()     const { return (std::filesystem::path(m_rootPath) / "Models").string(); }
+    /** @brief Returns e.g. <root>/ProjectInfo.json */
+    std::string GetProjectInfoPath() const { return (std::filesystem::path(m_rootPath) / "ProjectInfo.json").string(); }
 
     /** @brief Returns true if this Project holds a non-empty path. */
     bool IsOpen() const { return !m_rootPath.empty(); }

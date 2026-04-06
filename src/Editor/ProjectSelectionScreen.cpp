@@ -4,6 +4,7 @@
 
 #include "SDL3/SDL.h"
 #include <GL/gl.h>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 
@@ -80,7 +81,9 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     if (ImGui::Button("Browse...##newloc", ImVec2(l_browseW, 0)))
     {
         IGFD::FileDialogConfig cfg;
-        cfg.path = _state.location.empty() ? "." : _state.location;
+        const char* l_home = std::getenv("HOME");
+        std::string l_docsPath = l_home ? std::string(l_home) + "/Documents" : ".";
+        cfg.path = _state.location.empty() ? l_docsPath : _state.location;
         ImGuiFileDialog::Instance()->OpenDialog(g_newProjectDialogName, "Choose Location", nullptr, cfg);
     }
 
@@ -173,7 +176,9 @@ void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
     if (ImGui::Button("Browse...##loaddir", ImVec2(l_browseW, 0)))
     {
         IGFD::FileDialogConfig cfg;
-        cfg.path = _state.loadDir.empty() ? "." : _state.loadDir;
+        const char* l_home = std::getenv("HOME");
+        std::string l_docsPath = l_home ? std::string(l_home) + "/Documents" : ".";
+        cfg.path = _state.loadDir.empty() ? l_docsPath : _state.loadDir;
         ImGuiFileDialog::Instance()->OpenDialog(g_loadProjectDialogName, "Choose Project Directory", nullptr, cfg);
     }
 
