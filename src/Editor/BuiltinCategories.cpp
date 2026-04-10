@@ -111,7 +111,7 @@ void BuiltinCategories::Load(RE::EngineContents& _contents)
                 continue;
             }
             l_out << entry.source;
-            printf("[BuiltinCategories] Created %s\n", l_path.string().c_str());
+            printf("BuiltinCategories: Created %s\n", l_path.string().c_str());
         }
 
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_path.string());

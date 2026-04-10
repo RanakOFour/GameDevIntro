@@ -21,7 +21,7 @@ using json = nlohmann::json;
 #include <filesystem>
 
 Editor::Editor(RE::EngineContents engineContents, Project project)
-: m_showTextEdit(false)
+: m_state(State::SceneEdit)
 , m_showLoadDialog(false)
 , m_showSaveDialog(false)
 , m_engineContents(std::move(engineContents))
@@ -57,6 +57,15 @@ std::shared_ptr<Editor> Editor::Create(RE::EngineContents engineContents, Projec
     l_editor->m_textEdit = std::make_shared<TextEditTab>(l_editorFromThis);
     l_editor->m_textEdit->m_acTree.SetTextEdit(l_editor->m_textEdit);
 
+    // Register editor-level conditions and actions.
+    // Raw pointer capture is safe: lambdas live inside m_stateRegistry which is
+    // owned by the same Editor object.
+    Editor* l_raw = l_editor.get();
+    l_editor->m_stateRegistry.RegisterCondition("scene_tab", [l_raw]{ return l_raw->m_state == State::SceneEdit; });
+    l_editor->m_stateRegistry.RegisterCondition("text_tab",  [l_raw]{ return l_raw->m_state == State::TextEdit; });
+    l_editor->m_stateRegistry.RegisterAction("scene_tab", [l_raw]{ l_raw->m_state = State::SceneEdit; });
+    l_editor->m_stateRegistry.RegisterAction("text_tab",  [l_raw]{ l_raw->m_state = State::TextEdit; });
+
     RE::Log::Message("Editor initialized with UI panels");
 
     l_editor->LoadProjectInfo();
@@ -83,24 +92,20 @@ Editor::~Editor()
 
 void Editor::InitImGui()
 {
-    // Get ImGui context from IO Manager
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     
-    // Enable mouse drag for window operations
     io.ConfigDragClickToInputText = 0.0f;
 
-    // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     
-    // Tweak style for better docking
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowMenuButtonPosition = ImGuiDir_Right;
 
     auto l_window = m_engineContents.io->GetWindow().lock();
-    // Setup Platform/Renderer backends
+    
     ImGui_ImplSDL3_InitForOpenGL(l_window->GetSDLWindow(), l_window->GetGLContext());
     ImGui_ImplOpenGL3_Init("#version 430");
 
@@ -116,12 +121,31 @@ void Editor::CleanupImGui()
 
 void Editor::Run()
 {
-    float l_oneSixtieth = 1.0f / 60.0f;
+    const float l_targetFrameTime = 1.0f / 60.0f;
+    const Uint64 l_perfFreq = SDL_GetPerformanceFrequency();
+    Uint64 l_frameStart = SDL_GetPerformanceCounter();
+
     while (!m_engineContents.io->GetQuitSignal())
     {
         HandleInput();
-        //Update(l_oneSixtieth);
+        //Update(l_targetFrameTime);
         Draw();
+
+        // Measure how long this iteration took and sleep for the remainder of
+        // the 60 Hz budget. SDL_Delay granularity is ~1 ms so we keep spinning
+        // for the last millisecond to hit the target precisely.
+        float l_elapsed = (SDL_GetPerformanceCounter() - l_frameStart) / static_cast<float>(l_perfFreq);
+        float l_remaining = l_targetFrameTime - l_elapsed;
+        if (l_remaining > 0.001f)
+        {
+            SDL_Delay((Uint32)((l_remaining - 0.001f) * 1000.0f));
+        }
+        while ((SDL_GetPerformanceCounter() - l_frameStart) / static_cast<float>(l_perfFreq) < l_targetFrameTime)
+        {
+            // Silly wait for sub-millisecond accuracy
+        }
+
+        l_frameStart = SDL_GetPerformanceCounter();
     }
 
     printf("Editor no longer running\n");
@@ -236,7 +260,7 @@ void Editor::SaveProjectInfo()
     std::ofstream l_file(m_project.GetProjectInfoPath());
     if (!l_file.is_open())
     {
-        printf("[Editor] Failed to write ProjectInfo.json\n");
+        printf("Editor: Failed to write ProjectInfo.json\n");
         return;
     }
 
@@ -248,7 +272,9 @@ void Editor::SaveProjectInfo()
 void Editor::LoadProjectInfo()
 {
     if (!m_project.IsOpen())
+    {
         return;
+    }
 
     std::string l_infoPath = m_project.GetProjectInfoPath();
     std::ifstream l_file(l_infoPath);
@@ -258,22 +284,33 @@ void Editor::LoadProjectInfo()
         std::string l_defaultScene = (std::filesystem::path(m_project.GetScenesDir()) / "Default.lua").string();
         SceneSerializer::SaveToFile(l_defaultScene, m_engineContents);
         m_currentScenePath = l_defaultScene;
-        printf("[Editor] Created default scene: %s\n", l_defaultScene.c_str());
+        printf("Editor: Created default scene: %s\n", l_defaultScene.c_str());
         SaveProjectInfo();
         return;
     }
 
     json l_projectInfo;
-    try { l_file >> l_projectInfo; }
-    catch (...) { printf("[Editor] Failed to parse ProjectInfo.json\n"); return; }
+    try 
+    {
+        l_file >> l_projectInfo;
+    }
+    catch (json::parse_error& e)
+    {
+        printf("Editor: Failed to parse ProjectInfo.json: %s\n", e.what());
+        return;
+    }
 
     if (!l_projectInfo.contains("currentScene") || l_projectInfo["currentScene"].is_null())
+    {
         return;
+    }
 
     std::string l_scenePath = l_projectInfo["currentScene"].get<std::string>();
 
     if (l_scenePath.empty() || !std::filesystem::exists(l_scenePath))
+    {
         return;
+    }
 
     SceneSerializer::LoadFromFile(l_scenePath, m_engineContents);
 
@@ -285,7 +322,7 @@ void Editor::LoadProjectInfo()
     m_sceneEdit->m_entityPanel.RefreshEntityList();
 
     m_currentScenePath = l_scenePath;
-    printf("[Editor] Restored scene from ProjectInfo: %s\n", l_scenePath.c_str());
+    printf("Editor: Restored scene from ProjectInfo: %s\n", l_scenePath.c_str());
 }
 
 void Editor::Draw()
@@ -306,21 +343,30 @@ void Editor::Draw()
     // Menu bar and tutorial panel are universal across all tabs
     DrawMenuBar();
 
-    if (m_showTextEdit)
+    if (m_state == State::TextEdit)
     {
         ImGui::BeginDisabled();
     }
 
     m_sceneEdit->Draw();
 
-    if (m_showTextEdit)
+    if (m_state == State::TextEdit)
     {
         ImGui::EndDisabled();
         m_textEdit->Draw();
     }
 
-    // Tutorial panel drawn last so it appears above all tab content
+    // Tutorial panel drawn last so it appears above all tab content.
     m_tutorialPanel.DrawAsWindow();
+
+    // Force the tutorial window to the front of the display stack so it is not
+    // obscured by the fullscreen TextEdit window.
+    if (m_tutorialPanel.IsActive())
+    {
+        ImGuiWindow* l_tutWin = ImGui::FindWindowByName(m_tutorialPanel.GetTitle().c_str());
+        if (l_tutWin)
+            ImGui::BringWindowToDisplayFront(l_tutWin);
+    }
 
     // Rendering
     ImGui::PopFont();
@@ -335,6 +381,7 @@ void Editor::HandleInput()
     std::vector<SDL_Event> l_polledEvents = m_engineContents.io->UpdateInputs();
 
     // Handle SDL_Events for imgui
+    bool l_windowResized = false;
     for (const SDL_Event& l_event : l_polledEvents)
     {
         ImGui_ImplSDL3_ProcessEvent(&l_event);
@@ -401,18 +448,28 @@ void Editor::HandleInput()
             m_sceneEdit->m_rulesPanel.SetShown(!m_sceneEdit->m_rulesPanel.IsShown());
         }
 
-        // ESC input
+        // ESC input to close all panels and context menus
         if (m_engineContents.io->GetKeyDownThisFrame((char)27))
         {
             m_sceneEdit->m_categoryPanel.SetShown(false);
             m_sceneEdit->m_entityPanel.SetShown(false);
             m_sceneEdit->m_rulesPanel.SetShown(false);
             m_sceneEdit->m_propertiesPanel.SetShown(false);
+            m_sceneEdit->m_showContext = false;
         }
 
+        // Tab input to switch between scene and text edit
         if(m_engineContents.io->GetKeyDownThisFrame('\t'))
         {
-            m_showTextEdit = !m_showTextEdit;
+            if(m_state == State::SceneEdit)
+            {
+                SetState(State::TextEdit);
+            }
+            else
+            {
+                SetState(State::SceneEdit);
+            }
+
             RE::Log::Message("Tab pressed!");
         }
     }

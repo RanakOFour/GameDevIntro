@@ -16,7 +16,7 @@ Project Project::Create(const std::string& _rootPath)
         if (!std::filesystem::exists(l_dir))
         {
             std::filesystem::create_directories(l_dir);
-            printf("[Project] Created directory: %s\n", l_dir.string().c_str());
+            printf("Project: Created directory: %s\n", l_dir.string().c_str());
         }
     }
 

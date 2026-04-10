@@ -26,7 +26,9 @@ struct TutorialStep
     std::string body;         ///< Scrollable description text (may contain newlines).
     std::string imagePath;    ///< Asset path to an optional image shown above the body.
     std::string highlightKey; ///< Key into TutorialPanel::m_regions (or ImGui window title) to highlight.
-    std::string event;        ///< Advance trigger: \"next\" (default) or \"click_region\".
+    std::string event;        ///< Advance trigger: \"next\" (default), \"click_region\", or \"wait_state\".
+    std::string forceState;   ///< Editor state to force immediately when this step is entered (optional).
+    std::string waitState;    ///< State condition checked each frame when event=\"wait_state\".
 };
 
 /**
@@ -49,6 +51,7 @@ private:
     std::string m_tutorialTitle; ///< Main title of the loaded tutorial.
     std::vector<TutorialStep> m_steps; ///< Chronological list of tutorial steps.
     int m_currentStep = 0; ///< Index of the currently displayed step.
+    int m_lastAppliedForceStep = -1; ///< Tracks which step's force state was last applied.
 
     /// Loaded textures for the tutorial steps.
     std::map<std::string, std::shared_ptr<RE::Asset::Texture>> m_imageCache;
@@ -61,6 +64,26 @@ private:
 
     /** @brief Renders the tutorial window, dim overlay (if applicable), and highlight. */
     void Draw() override;
+
+    /**
+     * @brief Applies a force-state directive, immediately mutating editor state.
+     *
+     * Supported values: \"scene_tab\", \"text_tab\", \"game_run\", \"game_stop\",
+     * \"panel:<PanelTitle>\" (e.g. \"panel:Categories\").
+     *
+     * @param _state Force-state string from TutorialStep::forceState.
+     */
+    void ApplyForceState(const std::string& _state);
+
+    /**
+     * @brief Returns true when the given state condition is currently satisfied.
+     *
+     * Supported values: \"scene_tab\", \"text_tab\", \"game_running\", \"game_stopped\",
+     * \"entity_selected\", \"panel_open:<PanelTitle>\" (e.g. \"panel_open:Categories\").
+     *
+     * @param _state Wait-state condition string from TutorialStep::waitState.
+     */
+    bool IsStateAchieved(const std::string& _state) const;
 
 public:
     TutorialPanel() {};

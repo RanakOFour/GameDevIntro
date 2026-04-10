@@ -38,6 +38,8 @@ class Panel
     void DrawAsWindow(ImGuiWindowFlags _flags = 0);
     void DrawAsChild(ImGuiChildFlags _flags = 0);
 
+    /** @brief Returns the panel's title string. */
+    std::string GetTitle() const { return m_panelTitle; }
     /** @brief Returns whether the panel is currently visible. */
     bool IsShown() const { return m_showPanel; }
     /**

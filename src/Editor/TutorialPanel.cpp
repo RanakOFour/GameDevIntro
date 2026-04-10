@@ -1,5 +1,6 @@
 #include "Editor/TutorialPanel.h"
 #include "Editor/Editor.h"
+#include "Editor/StateRegistry.h"
 
 #include "RanakEngine/Assets.h"
 #include "RanakEngine/Core.h"
@@ -51,11 +52,13 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
 
         sol::table l_stepTable = l_pair.second.as<sol::table>();
         TutorialStep l_step;
-        l_step.title = l_stepTable.get_or("title",     std::string{});
-        l_step.body = l_stepTable.get_or("body",       std::string{});
-        l_step.imagePath = l_stepTable.get_or("image",      std::string{});
-        l_step.highlightKey = l_stepTable.get_or("highlight",  std::string{});
-        l_step.event = l_stepTable.get_or("event",      std::string{});
+        l_step.title = l_stepTable.get_or("title",        std::string{});
+        l_step.body = l_stepTable.get_or("body",          std::string{});
+        l_step.imagePath = l_stepTable.get_or("image",    std::string{});
+        l_step.highlightKey = l_stepTable.get_or("highlight", std::string{});
+        l_step.event = l_stepTable.get_or("event",        std::string{});
+        l_step.forceState = l_stepTable.get_or("force_state", std::string{});
+        l_step.waitState  = l_stepTable.get_or("wait_state",  std::string{});
         m_steps.push_back(l_step);
 
         // Pre-load any images
@@ -72,6 +75,7 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
     if (!m_steps.empty())
     {
         m_showPanel = true;
+        m_lastAppliedForceStep = -1;
     }
 
     RE::Log::Message("TutorialPanel: loaded " + std::to_string(m_steps.size()) + " steps from " + _path);
@@ -87,7 +91,8 @@ bool TutorialPanel::IsStepInteractive() const
     if (!IsActive())
         return false;
 
-    return m_steps[m_currentStep].event == "click_region";
+    const std::string& l_event = m_steps[m_currentStep].event;
+    return l_event == "click_region" || l_event == "wait_state";
 }
 
 std::string TutorialPanel::GetCurrentHighlightKey() const
@@ -101,6 +106,22 @@ std::string TutorialPanel::GetCurrentHighlightKey() const
 void TutorialPanel::ClearRegions()
 {
     m_regions.clear();
+}
+
+void TutorialPanel::ApplyForceState(const std::string& _state)
+{
+    if (_state.empty()) return;
+    auto l_editor = m_editor.lock();
+    if (!l_editor) return;
+    l_editor->GetStateRegistry().Apply(_state);
+}
+
+bool TutorialPanel::IsStateAchieved(const std::string& _state) const
+{
+    if (_state.empty()) return true;
+    auto l_editor = m_editor.lock();
+    if (!l_editor) return false;
+    return l_editor->GetStateRegistry().Evaluate(_state);
 }
 
 // Resolves the ImRect for _key: checks manual registrations first,
@@ -154,7 +175,17 @@ void TutorialPanel::Draw()
 {
     const TutorialStep& l_step = m_steps[m_currentStep];
     const bool l_isClickRegion = (l_step.event == "click_region" && !l_step.highlightKey.empty());
+    const bool l_isWaitState   = (l_step.event == "wait_state"   && !l_step.waitState.empty());
+    const bool l_isInteractive = l_isClickRegion || l_isWaitState;
     const bool l_isLast = (m_currentStep == (int)m_steps.size() - 1);
+
+    // Apply force state on the first frame of a new step
+    const bool l_justEntered = (m_currentStep != m_lastAppliedForceStep);
+    if (l_justEntered)
+    {
+        ApplyForceState(l_step.forceState);
+        m_lastAppliedForceStep = m_currentStep;
+    }
 
     // Auto-advance: detect a click inside the highlighted region
     if (l_isClickRegion)
@@ -172,11 +203,23 @@ void TutorialPanel::Draw()
         }
     }
 
-    // Full-screen dim window for "next" steps
+    // Auto-advance: check required editor state (skip on the same frame force was applied)
+    if (l_isWaitState && !l_justEntered && IsStateAchieved(l_step.waitState))
+    {
+        if (l_isLast)
+            m_showPanel = false;
+        else
+            m_currentStep++;
+    }
+
+    // Full-screen dim window for non-interactive steps ("next" button steps)
     // Rendered before the tutorial window so it sits below it
     // but above the editor panels (which were drawn in DrawEditorUI before this call).
     // Because it captures mouse input, editor panels behind it cannot be clicked.
-    if (!l_isClickRegion)
+    // Skip the dim when the text editor is active so the user can freely interact with it.
+    auto l_editorForDim = m_editor.lock();
+    bool l_isTextEdit = l_editorForDim && l_editorForDim->GetState() == Editor::State::TextEdit;
+    if (!l_isInteractive && !l_isTextEdit)
     {
         ImGuiIO& l_io = ImGui::GetIO();
         ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
@@ -193,7 +236,6 @@ void TutorialPanel::Draw()
         ImGui::PopStyleColor();
     }
 
-    // Highlight overlay (drawn above all windows via foreground draw list)
     DrawHighlightOverlay();
 
     // Calculate dynamic window size based on content
@@ -293,6 +335,16 @@ void TutorialPanel::Draw()
         ImGui::ProgressBar(l_progress, ImVec2(-1.0f, 0.0f), "");
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
         ImGui::TextWrapped("Click the highlighted area to continue...");
+        ImGui::PopStyleColor();
+    }
+    else if (l_isWaitState)
+    {
+        // Tutorial is waiting for a specific editor state – show progress bar and hint.
+        float l_progress = m_steps.size() > 1
+            ? (float)m_currentStep / (float)(m_steps.size() - 1) : 1.0f;
+        ImGui::ProgressBar(l_progress, ImVec2(-1.0f, 0.0f), "");
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+        ImGui::TextWrapped("Waiting for: %s", l_step.waitState.c_str());
         ImGui::PopStyleColor();
     }
     else

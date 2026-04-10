@@ -174,7 +174,11 @@ void TextEditTab::Draw()
     ImGui::SetNextWindowSize(m_size, ImGuiCond_Always);
 
     bool l_showTab = true;
-    if(ImGui::Begin("TextEdit", &l_showTab, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize))
+    if(ImGui::Begin("TextEdit", &l_showTab, ImGuiWindowFlags_NoTitleBar |
+                                            ImGuiWindowFlags_NoMove |
+                                            ImGuiWindowFlags_NoResize |
+                                            ImGuiWindowFlags_NoBringToFrontOnFocus |
+                                            ImGuiWindowFlags_NoFocusOnAppearing))
     {
         if(ImGui::BeginTable("TabTable", 3, ImGuiTableFlags_SizingFixedFit))
         {

@@ -86,6 +86,13 @@ public:
     
     /** @brief Returns the ID of the currently selected entity, or -1. */
     int GetSelectedEntity();
+    /** @brief Returns true while the scene simulation is playing. */
+    bool IsGameRunning() const { return m_isGameRunning; }
+    /**
+     * @brief Looks up a scene-editor panel by its window title.
+     * @return Pointer to the matching Panel, or nullptr if not found.
+     */
+    Panel* GetPanelByName(const std::string& _name);
 };
 
 #endif

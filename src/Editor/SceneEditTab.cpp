@@ -1,5 +1,6 @@
 #include "Editor/SceneEditTab.h"
 #include "Editor/SceneSerializer.h"
+#include "Editor/StateRegistry.h"
 
 #include "RanakEngine/Physics/PhysicsManager.h"
 
@@ -24,6 +25,15 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 
 	m_gridShader = l_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
     glGenVertexArrays(1, &m_dummyGridVAO);
+
+    // Register SceneEditTab conditions and actions in the shared StateRegistry.
+    SceneEditTab* l_self = this;
+    StateRegistry& l_reg = l_editor->GetStateRegistry();
+    l_reg.RegisterCondition("game_running",    [l_self]{ return  l_self->m_isGameRunning; });
+    l_reg.RegisterCondition("game_stopped",    [l_self]{ return !l_self->m_isGameRunning; });
+    l_reg.RegisterCondition("entity_selected", [l_self]{ return  l_self->m_selectedEntityId != -1; });
+    l_reg.RegisterAction("game_run",  [l_self]{ l_self->Run(); });
+    l_reg.RegisterAction("game_stop", [l_self]{ l_self->Stop(); });
 }
 
 SceneEditTab::~SceneEditTab()
@@ -279,4 +289,14 @@ void SceneEditTab::SelectEntity(int _id)
 int SceneEditTab::GetSelectedEntity()
 {
 	return m_selectedEntityId;
+}
+
+Panel* SceneEditTab::GetPanelByName(const std::string& _name)
+{
+    if (m_entityPanel.GetTitle()     == _name) return &m_entityPanel;
+    if (m_categoryPanel.GetTitle()   == _name) return &m_categoryPanel;
+    if (m_rulesPanel.GetTitle()      == _name) return &m_rulesPanel;
+    if (m_cameraPanel.GetTitle()     == _name) return &m_cameraPanel;
+    if (m_propertiesPanel.GetTitle() == _name) return &m_propertiesPanel;
+    return nullptr;
 }

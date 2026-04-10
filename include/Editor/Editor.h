@@ -4,6 +4,7 @@
 #include "RanakEngine/RanakEngine.h"
 
 #include "Editor/Project.h"
+#include "Editor/StateRegistry.h"
 #include "Editor/TutorialPanel.h"
 
 #include "imgui/imgui.h"
@@ -29,15 +30,23 @@ class TextEditTab;
  */
 class Editor : public std::enable_shared_from_this<Editor>
 {
+public:
+    enum State
+    {
+        SceneEdit,
+        TextEdit
+    };
 private:
-    std::shared_ptr<SceneEditTab> m_sceneEdit; ///< The 3D scene-editing tab.
+    std::shared_ptr<SceneEditTab> m_sceneEdit; ///< The 2D scene-editing tab.
     std::shared_ptr<TextEditTab>  m_textEdit;  ///< The Lua source-file editing tab.
     ImFont* m_font;                            ///< Custom font loaded for the editor UI.
 
-    RE::EngineContents m_engineContents; ///< Aggregated engine sub-systems.
+    RE::EngineContents m_engineContents; ///< Aggregated engine systems.
     Project            m_project;        ///< The currently open project (path + subdir helpers).
 
-    bool m_showTextEdit; ///< True when the TextEditTab is active.
+    State m_state; ///< The current editor state (active tab).
+
+    StateRegistry m_stateRegistry; ///< Named conditions and actions registered by all editor subsystems.
 
     bool m_showLoadDialog = false;   ///< True when the "Load Category" file dialog is open.
     bool m_showSaveDialog = false;   ///< True when the "Create Category" dialog is open.
@@ -84,6 +93,12 @@ private:
     std::weak_ptr<SceneEditTab> GetSceneEdit();
     /** @brief Returns a reference to the tutorial panel. */
     TutorialPanel& GetTutorialPanel() { return m_tutorialPanel; }
+    /** @brief Returns the current editor state (active tab). */
+    State GetState() const { return m_state; }
+    /** @brief Switches between the scene-edit tab and text-edit tab. */
+    void SetState(State _state) { m_state = _state; }
+    /** @brief Returns a reference to the named condition/action registry. */
+    StateRegistry& GetStateRegistry() { return m_stateRegistry; }
 };
 
 #endif

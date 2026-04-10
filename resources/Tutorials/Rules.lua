@@ -3,8 +3,9 @@ return {
     title = "Writing Rules",
     steps = {
         {
-            title = "What is a Rule?",
-            body  = [[A Rule is a Lua script that runs game logic.
+            title       = "What is a Rule?",
+            force_state = "scene_tab",
+            body        = [[A Rule is a Lua script that runs game logic.
 
 It declares which categories an entity must have, and then defines
 Init, Update, and/or Draw functions that run once per matching entity each frame.
@@ -12,8 +13,9 @@ Init, Update, and/or Draw functions that run once per matching entity each frame
 Rules live in resources/Rules/.]],
         },
         {
-            title = "The Rule Syntax",
-            body  = [[A rule file returns a Rule table:
+            title       = "The Rule Syntax",
+            force_state = "text_tab",
+            body        = [[A rule file returns a Rule table:
 
   local MyRule = Rule {
       categories = { "Transform", "Physics" },
@@ -35,11 +37,14 @@ Rules live in resources/Rules/.]],
       -- called every frame after Update; use for rendering
   end
 
-  return MyRule]],
+  return MyRule
+
+The editor has switched to the Text Editor tab – try writing a rule file now.]],
         },
         {
-            title = "Accessing Entity Data",
-            body  = [[Inside Update/Draw, _entityData is a table keyed by category name:
+            title       = "Accessing Entity Data",
+            force_state = "text_tab",
+            body        = [[Inside Update/Draw, _entityData is a table keyed by category name:
 
   function MyRule:Update(_entityData)
       local tf  = _entityData["Transform"]
@@ -56,8 +61,9 @@ Changes to _entityData are live – they affect the entity's stored data immedia
 There is no need to write back to a separate structure.]],
         },
         {
-            title = "Rule-Level Fields",
-            body  = [[Rule fields are shared state for the rule itself, not per-entity.
+            title       = "Rule-Level Fields",
+            force_state = "text_tab",
+            body        = [[Rule fields are shared state for the rule itself, not per-entity.
 
   local Spawner = Rule {
       categories = { "Transform" },
@@ -78,8 +84,9 @@ There is no need to write back to a separate structure.]],
 Access rule fields through self.fields inside the method body.]],
         },
         {
-            title = "Available Global APIs",
-            body  = [[The following globals are available in all rule scripts:
+            title       = "Available Global APIs",
+            force_state = "text_tab",
+            body        = [[The following globals are available in all rule scripts:
 
   Core.Camera   – get/set position, projection, draw entities
   IO            – keyboard input (GetKeyDown), audio (PlayAudio)
@@ -92,8 +99,12 @@ Access rule fields through self.fields inside the method body.]],
 The autocomplete in the Text Editor (Ctrl+Space) lists all available functions.]],
         },
         {
-            title = "Loading a Rule",
-            body  = [[To add a rule to the running scene:
+            title       = "Loading a Rule",
+            force_state = "scene_tab",
+            event       = "wait_state",
+            wait_state  = "panel_open:Rules",
+            highlight   = "Rules",
+            body        = [[To add a rule to the running scene:
 
   1. Write the .lua file and save it in resources/Rules/.
   2. Open the Rules panel.
@@ -102,9 +113,8 @@ The autocomplete in the Text Editor (Ctrl+Space) lists all available functions.]
 The rule becomes active immediately and will start processing entities
 that match its category list on the next frame.
 
-Use the Toggle button in the Rules panel to enable/disable a rule at runtime.]],
-            highlight = "Rules",
-            event     = "click_region",
+Use the Toggle button in the Rules panel to enable/disable a rule at runtime.
+The tutorial will advance automatically once the Rules panel is open.]],
         },
     }
 }

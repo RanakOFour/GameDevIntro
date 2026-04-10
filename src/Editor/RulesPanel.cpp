@@ -72,6 +72,8 @@ void RulesPanel::Draw()
     ImGui::InputTextWithHint("##RulesFilter", "Search rules...", &m_filterString);
 
     ImGui::Separator();
+    
+    sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
 
     // Active rules list
     if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
@@ -88,16 +90,18 @@ void RulesPanel::Draw()
             }
 
             ImGui::PushID(l_ruleName.c_str());
+
+            std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
             
-            ImGui::Text(l_ruleName.c_str());
+            ImGui::Text(l_rulePtr->GetActive() ? l_ruleName.c_str()
+                                               : (l_ruleName + " (Inactive)").c_str()
+                                            );
 
             // Remove button
             ImGui::SameLine(ImGui::GetWindowWidth() - 100);
             if (ImGui::Button("Toggle", ImVec2(0, 0)))
             {
                 // Set rule to not active
-                sol::table l_sceneTable = m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetSceneTable();
-                std::shared_ptr<RE::Core::Rule> l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
                 l_rulePtr->SetActive(!l_rulePtr->GetActive());
                 
                 std::string l_logMessage = "Set " + l_ruleName + " to ";
