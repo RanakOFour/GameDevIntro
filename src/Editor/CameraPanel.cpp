@@ -6,10 +6,10 @@
 
 #include "imgui/imgui.h"
 
-CameraPanel::CameraPanel(std::weak_ptr<Editor> _editor)
+CameraPanel::CameraPanel(Editor& _editor)
 : Panel("Camera Settings", _editor)
 {
-    m_camera = _editor.lock()->GetEngineContents().core->GetCamera();
+    m_camera = _editor.GetEngineContents().core->GetCamera();
 }
 
 CameraPanel::~CameraPanel()

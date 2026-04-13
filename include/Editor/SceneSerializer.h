@@ -2,6 +2,7 @@
 #define SCENE_SERIALIZER_H
 
 #include "RanakEngine/RanakEngine.h"
+#include "Editor/SceneSettings.h"
 
 #include <string>
 
@@ -33,54 +34,7 @@
  */
 class SceneSerializer
 {
-public:
-    SceneSerializer() = delete;
-
-    /**
-     * @brief Converts a live scene to a self-constructing, fully portable Lua script.
-     *
-     * Categories are embedded using their origin-file source (via
-     * LuaFile::GetCode()).  If no origin file is recorded the source is
-     * reconstructed from the category's base-fields table.  Rules are embedded
-     * using the source cached in the AssetManager under the conventional path
-     * `./resources/Rules/<name>.lua`; if that file cannot be found a warning
-     * comment is emitted instead.
-     *
-     * @param _scene    The scene to serialise.
-     * @param _contents Engine contents (provides LuaContext + AssetManager).
-     * @return          Lua source code as a std::string.
-     */
-    static std::string Serialize(RE::EngineContents& _contents);
-
-    /**
-     * @brief Serializes the scene and writes the resulting Lua script to a file.
-     *
-     * @param _scene    The scene to serialise.
-     * @param _contents Engine contents (provides LuaContext + AssetManager).
-     * @param _filePath Destination file path (created / overwritten).
-     */
-    static void SaveToFile(const std::string& _filePath,
-                           RE::EngineContents& _contents);
-
-    /**
-     * @brief Reconstructs a scene by executing a Lua script file on disk.
-     *
-     * @param _filePath Path to the previously saved scene script.
-     * @param _contents Engine contents bundle.
-     */
-    static void LoadFromFile(const std::string& _filePath,
-                             RE::EngineContents& _contents);
-
-    /**
-     * @brief Reconstructs a scene by executing a Lua script provided as a string.
-     *
-     * @param _script   Lua source code (as produced by Serialize()).
-     * @param _contents Engine contents bundle.
-     */
-    static void LoadFromString(const std::string& _script,
-                               RE::EngineContents& _contents);
-
-private:
+    private:
     /**
      * @brief Converts a sol::object field value to a Lua literal string.
      *
@@ -116,7 +70,64 @@ private:
      *
      * @param _contents Engine contents bundle.
      */
-    static void RegisterConstructorHelpers(RE::EngineContents& _contents);
+    static void RegisterConstructorHelpers(RE::EngineContents& _contents,
+                                           SceneSettings* _outSettings);
+
+    public:
+    SceneSerializer() = delete;
+
+    /**
+     * @brief Converts a live scene to a self-constructing, fully portable Lua script.
+     *
+     * Categories are embedded using their origin-file source (via
+     * LuaFile::GetCode()).  If no origin file is recorded the source is
+     * reconstructed from the category's base-fields table.  Rules are embedded
+     * using the source cached in the AssetManager under the conventional path
+     * `./resources/Rules/<name>.lua`; if that file cannot be found a warning
+     * comment is emitted instead.
+     *
+     * @param _scene    The scene to serialise.
+     * @param _contents Engine contents (provides LuaContext + AssetManager).
+     * @return          Lua source code as a std::string.
+     */
+    /**
+     * @param _settings  Scene settings (gravity, clear colour) to embed in the script.
+     */
+    static std::string Serialize(RE::EngineContents& _contents,
+                                 const SceneSettings& _settings);
+
+    /**
+     * @brief Serializes the scene and writes the resulting Lua script to a file.
+     *
+     * @param _filePath Destination file path (created / overwritten).
+     * @param _contents Engine contents (provides LuaContext + AssetManager).
+     * @param _settings Scene settings to embed.
+     */
+    static void SaveToFile(const std::string& _filePath,
+                           RE::EngineContents& _contents,
+                           const SceneSettings& _settings);
+
+    /**
+     * @brief Reconstructs a scene by executing a Lua script file on disk.
+     *
+     * @param _filePath   Path to the previously saved scene script.
+     * @param _contents   Engine contents bundle.
+     * @param _outSettings If non-null, receives the settings read from the script.
+     */
+    static void LoadFromFile(const std::string& _filePath,
+                             RE::EngineContents& _contents,
+                             SceneSettings* _outSettings = nullptr);
+
+    /**
+     * @brief Reconstructs a scene by executing a Lua script provided as a string.
+     *
+     * @param _script      Lua source code (as produced by Serialize()).
+     * @param _contents    Engine contents bundle.
+     * @param _outSettings If non-null, receives the settings read from the script.
+     */
+    static void LoadFromString(const std::string& _script,
+                               RE::EngineContents& _contents,
+                               SceneSettings* _outSettings = nullptr);
 };
 
 #endif // SCENE_SERIALIZER_H

@@ -1,23 +1,30 @@
 #include "Editor/SceneEditTab.h"
 #include "Editor/SceneSerializer.h"
 #include "Editor/StateRegistry.h"
+#include "Editor/SceneSettingsPanel.h"
+#include "Editor/BuiltinRules.h"
+
+#include <filesystem>
 
 #include "RanakEngine/Physics/PhysicsManager.h"
 
 #include "SDL3/SDL.h"
 
-SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
+SceneEditTab::SceneEditTab(Editor& _editor)
 : m_editor(_editor)
-, m_entityPanel(m_editor)
-, m_propertiesPanel(m_editor)
-, m_categoryPanel(m_editor)
-, m_rulesPanel(m_editor)
+, m_entityPanel(_editor)
+, m_propertiesPanel(_editor)
+, m_categoryPanel(_editor)
+, m_rulesPanel(_editor)
+, m_cameraPanel(_editor)
 , m_selectedEntityId(-1)
 , m_isGameRunning(false)
 , m_lastFrameTime(SDL_GetPerformanceCounter())
+, m_sceneSettings()
+, m_settingsPanel(_editor, &m_sceneSettings)
+, m_consolePanel(_editor)
 {
-	auto l_editor = _editor.lock();
-	auto l_engineContents = l_editor->GetEngineContents();
+	auto l_engineContents = _editor.GetEngineContents();
 
 	m_scene = l_engineContents.core->GetScene();
 	m_camera = l_engineContents.core->GetCamera().lock();
@@ -28,12 +35,15 @@ SceneEditTab::SceneEditTab(std::weak_ptr<Editor> _editor)
 
     // Register SceneEditTab conditions and actions in the shared StateRegistry.
     SceneEditTab* l_self = this;
-    StateRegistry& l_reg = l_editor->GetStateRegistry();
+    StateRegistry& l_reg = _editor.GetStateRegistry();
     l_reg.RegisterCondition("game_running",    [l_self]{ return  l_self->m_isGameRunning; });
     l_reg.RegisterCondition("game_stopped",    [l_self]{ return !l_self->m_isGameRunning; });
+    l_reg.RegisterCondition("game_paused",     [l_self]{ return  l_self->m_isGamePaused; });
     l_reg.RegisterCondition("entity_selected", [l_self]{ return  l_self->m_selectedEntityId != -1; });
-    l_reg.RegisterAction("game_run",  [l_self]{ l_self->Run(); });
-    l_reg.RegisterAction("game_stop", [l_self]{ l_self->Stop(); });
+    l_reg.RegisterAction("game_run",    [l_self]{ l_self->Run(); });
+    l_reg.RegisterAction("game_stop",   [l_self]{ l_self->Stop(); });
+    l_reg.RegisterAction("game_pause",  [l_self]{ l_self->Pause(); });
+    l_reg.RegisterAction("game_resume", [l_self]{ l_self->Resume(); });
 }
 
 SceneEditTab::~SceneEditTab()
@@ -49,7 +59,7 @@ void SceneEditTab::DrawEditorUI()
     // When a non-interactive tutorial step is active, suppress the context menu
     // and disable all editor panel widgets so the user can only interact with
     // the tutorial window itself.
-    TutorialPanel& l_tutorial = m_editor.lock()->GetTutorialPanel();
+    TutorialPanel& l_tutorial = m_editor.GetTutorialPanel();
     const bool l_tutLocked = l_tutorial.IsActive() && !l_tutorial.IsStepInteractive();
 
     if (!l_tutLocked)
@@ -58,8 +68,12 @@ void SceneEditTab::DrawEditorUI()
     // If the current tutorial step highlights a specific panel, ensure it is
     // visible before Draw() is called so FindWindowByName can locate it.
     const std::string& l_highlightKey = l_tutorial.GetCurrentHighlightKey();
-    if (l_highlightKey == "Categories")  m_categoryPanel.SetShown(true);
-    else if (l_highlightKey == "Rules")  m_rulesPanel.SetShown(true);
+    if      (l_highlightKey == "Entity List")       m_entityPanel.SetShown(true);
+    else if (l_highlightKey == "Categories")        m_categoryPanel.SetShown(true);
+    else if (l_highlightKey == "Rules")             m_rulesPanel.SetShown(true);
+    else if (l_highlightKey == "Entity Properties") m_propertiesPanel.SetShown(true);
+    else if (l_highlightKey == "Camera")            m_cameraPanel.SetShown(true);
+    else if (l_highlightKey == "Console")           m_consolePanel.SetShown(true);
 
     if (l_tutLocked)
         ImGui::BeginDisabled();
@@ -69,6 +83,8 @@ void SceneEditTab::DrawEditorUI()
     m_rulesPanel.DrawAsWindow();
     m_cameraPanel.DrawAsWindow();
     m_propertiesPanel.DrawAsWindow();
+    m_settingsPanel.DrawAsWindow();
+    m_consolePanel.DrawAsWindow();
 
     if (l_tutLocked)
         ImGui::EndDisabled();
@@ -83,8 +99,8 @@ void SceneEditTab::DrawContextMenu()
         ImVec2 l_buttonSize(170, 25);
         if(ImGui::Button("Create Entity", l_buttonSize))
         {	
-			Vector2 l_mousePos = m_editor.lock()->GetEngineContents().io->GetMouseInfo().position;
-            Vector3 l_mousePosWorld = m_editor.lock()->GetEngineContents().core->ScreenToWorldPoint(l_mousePos);
+			Vector2 l_mousePos = m_editor.GetEngineContents().io->GetMouseInfo().position;
+            Vector3 l_mousePosWorld = m_editor.GetEngineContents().core->ScreenToWorldPoint(l_mousePos);
             Vector2 l_entityPos(l_mousePosWorld.x, l_mousePosWorld.y);
 
             m_entityPanel.AddEntity();
@@ -158,9 +174,15 @@ void SceneEditTab::Draw()
     m_lastFrameTime = l_now;
 
     ImGuiIO& l_io = ImGui::GetIO();
-    float l_btnWidth = 80.0f;
-    ImGui::SetNextWindowPos(ImVec2((l_io.DisplaySize.x - l_btnWidth) * 0.5f, 24.0f));
-    ImGui::SetNextWindowSize(ImVec2(l_btnWidth, 0.0f));
+    const float l_playBtnW  = 64.0f;
+    const float l_stopBtnW  = 64.0f;
+    const float l_pauseBtnW = 80.0f;
+    const float l_spacing   = 8.0f;
+    const float l_toolW     = m_isGameRunning
+        ? l_stopBtnW + l_spacing + l_pauseBtnW
+        : l_playBtnW;
+    ImGui::SetNextWindowPos(ImVec2((l_io.DisplaySize.x - l_toolW) * 0.5f, 24.0f));
+    ImGui::SetNextWindowSize(ImVec2(l_toolW + 16.0f, 0.0f));
     ImGui::SetNextWindowBgAlpha(0.75f);
     if(ImGui::Begin("##PlayToolbar", nullptr,
         ImGuiWindowFlags_NoDecoration |
@@ -171,25 +193,27 @@ void SceneEditTab::Draw()
     {
         if (m_isGameRunning)
         {
-            if (ImGui::Button("Stop", ImVec2(l_btnWidth - 16.0f, 0.0f)))
-            {
+            if (ImGui::Button("Stop", ImVec2(l_stopBtnW, 0.0f)))
                 Stop();
+            ImGui::SameLine(0.0f, l_spacing);
+            std::string l_pauseLabel = m_isGamePaused ? "Resume" : "Pause";
+            if (ImGui::Button(l_pauseLabel.c_str(), ImVec2(l_pauseBtnW, 0.0f)))
+            {
+                if (m_isGamePaused) Resume(); else Pause();
             }
         }
         else
         {
-            if (ImGui::Button("Play", ImVec2(l_btnWidth - 16.0f, 0.0f)))
-            {
+            if (ImGui::Button("Play", ImVec2(l_playBtnW, 0.0f)))
                 Run();
-            }
         }
     }
     ImGui::End();
 
     auto l_scene = m_scene.lock();
 
-    // Update scene rules if simulation is running
-    if (m_isGameRunning)
+    // Update scene rules if simulation is running and not paused
+    if (m_isGameRunning && !m_isGamePaused)
     {
         auto l_physics = RE::Physics::Manager::Get().lock();
         l_physics->Step(l_dt);
@@ -240,8 +264,13 @@ void SceneEditTab::Draw()
 
 void SceneEditTab::Run()
 {
-    // Snapshot scene state before simulation begins so we can restore it on Stop.
-    m_savedSceneState = SceneSerializer::Serialize(m_editor.lock()->GetEngineContents());
+    // Snapshot scene state (including current settings) before simulation begins.
+    m_savedSceneState = SceneSerializer::Serialize(m_editor.GetEngineContents(),
+                                                   m_sceneSettings);
+
+    // Apply scene gravity to the physics world before Init() runs.
+    if (auto l_physics = RE::Physics::Manager::Get().lock())
+        l_physics->SetGravity(Vector2(m_sceneSettings.gravityX, m_sceneSettings.gravityY));
 
     auto l_scene = m_scene.lock();
     l_scene->Init();
@@ -250,27 +279,41 @@ void SceneEditTab::Run()
     m_isGameRunning = true;
 }
 
+void SceneEditTab::Pause()
+{
+    m_isGamePaused = true;
+    m_lastFrameTime = SDL_GetPerformanceCounter();
+}
+
+void SceneEditTab::Resume()
+{
+    m_isGamePaused = false;
+    m_lastFrameTime = SDL_GetPerformanceCounter();
+}
+
 void SceneEditTab::Stop()
 {
     m_isGameRunning = false;
+    m_isGamePaused  = false;
 
     if (m_savedSceneState.empty())
     {
         return;
     }
 
-    auto& l_engineContents = m_editor.lock()->GetEngineContents();
+    auto& l_engineContents = m_editor.GetEngineContents();
 
     l_engineContents.physics->Reset();
 
-    // Restore the scene to its pre-play state.
-    SceneSerializer::LoadFromString(m_savedSceneState, l_engineContents);
+    // Restore the scene to its pre-play state; also recover saved settings.
+    SceneSerializer::LoadFromString(m_savedSceneState, l_engineContents, &m_sceneSettings);
     m_savedSceneState.clear();
 
-    // Re-add the EditorRender rule (it is skipped during serialization).
-    auto l_renderRuleFile = l_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = l_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
-    l_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+    // Re-add built-in rules (they are excluded from serialisation).
+    BuiltinRules::Load(l_engineContents);
+
+    // Re-add any registry rules that the snapshot may not have included.
+    ReapplyRegistryToScene();
 
     // Update local scene reference and refresh panels.
     m_scene = l_engineContents.core->GetScene();
@@ -283,7 +326,7 @@ void SceneEditTab::Stop()
 void SceneEditTab::SelectEntity(int _id)
 {
     m_selectedEntityId = _id;
-    m_propertiesPanel.SetShown(true);
+    m_propertiesPanel.SetShown(_id >= 0);
 }
 
 int SceneEditTab::GetSelectedEntity()
@@ -299,4 +342,71 @@ Panel* SceneEditTab::GetPanelByName(const std::string& _name)
     if (m_cameraPanel.GetTitle()     == _name) return &m_cameraPanel;
     if (m_propertiesPanel.GetTitle() == _name) return &m_propertiesPanel;
     return nullptr;
+}
+
+void SceneEditTab::RegisterRule(const std::string& _name, const std::string& _filePath)
+{
+    for (const auto& entry : m_ruleRegistry)
+        if (entry.name == _name) return; // already registered
+
+    m_ruleRegistry.push_back({ _name, _filePath });
+}
+
+void SceneEditTab::ClearRuleRegistry()
+{
+    m_ruleRegistry.clear();
+}
+
+void SceneEditTab::RebuildRegistryFromScene()
+{
+    m_ruleRegistry.clear();
+
+    auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+    if (!l_scene) return;
+
+    sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
+
+    for (auto& l_pair : l_rulesTable.pairs())
+    {
+        if (l_pair.first.get_type() != sol::type::string) continue;
+
+        const std::string l_name = l_pair.first.as<std::string>();
+        if (BuiltinRules::IsBuiltin(l_name)) continue;
+
+        std::shared_ptr<RE::Core::Rule> l_rulePtr =
+            l_rulesTable.raw_get<std::shared_ptr<RE::Core::Rule>>(l_name);
+
+        std::string l_path;
+        if (l_rulePtr)
+        {
+            auto l_file = l_rulePtr->GetOriginFile().lock();
+            if (l_file) l_path = l_file->GetPath();
+        }
+
+        m_ruleRegistry.push_back({ l_name, l_path });
+    }
+}
+
+void SceneEditTab::ReapplyRegistryToScene()
+{
+    auto& l_contents = m_editor.GetEngineContents();
+    auto l_scene = l_contents.core->GetScene().lock();
+    if (!l_scene) return;
+
+    sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
+
+    for (const auto& entry : m_ruleRegistry)
+    {
+        // Skip if already present in the scene.
+        auto l_existing = l_rulesTable.raw_get<sol::object>(entry.name);
+        if (l_existing.valid() && l_existing.get_type() != sol::type::nil)
+            continue;
+
+        if (entry.filePath.empty() || !std::filesystem::exists(entry.filePath))
+            continue;
+
+        auto l_file = l_contents.resources->Load<RE::Asset::LuaFile>(entry.filePath);
+        RE::Core::Rule l_rule = l_contents.core->GetLuaContext()->CreateRule(l_file);
+        l_scene->AddRule(l_rule);
+    }
 }

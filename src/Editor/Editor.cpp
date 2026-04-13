@@ -6,9 +6,12 @@
 
 #include "Editor/SceneSerializer.h"
 #include "Editor/BuiltinCategories.h"
+#include "Editor/BuiltinRules.h"
+#include "Editor/SceneSettings.h"
 
 #include "RanakEngine/IO.h"
 #include "RanakEngine/Core.h"
+#include "RanakEngine/Physics.h"
 
 #include "imguiFileDialog/ImGuiFileDialog.h"
 
@@ -26,6 +29,7 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 , m_showSaveDialog(false)
 , m_engineContents(std::move(engineContents))
 , m_project(std::move(project))
+, m_tutorialPanel(*this)
 {
     RE::Log::Message("Engine already initialised; Editor taking ownership");
 
@@ -37,40 +41,24 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 
     m_font = ImGui::GetIO().Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
 
-    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
+    BuiltinRules::Load(m_engineContents);
 
-    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
-
-    RE::Log::Message("Editor constructed");
-}
-
-std::shared_ptr<Editor> Editor::Create(RE::EngineContents engineContents, Project project)
-{
-    std::shared_ptr<Editor> l_editor;
-    l_editor.reset(new Editor(std::move(engineContents), std::move(project)));
-
-    std::shared_ptr<Editor> l_editorFromThis = l_editor->shared_from_this();
-    
-    l_editor->m_tutorialPanel = TutorialPanel(l_editorFromThis);
-    l_editor->m_sceneEdit = std::make_shared<SceneEditTab>(l_editorFromThis);
-    l_editor->m_textEdit = std::make_shared<TextEditTab>(l_editorFromThis);
-    l_editor->m_textEdit->m_acTree.SetTextEdit(l_editor->m_textEdit);
+    // Create tabs — pass *this (Editor fully owns both, both outlived by this).
+    m_sceneEdit = std::make_shared<SceneEditTab>(*this);
+    m_textEdit  = std::make_shared<TextEditTab>(*this);
+    m_textEdit->m_acTree.SetTextEdit(m_textEdit);
 
     // Register editor-level conditions and actions.
-    // Raw pointer capture is safe: lambdas live inside m_stateRegistry which is
-    // owned by the same Editor object.
-    Editor* l_raw = l_editor.get();
-    l_editor->m_stateRegistry.RegisterCondition("scene_tab", [l_raw]{ return l_raw->m_state == State::SceneEdit; });
-    l_editor->m_stateRegistry.RegisterCondition("text_tab",  [l_raw]{ return l_raw->m_state == State::TextEdit; });
-    l_editor->m_stateRegistry.RegisterAction("scene_tab", [l_raw]{ l_raw->m_state = State::SceneEdit; });
-    l_editor->m_stateRegistry.RegisterAction("text_tab",  [l_raw]{ l_raw->m_state = State::TextEdit; });
+    // Raw pointer capture safe: lambdas stored in m_stateRegistry owned by this Editor.
+    Editor* l_raw = this;
+    m_stateRegistry.RegisterCondition("scene_tab", [l_raw]{ return l_raw->m_state == State::SceneEdit; });
+    m_stateRegistry.RegisterCondition("text_tab",  [l_raw]{ return l_raw->m_state == State::TextEdit; });
+    m_stateRegistry.RegisterAction("scene_tab", [l_raw]{ l_raw->m_state = State::SceneEdit; });
+    m_stateRegistry.RegisterAction("text_tab",  [l_raw]{ l_raw->m_state = State::TextEdit; });
 
     RE::Log::Message("Editor initialized with UI panels");
 
-    l_editor->LoadProjectInfo();
-
-    return l_editor;
+    LoadProjectInfo();
 }
 
 Editor::~Editor()
@@ -187,6 +175,23 @@ void Editor::DrawMenuBar()
             ImGui::EndMenu();
         }
 
+        if (ImGui::BeginMenu("Edit"))
+        {
+            std::string l_undoLabel = m_undoManager.CanUndo()
+                ? "Undo " + m_undoManager.GetUndoDescription()
+                : "Undo";
+            std::string l_redoLabel = m_undoManager.CanRedo()
+                ? "Redo " + m_undoManager.GetRedoDescription()
+                : "Redo";
+
+            if (ImGui::MenuItem(l_undoLabel.c_str(), "Ctrl+Z", false, m_undoManager.CanUndo()))
+                m_undoManager.Undo();
+            if (ImGui::MenuItem(l_redoLabel.c_str(), "Ctrl+Shift+Z", false, m_undoManager.CanRedo()))
+                m_undoManager.Redo();
+
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("View"))
         {
             ImGui::MenuItem("Show Grid");
@@ -197,6 +202,20 @@ void Editor::DrawMenuBar()
                 m_sceneEdit->m_cameraPanel.SetShown(true);
             }
 
+            if (ImGui::MenuItem("Console"))
+            {
+                m_sceneEdit->m_consolePanel.SetShown(!m_sceneEdit->m_consolePanel.IsShown());
+            }
+
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Settings"))
+        {
+            if (ImGui::MenuItem("Project Settings"))
+                m_showSettingsDialog = true;
+            if (ImGui::MenuItem("Scene Settings"))
+                m_sceneEdit->m_settingsPanel.SetShown(true);
             ImGui::EndMenu();
         }
 
@@ -222,13 +241,13 @@ void Editor::DrawMenuBar()
             std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
             if (m_showLoadDialog)
             {
-                SceneSerializer::LoadFromFile(l_filePathName, m_engineContents);
+                SceneSerializer::LoadFromFile(l_filePathName, m_engineContents,
+                                              &m_sceneEdit->GetSceneSettings());
 
-                // Re-add EditorRender rule, since it is ignored during scene serialisation
-                auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-                RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
-
-                m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+                // Re-add built-in rules after scene load (they are excluded from serialisation)
+                BuiltinRules::Load(m_engineContents);
+                // Rebuild the editor rule registry to match the newly loaded scene.
+                m_sceneEdit->RebuildRegistryFromScene();
                 m_sceneEdit->m_scene = m_engineContents.core->GetScene();
                 m_sceneEdit->m_entityPanel.RefreshEntityList();
 
@@ -237,7 +256,8 @@ void Editor::DrawMenuBar()
             }
             else
             {
-                SceneSerializer::SaveToFile(l_filePathName, m_engineContents);
+                SceneSerializer::SaveToFile(l_filePathName, m_engineContents,
+                                            m_sceneEdit->GetSceneSettings());
                 m_currentScenePath = l_filePathName;
                 SaveProjectInfo();
             }
@@ -249,13 +269,77 @@ void Editor::DrawMenuBar()
     }
 }
 
+void Editor::ApplyProjectSettings()
+{
+    const ProjectSettings& s = m_project.GetSettings();
+
+    // Camera: restore initial state.
+    if (auto l_camera = m_engineContents.core->GetCamera().lock())
+    {
+        l_camera->SetPosition(Vector3(s.cameraX, s.cameraY, s.cameraZ));
+        l_camera->SetCameraWidth(s.cameraWidth);
+        if (s.cameraPerspective) l_camera->SetPerspective();
+        else                     l_camera->SetOrthographic();
+    }
+}
+
+void Editor::DrawSettingsDialog()
+{
+    if (!m_showSettingsDialog)
+        return;
+
+    ImGui::OpenPopup("Project Settings");
+    m_showSettingsDialog = false; // consumed — popup stays open via BeginPopupModal
+
+    ImGui::SetNextWindowSize(ImVec2(400, 0), ImGuiCond_Always);
+}
+
+// Drawn every frame so the modal persists while open.
+static void DrawSettingsDialogContent(ProjectSettings& s, bool& outApply)
+{
+    outApply = false;
+
+    if (!ImGui::BeginPopupModal("Project Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    ImGui::SeparatorText("Camera (initial)");
+    ImGui::DragFloat("Position X", &s.cameraX, 0.1f, -10000.0f, 10000.0f, "%.2f");
+    ImGui::DragFloat("Position Y", &s.cameraY, 0.1f, -10000.0f, 10000.0f, "%.2f");
+    ImGui::DragFloat("Position Z", &s.cameraZ, 0.1f,      0.1f, 10000.0f, "%.2f");
+    ImGui::DragFloat("Width (ortho zoom)", &s.cameraWidth, 0.1f, 0.1f, 1000.0f, "%.2f");
+    ImGui::Checkbox("Perspective", &s.cameraPerspective);
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    if (ImGui::Button("Apply & Close", ImVec2(160, 0)))
+    {
+        outApply = true;
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Cancel", ImVec2(100, 0)))
+        ImGui::CloseCurrentPopup();
+
+    ImGui::EndPopup();
+}
+
 void Editor::SaveProjectInfo()
 {
     if (!m_project.IsOpen())
         return;
 
+    const ProjectSettings& s = m_project.GetSettings();
+
     json l_projectInfo;
     l_projectInfo["currentScene"] = m_currentScenePath;
+
+    l_projectInfo["settings"]["camera"]["x"]           = s.cameraX;
+    l_projectInfo["settings"]["camera"]["y"]           = s.cameraY;
+    l_projectInfo["settings"]["camera"]["z"]           = s.cameraZ;
+    l_projectInfo["settings"]["camera"]["width"]       = s.cameraWidth;
+    l_projectInfo["settings"]["camera"]["perspective"] = s.cameraPerspective;
 
     std::ofstream l_file(m_project.GetProjectInfoPath());
     if (!l_file.is_open())
@@ -265,7 +349,6 @@ void Editor::SaveProjectInfo()
     }
 
     l_file << l_projectInfo.dump(4);
-
     l_file.close();
 }
 
@@ -282,7 +365,8 @@ void Editor::LoadProjectInfo()
     {
         // Fresh project — create and select a default empty scene.
         std::string l_defaultScene = (std::filesystem::path(m_project.GetScenesDir()) / "Default.lua").string();
-        SceneSerializer::SaveToFile(l_defaultScene, m_engineContents);
+        SceneSerializer::SaveToFile(l_defaultScene, m_engineContents,
+                                    m_sceneEdit->GetSceneSettings());
         m_currentScenePath = l_defaultScene;
         printf("Editor: Created default scene: %s\n", l_defaultScene.c_str());
         SaveProjectInfo();
@@ -300,6 +384,25 @@ void Editor::LoadProjectInfo()
         return;
     }
 
+    // --- Restore project settings (safe: defaults are used for missing keys) ---
+    if (l_projectInfo.contains("settings"))
+    {
+        const auto& s = l_projectInfo["settings"];
+        ProjectSettings& ps = m_project.GetSettings();
+
+        if (s.contains("camera"))
+        {
+            ps.cameraX           = s["camera"].value("x",           ps.cameraX);
+            ps.cameraY           = s["camera"].value("y",           ps.cameraY);
+            ps.cameraZ           = s["camera"].value("z",           ps.cameraZ);
+            ps.cameraWidth       = s["camera"].value("width",       ps.cameraWidth);
+            ps.cameraPerspective = s["camera"].value("perspective", ps.cameraPerspective);
+        }
+    }
+
+    ApplyProjectSettings();
+
+    // --- Restore last open scene ---
     if (!l_projectInfo.contains("currentScene") || l_projectInfo["currentScene"].is_null())
     {
         return;
@@ -312,12 +415,13 @@ void Editor::LoadProjectInfo()
         return;
     }
 
-    SceneSerializer::LoadFromFile(l_scenePath, m_engineContents);
+    SceneSerializer::LoadFromFile(l_scenePath, m_engineContents,
+                                  &m_sceneEdit->GetSceneSettings());
 
-    // Re-add EditorRender rule, since it is ignored during scene serialisation
-    auto l_renderRuleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>("./resources/Rules/EditorRender.lua");
-    RE::Core::Rule l_renderRule = m_engineContents.core->GetLuaContext()->CreateRule(l_renderRuleFile);
-    m_engineContents.core->GetScene().lock()->AddRule(l_renderRule);
+    // Re-add built-in rules after scene load (they are excluded from serialisation)
+    BuiltinRules::Load(m_engineContents);
+    // Rebuild the editor rule registry to match the newly loaded scene.
+    m_sceneEdit->RebuildRegistryFromScene();
     m_sceneEdit->m_scene = m_engineContents.core->GetScene();
     m_sceneEdit->m_entityPanel.RefreshEntityList();
 
@@ -327,8 +431,9 @@ void Editor::LoadProjectInfo()
 
 void Editor::Draw()
 {
-    // Clear the screen
-    glClearColor(0.2f, 0.2f, 0.4f, 1.0f);
+    // Clear the screen using the scene's configured background colour.
+    const SceneSettings& ss = m_sceneEdit->GetSceneSettings();
+    glClearColor(ss.clearColorR, ss.clearColorG, ss.clearColorB, ss.clearColorA);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Start ImGui frame
@@ -342,6 +447,16 @@ void Editor::Draw()
 
     // Menu bar and tutorial panel are universal across all tabs
     DrawMenuBar();
+
+    // Project Settings modal — drawn outside menu bar so it renders correctly.
+    DrawSettingsDialog();
+    bool l_applySettings = false;
+    DrawSettingsDialogContent(m_project.GetSettings(), l_applySettings);
+    if (l_applySettings)
+    {
+        ApplyProjectSettings();
+        SaveProjectInfo();
+    }
 
     if (m_state == State::TextEdit)
     {
@@ -391,11 +506,11 @@ void Editor::HandleInput()
 
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
+        // --- LMB press: select entity and begin drag ---
         if (l_mouseInfo.LMBDown && !m_engineContents.io->GetLastFrameMouseInfo().LMBDown)
         {
             Vector3 l_mouseWorldPos = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
             l_mouseWorldPos.z = m_sceneEdit->m_camera->GetPosition().z;
-            //Raycast into screen to check for object
             RE::Core::Ray l_ray{
                 l_mouseWorldPos,
                 Vector3(0.0f, 0.0f, -1.0f)
@@ -419,6 +534,11 @@ void Editor::HandleInput()
                 Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
 
                 m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+
+                // Begin drag
+                m_sceneEdit->m_isDraggingEntity = true;
+                m_sceneEdit->m_dragStartWorldPos = Vector2(l_mouseWorldPos.x, l_mouseWorldPos.y);
+                m_sceneEdit->m_dragStartEntityPos = l_entityWorldPos;
             }
             else
             {
@@ -426,6 +546,68 @@ void Editor::HandleInput()
             }
 
             RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
+        }
+
+        // --- LMB held: drag entity ---
+        if (l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity && m_sceneEdit->m_selectedEntityId >= 0)
+        {
+            Vector3 l_currentWorld = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
+            Vector2 l_delta(
+                l_currentWorld.x - m_sceneEdit->m_dragStartWorldPos.x,
+                l_currentWorld.y - m_sceneEdit->m_dragStartWorldPos.y
+            );
+
+            Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_delta;
+
+            auto l_scene = m_engineContents.core->GetScene().lock();
+            sol::table l_transform = l_scene->GetRegistry()
+                .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                .raw_get<sol::table>("Transform");
+            l_transform.raw_set("Position", l_newPos);
+        }
+
+        // --- LMB released: end drag, push undo ---
+        if (!l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity)
+        {
+            m_sceneEdit->m_isDraggingEntity = false;
+
+            if (m_sceneEdit->m_selectedEntityId >= 0)
+            {
+                auto l_scene = m_engineContents.core->GetScene().lock();
+                Vector2 l_finalPos = l_scene->GetRegistry()
+                    .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                    .traverse_raw_get<Vector2>("Transform", "Position");
+
+                // Only push undo if position actually changed
+                Vector2 l_diff = l_finalPos - m_sceneEdit->m_dragStartEntityPos;
+                if (l_diff.x != 0.0f || l_diff.y != 0.0f)
+                {
+                    int l_entityId = m_sceneEdit->m_selectedEntityId;
+                    Vector2 l_oldPos = m_sceneEdit->m_dragStartEntityPos;
+                    Vector2 l_newPos = l_finalPos;
+                    Editor* l_self = this;
+
+                    m_undoManager.PushCommand(
+                        std::make_unique<LambdaCommand>(
+                            "Move Entity",
+                            [l_self, l_entityId, l_newPos]() {
+                                auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
+                                sol::table l_tf = l_sc->GetRegistry()
+                                    .GetEntityAttributes(l_entityId)
+                                    .raw_get<sol::table>("Transform");
+                                l_tf.raw_set("Position", l_newPos);
+                            },
+                            [l_self, l_entityId, l_oldPos]() {
+                                auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
+                                sol::table l_tf = l_sc->GetRegistry()
+                                    .GetEntityAttributes(l_entityId)
+                                    .raw_get<sol::table>("Transform");
+                                l_tf.raw_set("Position", l_oldPos);
+                            }
+                        )
+                    );
+                }
+            }
         }
 
         m_sceneEdit->m_camera->SetCameraWidth(m_sceneEdit->m_camera->GetCameraWidth() + l_mouseInfo.deltaScroll);
@@ -448,6 +630,11 @@ void Editor::HandleInput()
             m_sceneEdit->m_rulesPanel.SetShown(!m_sceneEdit->m_rulesPanel.IsShown());
         }
 
+        if (m_engineContents.io->GetKeyDownThisFrame('`'))
+        {
+            m_sceneEdit->m_consolePanel.SetShown(!m_sceneEdit->m_consolePanel.IsShown());
+        }
+
         // ESC input to close all panels and context menus
         if (m_engineContents.io->GetKeyDownThisFrame((char)27))
         {
@@ -456,6 +643,16 @@ void Editor::HandleInput()
             m_sceneEdit->m_rulesPanel.SetShown(false);
             m_sceneEdit->m_propertiesPanel.SetShown(false);
             m_sceneEdit->m_showContext = false;
+        }
+
+        // Undo / Redo shortcuts
+        if (ImGui::GetIO().KeyCtrl && ImGui::GetIO().KeyShift && m_engineContents.io->GetKeyDownThisFrame('z'))
+        {
+            m_undoManager.Redo();
+        }
+        else if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('z'))
+        {
+            m_undoManager.Undo();
         }
 
         // Tab input to switch between scene and text edit
@@ -475,7 +672,7 @@ void Editor::HandleInput()
     }
 }
 
-std::weak_ptr<SceneEditTab> Editor::GetSceneEdit()
+SceneEditTab& Editor::GetSceneEdit()
 {
-    return m_sceneEdit;
+    return *m_sceneEdit;
 }

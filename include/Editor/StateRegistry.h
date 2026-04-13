@@ -28,7 +28,11 @@
  */
 class StateRegistry
 {
-public:
+    private:
+    std::unordered_map<std::string, std::function<bool()>> m_conditions;
+    std::unordered_map<std::string, std::function<void()>> m_actions;
+    
+    public:
     /**
      * @brief Registers a named boolean condition.
      * @param _name  Lookup key (e.g. "entity_selected", "panel_open:Categories").
@@ -54,10 +58,6 @@ public:
      * @return True if the action was found and called, false if unregistered.
      */
     bool Apply(const std::string& _name) const;
-
-private:
-    std::unordered_map<std::string, std::function<bool()>> m_conditions;
-    std::unordered_map<std::string, std::function<void()>> m_actions;
 };
 
 #endif

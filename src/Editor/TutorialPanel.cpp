@@ -10,7 +10,7 @@
 #include "imgui/imgui.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
-TutorialPanel::TutorialPanel(std::weak_ptr<Editor> _editor)
+TutorialPanel::TutorialPanel(Editor& _editor)
 : Panel("Tutorial", _editor)
 {
     m_showPanel = false;
@@ -76,6 +76,7 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
     {
         m_showPanel = true;
         m_lastAppliedForceStep = -1;
+        m_waitSatisfiedAtEntry = false;
     }
 
     RE::Log::Message("TutorialPanel: loaded " + std::to_string(m_steps.size()) + " steps from " + _path);
@@ -92,7 +93,7 @@ bool TutorialPanel::IsStepInteractive() const
         return false;
 
     const std::string& l_event = m_steps[m_currentStep].event;
-    return l_event == "click_region" || l_event == "wait_state";
+    return l_event == "click_region" || l_event == "click_panel" || l_event == "wait_state";
 }
 
 std::string TutorialPanel::GetCurrentHighlightKey() const
@@ -111,17 +112,13 @@ void TutorialPanel::ClearRegions()
 void TutorialPanel::ApplyForceState(const std::string& _state)
 {
     if (_state.empty()) return;
-    auto l_editor = m_editor.lock();
-    if (!l_editor) return;
-    l_editor->GetStateRegistry().Apply(_state);
+    m_editor.GetStateRegistry().Apply(_state);
 }
 
 bool TutorialPanel::IsStateAchieved(const std::string& _state) const
 {
     if (_state.empty()) return true;
-    auto l_editor = m_editor.lock();
-    if (!l_editor) return false;
-    return l_editor->GetStateRegistry().Evaluate(_state);
+    return m_editor.GetStateRegistry().Evaluate(_state);
 }
 
 // Resolves the ImRect for _key: checks manual registrations first,
@@ -175,8 +172,9 @@ void TutorialPanel::Draw()
 {
     const TutorialStep& l_step = m_steps[m_currentStep];
     const bool l_isClickRegion = (l_step.event == "click_region" && !l_step.highlightKey.empty());
+    const bool l_isClickPanel  = (l_step.event == "click_panel"  && !l_step.highlightKey.empty());
     const bool l_isWaitState   = (l_step.event == "wait_state"   && !l_step.waitState.empty());
-    const bool l_isInteractive = l_isClickRegion || l_isWaitState;
+    const bool l_isInteractive = l_isClickRegion || l_isClickPanel || l_isWaitState;
     const bool l_isLast = (m_currentStep == (int)m_steps.size() - 1);
 
     // Apply force state on the first frame of a new step
@@ -185,10 +183,15 @@ void TutorialPanel::Draw()
     {
         ApplyForceState(l_step.forceState);
         m_lastAppliedForceStep = m_currentStep;
+        // Snapshot whether the wait_state condition is already satisfied right now
+        // (possibly because force_state just switched us into it). We suppress
+        // auto-advance until the condition first drops false, ensuring the user
+        // has to naturally achieve the state rather than having it gifted by force.
+        m_waitSatisfiedAtEntry = l_isWaitState && IsStateAchieved(l_step.waitState);
     }
 
-    // Auto-advance: detect a click inside the highlighted region
-    if (l_isClickRegion)
+    // Auto-advance: detect a click inside the highlighted region (not on entry frame)
+    if (l_isClickRegion && !l_justEntered)
     {
         ImRect l_rect;
         if (ResolveHighlightRect(l_step.highlightKey, m_regions, l_rect) && ImGui::IsMouseClicked(0))
@@ -203,13 +206,42 @@ void TutorialPanel::Draw()
         }
     }
 
-    // Auto-advance: check required editor state (skip on the same frame force was applied)
-    if (l_isWaitState && !l_justEntered && IsStateAchieved(l_step.waitState))
+    // Auto-advance: detect a click anywhere inside the named ImGui panel/window
+    if (l_isClickPanel && !l_justEntered)
     {
-        if (l_isLast)
-            m_showPanel = false;
-        else
-            m_currentStep++;
+        ImGuiWindow* l_win = ImGui::FindWindowByName(l_step.highlightKey.c_str());
+        if (l_win && !l_win->Hidden && ImGui::IsMouseClicked(0))
+        {
+            ImRect l_winRect(l_win->Pos,
+                             ImVec2(l_win->Pos.x + l_win->Size.x,
+                                    l_win->Pos.y + l_win->Size.y));
+            if (l_winRect.Contains(ImGui::GetMousePos()))
+            {
+                if (l_isLast)
+                    m_showPanel = false;
+                else
+                    m_currentStep++;
+            }
+        }
+    }
+
+    // Auto-advance: check required editor state.
+    // Skipped on the entry frame (l_justEntered) and also suppressed while
+    // m_waitSatisfiedAtEntry is true — i.e. when the condition was already met
+    // on entry (e.g. because force_state put us there). The flag is cleared once
+    // the condition drops to false, after which a genuine user action can satisfy it.
+    if (l_isWaitState && !l_justEntered)
+    {
+        bool l_conditionMet = IsStateAchieved(l_step.waitState);
+        if (!l_conditionMet)
+            m_waitSatisfiedAtEntry = false;  // condition dropped — next true will be genuine
+        if (l_conditionMet && !m_waitSatisfiedAtEntry)
+        {
+            if (l_isLast)
+                m_showPanel = false;
+            else
+                m_currentStep++;
+        }
     }
 
     // Full-screen dim window for non-interactive steps ("next" button steps)
@@ -217,8 +249,7 @@ void TutorialPanel::Draw()
     // but above the editor panels (which were drawn in DrawEditorUI before this call).
     // Because it captures mouse input, editor panels behind it cannot be clicked.
     // Skip the dim when the text editor is active so the user can freely interact with it.
-    auto l_editorForDim = m_editor.lock();
-    bool l_isTextEdit = l_editorForDim && l_editorForDim->GetState() == Editor::State::TextEdit;
+    bool l_isTextEdit = m_editor.GetState() == Editor::State::TextEdit;
     if (!l_isInteractive && !l_isTextEdit)
     {
         ImGuiIO& l_io = ImGui::GetIO();
@@ -335,6 +366,16 @@ void TutorialPanel::Draw()
         ImGui::ProgressBar(l_progress, ImVec2(-1.0f, 0.0f), "");
         ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
         ImGui::TextWrapped("Click the highlighted area to continue...");
+        ImGui::PopStyleColor();
+    }
+    else if (l_isClickPanel)
+    {
+        // User advances by clicking anywhere inside the named panel/window.
+        float l_progress = m_steps.size() > 1
+            ? (float)m_currentStep / (float)(m_steps.size() - 1) : 1.0f;
+        ImGui::ProgressBar(l_progress, ImVec2(-1.0f, 0.0f), "");
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+        ImGui::TextWrapped("Click the \"%s\" panel to continue...", l_step.highlightKey.c_str());
         ImGui::PopStyleColor();
     }
     else if (l_isWaitState)

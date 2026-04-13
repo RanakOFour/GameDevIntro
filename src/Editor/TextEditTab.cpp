@@ -3,7 +3,7 @@
 
 #include "RanakEngine/Log.h"
 
-TextEditTab::TextEditTab(std::weak_ptr<Editor> _editor)
+TextEditTab::TextEditTab(Editor& _editor)
 : m_editor(_editor)
 , m_textEditor()
 , m_categoryPanel(_editor)
@@ -12,7 +12,7 @@ TextEditTab::TextEditTab(std::weak_ptr<Editor> _editor)
 , m_size(1920, 1080)
 , m_acTree()
 {
-    m_acTree = AutoCompleteTree::InitTree(_editor.lock()->GetEngineContents().core->GetLuaContext());
+    m_acTree = AutoCompleteTree::InitTree(_editor.GetEngineContents().core->GetLuaContext());
     m_categoryPanel.SetShown(true);
     // Set configs for text editor
 
@@ -300,7 +300,7 @@ void TextEditTab::SaveCurrentFile()
     std::string l_catName      = l_category->GetName();
     std::bitset<1024> l_catSig = l_category->GetSignature();
 
-    auto l_scene      = m_editor.lock()->GetEngineContents().core->GetScene().lock();
+    auto l_scene      = m_editor.GetEngineContents().core->GetScene().lock();
     auto& l_registry  = l_scene->GetRegistry();  // reference, not a copy
     auto l_luaContext = RE::Core::LuaContext::Instance().lock();
 

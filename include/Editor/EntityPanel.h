@@ -31,12 +31,11 @@ class EntityPanel : public Panel
     void Draw() override;
 
     public:
-    EntityPanel() : m_registry() {};
     /**
      * @brief Constructs the panel and caches the entity registry reference.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    EntityPanel(std::weak_ptr<Editor> _editor);
+    EntityPanel(Editor& _editor);
     ~EntityPanel();
 
     /** @brief Adds a new empty entity to the scene and selects it. */

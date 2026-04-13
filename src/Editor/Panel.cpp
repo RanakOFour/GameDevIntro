@@ -2,7 +2,7 @@
 #include "Editor/Editor.h"
 #include "Editor/StateRegistry.h"
 
-Panel::Panel(std::string _name, std::weak_ptr<Editor> _editor)
+Panel::Panel(std::string _name, Editor& _editor)
 : m_panelTitle(_name)
 , m_editor(_editor)
 , m_showPanel(false)
@@ -13,13 +13,10 @@ Panel::Panel(std::string _name, std::weak_ptr<Editor> _editor)
     // Raw pointer capture is safe: this panel's lifetime is nested inside the
     // Editor that owns the registry (SceneEditTab owns panels by value, and
     // Editor owns SceneEditTab; Draw() is never called after destruction).
-    if (auto l_editor = m_editor.lock())
-    {
-        Panel* l_self = this;
-        StateRegistry& l_reg = l_editor->GetStateRegistry();
-        l_reg.RegisterCondition("panel_open:" + m_panelTitle, [l_self]{ return l_self->m_showPanel; });
-        l_reg.RegisterAction("panel:" + m_panelTitle,         [l_self]{ l_self->m_showPanel = true; });
-    }
+    Panel* l_self = this;
+    StateRegistry& l_reg = _editor.GetStateRegistry();
+    l_reg.RegisterCondition("panel_open:" + m_panelTitle, [l_self]{ return l_self->m_showPanel; });
+    l_reg.RegisterAction("panel:" + m_panelTitle,         [l_self]{ l_self->m_showPanel = true; });
 }
 
 void Panel::DrawAsWindow(ImGuiWindowFlags _flags)

@@ -12,21 +12,19 @@ int main()
         ProjectSelectionScreen::Result l_choice =
             ProjectSelectionScreen::Run(l_engineContents);
 
-        if (l_choice.action == ProjectSelectionScreen::Action::Exit)
+        if (l_choice.action != ProjectSelectionScreen::Action::Exit)
         {
-            RE::Shutdown(l_engineContents);
-            return 0;
+            Editor l_editor = Editor::Create(l_engineContents, l_choice.project);
+
+            l_engineContents.io->SetScreenSize(Vector2(1920, 1080));
+
+            if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
+                l_editor.GetTutorialPanel().LoadTutorial("./resources/Tutorials/GettingStarted.lua");
+
+            l_editor.Run();
         }
 
-        std::shared_ptr<Editor> l_editor =
-            Editor::Create(l_engineContents, l_choice.project);
-
-        l_engineContents.io->SetScreenSize(Vector2(1920, 1080));
-
-        if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
-            l_editor->GetTutorialPanel().LoadTutorial("./resources/Tutorials/GettingStarted.lua");
-
-        l_editor->Run();
+        RE::Shutdown(l_engineContents);
     }
     catch (std::exception& e)
     {

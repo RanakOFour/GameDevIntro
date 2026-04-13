@@ -36,7 +36,7 @@ class TextEditTab
     friend Editor;
     friend AutoCompleteTree;
     private:
-    std::weak_ptr<Editor> m_editor;               ///< Back-reference to the owning Editor.
+    Editor& m_editor;                         ///< Back-reference to the owning Editor.
     std::shared_ptr<RE::Asset::LuaFile> m_fileToEdit; ///< The currently open .lua source file.
 
     AutoCompleteTree m_acTree;    ///< Autocomplete provider wired to the text editor.
@@ -49,9 +49,9 @@ class TextEditTab
     public:
     /**
      * @brief Constructs the tab and wires the autocomplete tree callbacks.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    TextEditTab(std::weak_ptr<Editor> _editor);
+    TextEditTab(Editor& _editor);
     ~TextEditTab();
 
     /** @brief Renders the full three-column text-editing window. */

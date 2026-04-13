@@ -24,7 +24,16 @@
  */
 class BuiltinCategories
 {
-public:
+    private:
+    struct Entry
+    {
+        const std::string name;
+        const std::string source; ///< Lua source for the category file.
+    };
+
+    static const std::vector<Entry>& GetEntries();
+    
+    public:
     BuiltinCategories() = delete;
 
     /**
@@ -50,15 +59,6 @@ public:
      * Used by the CategoryPanel to suppress edit controls for these entries.
      */
     static bool IsBuiltin(const std::string& _name);
-
-private:
-    struct Entry
-    {
-        const std::string name;
-        const std::string source; ///< Lua source for the category file.
-    };
-
-    static const std::vector<Entry>& GetEntries();
 };
 
 #endif

@@ -14,10 +14,11 @@
 #include <sstream>
 #include <string>
 
-CategoryPanel::CategoryPanel(std::weak_ptr<Editor> _editor)
+CategoryPanel::CategoryPanel(Editor& _editor)
 : Panel("Categories", _editor)
 , m_showCreateDialog(false)
 , m_showLoadDialog(false)
+, m_showBuiltins(false)
 , m_newCategoryName("")
 , m_selectedCategory(-1)
 , m_selectedCategoryOrigin()
@@ -35,7 +36,7 @@ void CategoryPanel::RefreshCategoryList()
 {
     m_loadedCategories.clear();
 
-    auto l_context = m_editor.lock()->GetEngineContents()
+    auto l_context = m_editor.GetEngineContents()
                                .core->GetLuaContext();
     
     std::stringstream l_catNames(l_context->GetCategoryNames());
@@ -72,6 +73,10 @@ void CategoryPanel::Draw()
     // Search/Filter
     ImGui::InputTextWithHint("##CategoryFilter", "Search categories...", &m_filterString);
 
+    // Show built-ins toggle
+    ImGui::SameLine();
+    ImGui::Checkbox("Built-in", &m_showBuiltins);
+
     ImGui::Separator();
 
     // Category list
@@ -81,18 +86,21 @@ void CategoryPanel::Draw()
         {
             auto& l_category = m_loadedCategories[i];
 
-            if (m_filterString.size() > 0)
+            bool l_isBuiltin = BuiltinCategories::IsBuiltin(l_category);
+
+            // Hide built-ins unless checkbox is set
+            if (l_isBuiltin && !m_showBuiltins)
+                continue;
+
+            if (!m_filterString.empty())
             {
-                std::string filter(m_filterString);
-                if (l_category.find(filter) == std::string::npos)
+                if (l_category.find(m_filterString) == std::string::npos)
                     continue;
             }
 
-            bool l_isBuiltin = BuiltinCategories::IsBuiltin(l_category);
-
             if (l_isBuiltin)
             {
-                // Built-in: show greyed out with a lock marker, not selectable
+                // Built-in: greyed out, not selectable
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.55f, 0.55f, 0.55f, 1.0f));
                 ImGui::TextUnformatted((l_category + "  [built-in]").c_str());
                 ImGui::PopStyleColor();
@@ -118,8 +126,7 @@ void CategoryPanel::Draw()
 void CategoryPanel::SelectCategory(int _idx)
 {
     m_selectedCategory = _idx;
-    auto l_category = m_editor.lock()
-                      ->GetEngineContents().core
+    auto l_category = m_editor.GetEngineContents().core
                       ->GetLuaContext()
                       ->GetCategory(m_loadedCategories[m_selectedCategory])
                       .lock();
@@ -176,9 +183,9 @@ void CategoryPanel::DrawLoadCategoryDialog()
     if (!m_showLoadDialog)
         return;
 
-    auto l_editor = m_editor.lock();
-    std::string l_defaultPath = l_editor->GetProject().IsOpen()
-                              ? l_editor->GetProject().GetCategoriesDir()
+    auto& l_editor = m_editor;
+    std::string l_defaultPath = l_editor.GetProject().IsOpen()
+                              ? l_editor.GetProject().GetCategoriesDir()
                               : ".";
 
     IGFD::FileDialogConfig config;
@@ -209,7 +216,7 @@ void CategoryPanel::CreateNewCategory(const std::string _name)
 
 void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 {
-    RE::EngineContents l_engineContents = m_editor.lock()->GetEngineContents();
+    RE::EngineContents l_engineContents = m_editor.GetEngineContents();
     auto l_luaContext = l_engineContents.core->GetLuaContext();
 
     auto l_categoryFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
@@ -221,7 +228,7 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 
 void CategoryPanel::AssignCategoryToEntity(const int _entityId, const std::string _categoryName)
 {
-    auto l_scene = m_editor.lock()->GetEngineContents().core->GetScene().lock();
+    auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
     
     l_scene->AddToCategory(_entityId, _categoryName);
     RE::Log::Message("Category '" + _categoryName + "' assigned to entity " + std::to_string(_entityId));

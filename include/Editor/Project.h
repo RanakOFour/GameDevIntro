@@ -5,6 +5,24 @@
 #include <string>
 
 /**
+ * @struct ProjectSettings
+ * @brief Persistent per-project configuration saved inside ProjectInfo.json.
+ *
+ * Groups engine-level settings that are constant for a project but meaningless
+ * to embed in individual scene files (e.g. physics gravity, background colour).
+ * All fields have sensible defaults so a missing JSON block is harmless.
+ */
+struct ProjectSettings
+{
+    // --- Camera (initial state; applied when a fresh scene is loaded) ---
+    float cameraX     =  0.0f;  ///< Initial camera world X position.
+    float cameraY     =  0.0f;  ///< Initial camera world Y position.
+    float cameraZ     = 10.0f;  ///< Initial camera world Z position.
+    float cameraWidth = 30.0f;  ///< Initial orthographic half-width (zoom).
+    bool  cameraPerspective = false; ///< True = perspective, false = orthographic.
+};
+
+/**
  * @class Project
  * @brief Represents an open project directory that contains the user's categories,
  *        rules, scenes, and assets.
@@ -16,6 +34,7 @@ class Project
 {
     private:
     std::string m_rootPath;
+    ProjectSettings m_settings;
     
     public:
     Project() = default;
@@ -38,6 +57,11 @@ class Project
     std::string GetModelsDir()     const { return (std::filesystem::path(m_rootPath) / "Models").string(); }
     /** @brief Returns e.g. <root>/ProjectInfo.json */
     std::string GetProjectInfoPath() const { return (std::filesystem::path(m_rootPath) / "ProjectInfo.json").string(); }
+
+    /** @brief Returns a mutable reference to the project's persistent settings. */
+    ProjectSettings& GetSettings() { return m_settings; }
+    /** @brief Returns a const reference to the project's persistent settings. */
+    const ProjectSettings& GetSettings() const { return m_settings; }
 
     /** @brief Returns true if this Project holds a non-empty path. */
     bool IsOpen() const { return !m_rootPath.empty(); }

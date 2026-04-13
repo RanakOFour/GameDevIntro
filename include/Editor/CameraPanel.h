@@ -25,12 +25,11 @@ class CameraPanel : public Panel
     void Draw() override;
 
     public:
-    CameraPanel() {};
     /**
      * @brief Constructs the panel and caches the camera reference.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    CameraPanel(std::weak_ptr<Editor> _editor);
+    CameraPanel(Editor& _editor);
     ~CameraPanel();
 };
 

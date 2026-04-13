@@ -16,7 +16,7 @@
 #include <algorithm>
 #include <memory>
 
-PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
+PropertiesPanel::PropertiesPanel(Editor& _editor)
 : Panel("Entity Properties", _editor)
 , m_stringValueMap()
 , m_entityNameMap()
@@ -28,7 +28,7 @@ PropertiesPanel::PropertiesPanel(std::weak_ptr<Editor> _editor)
 , m_setPosition(false)
 , m_position(0, 0)
 , m_size(400.0f, 500.0f)
-, m_registry(m_editor.lock()->GetEngineContents().core->GetScene().lock()->GetRegistry())
+, m_registry(_editor.GetEngineContents().core->GetScene().lock()->GetRegistry())
 {
 
 }
@@ -61,7 +61,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 {
     // Fetch base category fields once so hidden metadata can be checked per property.
     sol::table l_baseFields;
-    auto l_category = m_editor.lock()->GetEngineContents()
+    auto l_category = m_editor.GetEngineContents()
                                .core->GetLuaContext()
                                ->GetCategory(_categoryName).lock();
     if (l_category)
@@ -210,16 +210,12 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 
 void PropertiesPanel::Draw()
 {
-    auto l_editor = m_editor.lock();
-    int l_selectedEntity = l_editor->GetSceneEdit().lock()->GetSelectedEntity();
+    int l_selectedEntity = m_editor.GetSceneEdit().GetSelectedEntity();
 
-    // Keep registry reference up-to-date with the current scene (it may change
-    // after a Load or Stop that rebuilds the scene).
-    if (l_editor)
+    auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+    if (l_scene)
     {
-        auto l_scene = l_editor->GetEngineContents().core->GetScene().lock();
-        if (l_scene)
-            m_registry = l_scene->GetRegistry();
+        m_registry = l_scene->GetRegistry();
     }
 
     // Only set position initially to prevent locking the panel
@@ -260,7 +256,7 @@ void PropertiesPanel::Draw()
             ImGui::Separator();
 
             // I love cache!!! Bleh :3
-            std::stringstream l_categories(l_editor->GetEngineContents()
+            std::stringstream l_categories(m_editor.GetEngineContents()
                 .core->GetLuaContext()
                 ->GetCategoryNames());
             std::string l_categoryName;
@@ -287,7 +283,7 @@ void PropertiesPanel::Draw()
                     if (ImGui::MenuItem(l_categoryName.c_str()))
                     {
                         // Peak cache optimisation. A s_ptr<LuaContext> would probably be best
-                        auto l_category = l_editor->GetEngineContents()
+                        auto l_category = m_editor.GetEngineContents()
                             .core->GetLuaContext()
                             ->GetCategory(l_categoryName).lock();
 

@@ -57,12 +57,11 @@ class PropertiesPanel : public Panel
 	void Draw() override;
 
 	public:
-	PropertiesPanel() {};
 	/**
 	 * @brief Constructs the panel.
-	 * @param _editor Weak pointer to the owning Editor.
+	 * @param _editor Reference to the owning Editor.
 	 */
-	PropertiesPanel(std::weak_ptr<Editor> _editor);
+	PropertiesPanel(Editor& _editor);
 	~PropertiesPanel();
 
 	/**

@@ -67,13 +67,20 @@ std::string BuiltinCategories::GetDataDir()
     const char* l_homeRaw = std::getenv("HOME");
     const std::string l_xdg  = l_xdgRaw  ? l_xdgRaw  : "";
     const std::string l_home = l_homeRaw ? l_homeRaw : "";
-    std::filesystem::path    l_base;
+    std::filesystem::path l_base;
+
     if (!l_xdg.empty())
+    {
         l_base = std::filesystem::path(l_xdg);
+    }
     else if (!l_home.empty())
+    {
         l_base = std::filesystem::path(l_home) / ".local" / "share";
+    }
     else
+    {
         l_base = std::filesystem::path(".");
+    }
 #endif
 
     return (l_base / "GameDevIntro" / "Categories").string();
@@ -84,8 +91,11 @@ bool BuiltinCategories::IsBuiltin(const std::string& _name)
     for (const auto& entry : GetEntries())
     {
         if (_name == entry.name)
+        {
             return true;
+        }
     }
+
     return false;
 }
 
@@ -94,7 +104,9 @@ void BuiltinCategories::Load(RE::EngineContents& _contents)
     std::filesystem::path l_dir(GetDataDir());
 
     if (!std::filesystem::exists(l_dir))
+    {
         std::filesystem::create_directories(l_dir);
+    }
 
     for (const auto& entry : GetEntries())
     {

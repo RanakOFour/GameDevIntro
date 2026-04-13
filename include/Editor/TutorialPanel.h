@@ -44,14 +44,25 @@ struct TutorialStep
  * Highlights are resolved by first checking the m_regions map (fine-grained
  * per-widget rects registered with RegisterRegion()), then falling back to
  * ImGui::FindWindowByName() for whole-window highlights.
+ *
+ * Supported event types:
+ *   "next"         — Next/Prev buttons and progress bar (default).
+ *   "click_region" — Auto-advances when the user left-clicks inside the region
+ *                    identified by @c highlight (manual region or ImGui window).
+ *   "click_panel"  — Auto-advances when the user left-clicks anywhere inside
+ *                    the ImGui panel/window whose title matches @c highlight.
+ *                    The panel is auto-shown by SceneEditTab before drawing.
+ *   "wait_state"   — Auto-advances when the named StateRegistry condition fires.
  */
 class TutorialPanel : public Panel
 {
-private:
+    
+    private:
     std::string m_tutorialTitle; ///< Main title of the loaded tutorial.
     std::vector<TutorialStep> m_steps; ///< Chronological list of tutorial steps.
     int m_currentStep = 0; ///< Index of the currently displayed step.
     int m_lastAppliedForceStep = -1; ///< Tracks which step's force state was last applied.
+    bool m_waitSatisfiedAtEntry = false; ///< True when the wait_state condition was already met when the step was entered (e.g. satisfied by force_state). Auto-advance is suppressed until the condition first drops false.
 
     /// Loaded textures for the tutorial steps.
     std::map<std::string, std::shared_ptr<RE::Asset::Texture>> m_imageCache;
@@ -85,13 +96,13 @@ private:
      */
     bool IsStateAchieved(const std::string& _state) const;
 
-public:
-    TutorialPanel() {};
+    public:
     /**
      * @brief Panel constructor.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    TutorialPanel(std::weak_ptr<Editor> _editor);
+    TutorialPanel(Editor& _editor);
+    ~TutorialPanel() = default;
 
     /**
      * @brief Loads and starts a tutorial from a Lua data file.

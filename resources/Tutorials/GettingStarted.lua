@@ -6,7 +6,7 @@
 --   body        (string)  – scrollable description text; use \n for line breaks
 --   image       (string)  – optional path to a texture shown above the body
 --   highlight   (string)  – optional key registered by a panel widget (see TutorialPanel.h)
---   event       (string)  – "next" (default), "click_region", or "wait_state"
+--   event       (string)  – "next" (default), "click_region", "click_panel", or "wait_state"
 --   force_state (string)  – editor state to apply immediately on entering this step
 --   wait_state  (string)  – condition checked each frame when event="wait_state"
 
@@ -16,78 +16,103 @@ return {
         {
             title       = "Welcome to the Editor",
             force_state = "scene_tab",
-            body        = [[Welcome! This editor is built around a system called ECR:
-  Entities – objects that exist in your scene.
-  Categories – tables of named fields attached to entities (like components).
-  Rules – Lua scripts that run logic on every entity that has certain categories.
+            body        = [[Welcome! This editor is built around ECR:
+  Entities    – objects that exist in your scene.
+  Categories  – tables of named fields attached to entities (like components).
+  Rules       – Lua scripts that run logic on every entity that has certain categories.
 
-This tutorial walks you through the basics.
-Press "Next >" whenever you are ready to continue.]],
+This tutorial walks you through the basics interactively.
+Press "Next >" when you're ready to begin.]],
         },
         {
-            title       = "The Scene View",
+            title       = "The Entity List",
             force_state = "scene_tab",
-            body        = [[The large viewport in the centre is your scene.
+            event       = "click_panel",
+            highlight   = "Entity List",
+            body        = [[The "Entity List" panel (top-left) shows every entity in the scene.
 
-  • Right-click anywhere in the scene to open the context menu.
-  • Use the context menu to create new entities.
-  • Click an entity in the Entity List (top-left) to select it and see its properties.]],
+From here you can:
+  • See all entities at a glance.
+  • Click an entity's name to select it.
+  • Use the context menu (right-click in the scene) to create or delete entities.
+
+Click anywhere on the panel to continue.]],
         },
         {
             title       = "Creating an Entity",
             force_state = "scene_tab",
             event       = "wait_state",
             wait_state  = "entity_selected",
-            body        = [[Right-click in the scene and choose "Create Entity".
+            body        = [[Right-click anywhere in the scene viewport and choose "Create Entity".
 
-A new entity will appear. Every entity automatically receives a Transform category with:
-  Position  – where it sits in the world (Vector2)
-  Layer     – draw order (number)
-  Rotation  – rotation in degrees (number)
+The entity will appear in the Entity List immediately.  Every new entity
+automatically receives a Transform category with:
+  Position  – world-space location (Vector2)
+  Rotation  – rotation in degrees
   Scale     – size in X and Y (Vector2)
+  Layer     – draw order (number)
 
-Select the entity in the Entity List to inspect and edit its Transform values.
-The tutorial will advance automatically once you select an entity.]],
+Click the new entity in the Entity List to select it.
+The tutorial will advance automatically once an entity is selected.]],
         },
         {
-            title       = "Opening the Category Panel",
+            title       = "Entity Properties",
             force_state = "scene_tab",
-            event       = "wait_state",
-            wait_state  = "panel_open:Categories",
-            body        = [[Categories define what data an entity holds.
+            event       = "click_panel",
+            highlight   = "Entity Properties",
+            body        = [[The "Entity Properties" panel opens automatically when you select an entity.
 
-Open the Category panel by right-clicking the scene and choosing
-"Show Category List", or from the panels already docked in the UI.
+It shows every category the entity belongs to, along with each field and its
+current value.  You can edit values directly:
+  • Numbers  → type or scroll to change.
+  • Booleans → checkbox.
+  • Strings  → text input (with a file picker for fields named *Path).
+  • Vectors  → drag handle or type into each component.
 
-From there you can:
-  • Load an existing category .lua file from disk.
-  • Create a new blank category.
-  • Assign a loaded category to the selected entity.
-
-The tutorial will advance automatically once the Categories panel is open.]],
+Click anywhere on the panel to continue.]],
+        },
+        {
+            title       = "The Categories Panel",
+            force_state = "scene_tab",
+            event       = "click_panel",
             highlight   = "Categories",
+            body        = [[The "Categories" panel lets you manage component data.
+
+From here you can:
+  • Load an existing category .lua file from disk.
+  • Create a new blank category file in the project.
+  • Assign a loaded category to the currently selected entity.
+  • Remove a category from an entity.
+
+Categories are loaded from your project's Categories/ folder and from the
+built-in editor categories (read-only).
+
+Click anywhere on the panel to continue.]],
         },
         {
             title       = "Anatomy of a Category File",
             force_state = "text_tab",
-            body        = [[A category file is a plain Lua file that returns a Category table:
+            body        = [[A category file is a plain Lua file that returns a Category table.
 
+Example:
   return Category {
-      Health   = 100,
+      Health    = 100,
       MaxHealth = 100,
-      Alive    = true,
+      Alive     = true,
   }
 
-The filename becomes the category's name automatically – no need to repeat it inside the file.
+The filename becomes the category's name automatically — no need to repeat it
+inside the file.  Fields can be numbers, booleans, strings, Vector2, Vector3,
+or Vector4.
 
-Try opening or creating a category file in the Text Editor tab now.
-The editor has switched to the Text Editor tab for you.]],
+The editor has switched to the Text Editor tab so you can open or create a
+category file.  Press "Next >" when you're ready to continue.]],
         },
         {
             title       = "Writing Your First Rule",
             force_state = "text_tab",
-            body        = [[Rules contain the logic of your game.  Open the Rules panel and load a .lua file,
-or create a new one in the Text Editor tab.
+            body        = [[Rules contain your game's logic.  Open the Rules panel and load a .lua file,
+or create a new one in the Text Editor.
 
 A minimal rule looks like this:
 
@@ -98,25 +123,26 @@ A minimal rule looks like this:
   function MyRule:Update(_entityData)
       local tf = _entityData["Transform"]
       local hp = _entityData["Health"]
-      -- your logic here
+      -- move, damage, animate...
   end
 
   return MyRule
 
-The rule runs once per entity that has ALL listed categories.]],
+The rule's Update() is called once per entity that has ALL listed categories.]],
         },
         {
             title       = "Hot Reloading",
             force_state = "text_tab",
-            body        = [[You can edit category and rule files while the editor is running.
+            body        = [[You can edit categories and rules while the editor is running.
 
   1. Open the file in the Text Editor tab.
   2. Make your changes.
   3. Press Ctrl+S (or the Save button) to save.
 
-The category definition will reload immediately.  Any entities that were members
-of the category will have their data updated – new fields are added with default values,
-and fields that still exist keep their current values.]],
+The category definition reloads immediately — new fields are added with
+default values, and existing fields keep their current entity values.
+
+Rules reload on the next scene Init (press Stop then Play again).]],
         },
         {
             title       = "You're Ready!",
@@ -124,8 +150,8 @@ and fields that still exist keep their current values.]],
             body        = [[That covers the basics of the editor.
 
 More tutorials are available under the Tutorials menu:
-  • Creating Categories – deep dive into the Category system
-  • Writing Rules      – patterns and tips for Rule logic
+  • Creating Categories – deep dive into the Category system.
+  • Writing Rules       – patterns and tips for Rule logic.
 
 Have fun building your game!]],
         },

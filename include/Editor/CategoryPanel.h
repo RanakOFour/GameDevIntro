@@ -33,6 +33,7 @@ class CategoryPanel : public Panel
 
     bool m_showCreateDialog; ///< Whether the "Create New Category" modal is open.
     bool m_showLoadDialog;   ///< Whether the file-open dialog is in progress.
+    bool m_showBuiltins;     ///< Whether built-in categories are visible in the list.
 
     /** @brief Re-queries the engine for the current list of registered category names. */
     void RefreshCategoryList();
@@ -44,12 +45,11 @@ class CategoryPanel : public Panel
     void Draw() override;
 
     public:
-    CategoryPanel() {};
     /**
      * @brief Constructs the panel.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    CategoryPanel(std::weak_ptr<Editor> _editor);
+    CategoryPanel(Editor& _editor);
     ~CategoryPanel();
 
     /**

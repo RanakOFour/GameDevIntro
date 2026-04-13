@@ -30,6 +30,7 @@ class RulesPanel : public Panel
 
     bool m_showCreateDialog; ///< Whether the "Create New Rule" modal is open.
     bool m_showLoadDialog;   ///< Whether the file-open dialog is in progress.
+    bool m_showBuiltins;     ///< Whether built-in rules are visible in the list.
 
     /** @brief Re-queries the scene for the current active and loaded rule lists. */
     void RefreshRuleList();
@@ -41,12 +42,11 @@ class RulesPanel : public Panel
     void Draw() override;
 
     public:
-    RulesPanel() {};
     /**
      * @brief Constructs the panel.
-     * @param _editor Weak pointer to the owning Editor.
+     * @param _editor Reference to the owning Editor.
      */
-    RulesPanel(std::weak_ptr<Editor> _editor);
+    RulesPanel(Editor& _editor);
     ~RulesPanel();
 
     /**
