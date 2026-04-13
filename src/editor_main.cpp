@@ -5,9 +5,7 @@ int main()
 {
     try
     {
-        // Initialise just enough of the engine to show the project selection
-        // screen (window + GL context).  Editor::Create() reuses this handle.
-        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(1920 / 4, 1080 / 4));
+        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(1920 / 2, 1080 / 2));
 
         ProjectSelectionScreen::Result l_choice =
             ProjectSelectionScreen::Run(l_engineContents);
