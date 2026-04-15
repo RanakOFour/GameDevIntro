@@ -2,6 +2,9 @@
 #include "Editor/Editor.h"
 #include "Editor/BuiltinCategories.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include "imgui/imgui.h"
 
 // String compatible functions for ImGui
@@ -120,7 +123,6 @@ void CategoryPanel::Draw()
 
     // Draw dialogs
     DrawCreateCategoryDialog();
-    DrawLoadCategoryDialog();
 }
 
 void CategoryPanel::SelectCategory(int _idx)
@@ -151,7 +153,7 @@ void CategoryPanel::DrawCreateCategoryDialog()
     if (ImGui::BeginPopupModal("Create New Category", &m_showCreateDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Category Name:");
-        ImGui::InputText("CategoryName", &m_newCategoryName[0], m_newCategoryName.size());
+        ImGui::InputText("CategoryName", &m_newCategoryName);
 
         ImGui::Separator();
 
@@ -210,8 +212,38 @@ void CategoryPanel::DrawLoadCategoryDialog()
 
 void CategoryPanel::CreateNewCategory(const std::string _name)
 {
-    // Implement category creation logic
-    RE::Log::Message("Creating new category: " + _name);
+    Editor& l_editor = m_editor;
+    if (!l_editor.GetProject().IsOpen())
+    {
+        RE::Log::Warning("No project open — cannot create category.");
+        return;
+    }
+
+    std::filesystem::path l_dir  = l_editor.GetProject().GetCategoriesDir();
+    std::filesystem::path l_path = l_dir / (_name + ".lua");
+
+    std::filesystem::create_directories(l_dir);
+
+    if (std::filesystem::exists(l_path))
+    {
+        RE::Log::Warning("Category already exists: " + l_path.string());
+        return;
+    }
+
+    std::ofstream l_file(l_path);
+    if (!l_file.is_open())
+    {
+        RE::Log::Error("Failed to create file: " + l_path.string());
+        return;
+    }
+
+    l_file << "return Category {\n"
+           << "    -- Add your fields here\n"
+           << "}\n";
+    l_file.close();
+
+    RE::Log::Message("Category created: " + l_path.string());
+    LoadCategoryFromFile(l_path.string());
 }
 
 void CategoryPanel::LoadCategoryFromFile(const std::string _path)

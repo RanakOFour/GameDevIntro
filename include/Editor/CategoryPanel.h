@@ -39,12 +39,12 @@ class CategoryPanel : public Panel
     void RefreshCategoryList();
     /** @brief Renders the modal dialog for creating a new category from a name. */
     void DrawCreateCategoryDialog();
-    /** @brief Renders the file-chooser dialog for loading a category .lua file. */
-    void DrawLoadCategoryDialog();
 
     void Draw() override;
 
     public:
+    /** @brief Renders the IGFD file-chooser dialog. Must be called outside any ImGui Begin/End scope. */
+    void DrawLoadCategoryDialog();
     /**
      * @brief Constructs the panel.
      * @param _editor Reference to the owning Editor.

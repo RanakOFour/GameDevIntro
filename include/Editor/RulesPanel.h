@@ -36,12 +36,12 @@ class RulesPanel : public Panel
     void RefreshRuleList();
     /** @brief Renders the modal dialog for creating a new rule from a name. */
     void DrawCreateRuleDialog();
-    /** @brief Renders the file-chooser dialog for loading a rule .lua file. */
-    void DrawLoadRuleDialog();
 
     void Draw() override;
 
     public:
+    /** @brief Renders the IGFD file-chooser dialog. Must be called outside any ImGui Begin/End scope. */
+    void DrawLoadRuleDialog();
     /**
      * @brief Constructs the panel.
      * @param _editor Reference to the owning Editor.

@@ -3,6 +3,9 @@
 #include "Editor/BuiltinRules.h"
 #include "Editor/SceneEditTab.h"
 
+#include <filesystem>
+#include <fstream>
+
 #include "imgui/imgui.h"
 
 // String compatible functions for ImGui
@@ -143,7 +146,6 @@ void RulesPanel::Draw()
 
     // Draw dialogs
     DrawCreateRuleDialog();
-    DrawLoadRuleDialog();
 }
 
 void RulesPanel::DrawCreateRuleDialog()
@@ -156,7 +158,7 @@ void RulesPanel::DrawCreateRuleDialog()
     if (ImGui::BeginPopupModal("Create New Rule", &m_showCreateDialog, ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::Text("Rule Name:");
-        ImGui::InputText("RuleName", &m_newRuleName[0], m_newRuleName.size());
+        ImGui::InputText("RuleName", &m_newRuleName);
 
         ImGui::Separator();
 
@@ -224,8 +226,43 @@ void RulesPanel::DrawLoadRuleDialog()
 
 void RulesPanel::CreateNewRule(const std::string _name)
 {
-    // TODO: Implement rule creation with template
-    RE::Log::Message("Creating new rule: " + _name);
+    if (!m_editor.GetProject().IsOpen())
+    {
+        RE::Log::Warning("No project open — cannot create rule.");
+        return;
+    }
+
+    std::filesystem::path l_dir  = m_editor.GetProject().GetRulesDir();
+    std::filesystem::path l_path = l_dir / (_name + ".lua");
+
+    std::filesystem::create_directories(l_dir);
+
+    if (std::filesystem::exists(l_path))
+    {
+        RE::Log::Warning("Rule already exists: " + l_path.string());
+        return;
+    }
+
+    std::ofstream l_file(l_path);
+    if (!l_file.is_open())
+    {
+        RE::Log::Error("Failed to create file: " + l_path.string());
+        return;
+    }
+
+    l_file << "local " << _name << " = Rule {\n"
+           << "    categories = { \"Transform\" },\n"
+           << "}\n"
+           << "\n"
+           << "function " << _name << ":Update(_entityData)\n"
+           << "    -- Add your logic here\n"
+           << "end\n"
+           << "\n"
+           << "return " << _name << "\n";
+    l_file.close();
+
+    RE::Log::Message("Rule created: " + l_path.string());
+    LoadRuleFromFile(l_path.string());
 }
 
 void RulesPanel::LoadRuleFromFile(const std::string _path)

@@ -226,6 +226,8 @@ void Editor::DrawMenuBar()
                 m_tutorialPanel.LoadTutorial("./resources/Tutorials/Categories.lua");
             if (ImGui::MenuItem("Writing Rules"))
                 m_tutorialPanel.LoadTutorial("./resources/Tutorials/Rules.lua");
+            if (ImGui::MenuItem("Build Asteroids"))
+                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Asteroids.lua");
             ImGui::EndMenu();
         }
 

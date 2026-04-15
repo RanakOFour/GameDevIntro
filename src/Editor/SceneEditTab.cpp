@@ -100,7 +100,9 @@ void SceneEditTab::DrawEditorUI()
 
     m_entityPanel.DrawAsWindow();
     m_categoryPanel.DrawAsWindow();
+    m_categoryPanel.DrawLoadCategoryDialog();
     m_rulesPanel.DrawAsWindow();
+    m_rulesPanel.DrawLoadRuleDialog();
     m_cameraPanel.DrawAsWindow();
     m_propertiesPanel.DrawAsWindow();
     m_settingsPanel.DrawAsWindow();

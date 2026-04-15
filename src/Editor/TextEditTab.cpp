@@ -274,6 +274,11 @@ void TextEditTab::Draw()
     }
 
     ImGui::End();
+
+    // IGFD file-chooser dialogs must be drawn outside any Begin/End scope
+    // to avoid blocking other windows and tabs.
+    m_categoryPanel.DrawLoadCategoryDialog();
+    m_rulesPanel.DrawLoadRuleDialog();
 }
 
 void TextEditTab::SetFile(std::weak_ptr<RE::Asset::LuaFile> _file)

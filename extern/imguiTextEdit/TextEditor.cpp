@@ -4,11 +4,6 @@
 //	This work is licensed under the terms of the MIT license.
 //	For a copy, see <https://opensource.org/licenses/MIT>.
 
-
-//
-//	Include files
-//
-
 #include <cmath>
 #include <limits>
 
@@ -21,19 +16,9 @@
 
 #include "TextEditor.h"
 
-
-//
-//	TextEditor::TextEditor
-//
-
 TextEditor::TextEditor() {
 	SetPalette(defaultPalette);
 }
-
-
-//
-//	TextEditor::setText
-//
 
 void TextEditor::setText(const std::string_view &text) {
 	// load text into document and reset subsystems
@@ -48,11 +33,6 @@ void TextEditor::setText(const std::string_view &text) {
 	showMatchingBracketsChanged = false;
 	languageChanged = false;
 }
-
-
-//
-//	TextEditor::render
-//
 
 void TextEditor::render(const char* title, const ImVec2& size, bool border) {
 	// get current transaction version
@@ -265,11 +245,6 @@ void TextEditor::render(const char* title, const ImVec2& size, bool border) {
 	ImGui::PopStyleVar();
 }
 
-
-//
-//	TextEditor::renderSelections
-//
-
 void TextEditor::renderSelections() {
 	auto drawList = ImGui::GetWindowDrawList();
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
@@ -295,11 +270,6 @@ void TextEditor::renderSelections() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::renderMarkers
-//
 
 void TextEditor::renderMarkers() {
 	if (markers.size()) {
@@ -347,11 +317,6 @@ void TextEditor::renderMarkers() {
 	}
 }
 
-
-//
-//	TextEditor::renderMatchingBrackets
-//
-
 void TextEditor::renderMatchingBrackets() {
 	if (showMatchingBrackets) {
 		if (bracketeer.size()) {
@@ -394,11 +359,6 @@ void TextEditor::renderMatchingBrackets() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::renderText
-//
 
 void TextEditor::renderText() {
 	auto drawList = ImGui::GetWindowDrawList();
@@ -456,11 +416,6 @@ void TextEditor::renderText() {
 	}
 }
 
-
-//
-//	TextEditor::renderCursors
-//
-
 void TextEditor::renderCursors() {
 	// update cursor animation timer
 	cursorAnimationTimer = std::fmod(cursorAnimationTimer + ImGui::GetIO().DeltaTime, 1.0f);
@@ -496,11 +451,6 @@ void TextEditor::renderCursors() {
 	}
 }
 
-
-//
-//	TextEditor::renderMargin
-//
-
 void TextEditor::renderMargin() {
 	if ((decoratorWidth != 0.0f && decoratorCallback) || showLineNumbers) {
 		// erase background in case we are scrolling horizontally
@@ -512,11 +462,6 @@ void TextEditor::renderMargin() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::renderLineNumbers
-//
 
 void TextEditor::renderLineNumbers() {
 	if (showLineNumbers) {
@@ -533,11 +478,6 @@ void TextEditor::renderLineNumbers() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::renderDecorations
-//
 
 void TextEditor::renderDecorations() {
 	if (decoratorWidth != 0.0f && decoratorCallback) {
@@ -559,11 +499,6 @@ void TextEditor::renderDecorations() {
 		ImGui::SetCursorScreenPos(cursorScreenPos);
 	}
 }
-
-
-//
-//	TextEditor::renderScrollbarMiniMap
-//
 
 void TextEditor::renderScrollbarMiniMap() {
 	// based on https://github.com/ocornut/imgui/issues/3114
@@ -613,11 +548,6 @@ void TextEditor::renderScrollbarMiniMap() {
 	}
 }
 
-
-//
-//	TextEditor::renderPanScrollIndicator
-//
-
 void TextEditor::renderPanScrollIndicator() {
 	if (showPanScrollIndicator && (panning || scrolling)) {
 		auto drawList = ImGui::GetWindowDrawList();
@@ -655,11 +585,6 @@ void TextEditor::renderPanScrollIndicator() {
 			2.0f);
 	}
 }
-
-
-//
-//	TextEditor::handleKeyboardInputs
-//
 
 void TextEditor::handleKeyboardInputs() {
 	if (ImGui::IsWindowFocused()) {
@@ -832,11 +757,6 @@ void TextEditor::handleKeyboardInputs() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::handleMouseInteractions
-//
 
 void TextEditor::handleMouseInteractions() {
 	// handle middle mouse button modes
@@ -1056,20 +976,10 @@ void TextEditor::handleMouseInteractions() {
 	}
 }
 
-
-//
-//	TextEditor::selectAll
-//
-
 void TextEditor::selectAll() {
 	moveToTop(false);
 	moveToBottom(true);
 }
-
-
-//
-//	TextEditor::selectLine
-//
 
 void TextEditor::selectLine(int line) {
 	Coordinate start{line, 0};
@@ -1077,21 +987,11 @@ void TextEditor::selectLine(int line) {
 	moveTo(document.getDown(start), true);
 }
 
-
-//
-//	TextEditor::selectLines
-//
-
 void TextEditor::selectLines(int startLine, int endLine) {
 	Coordinate start{startLine, 0};
 	moveTo(start, false);
 	moveTo(document.getDown(start, endLine - startLine + 1), true);
 }
-
-
-//
-//	TextEditor::selectRegion
-//
 
 void TextEditor::selectRegion(int startLine, int startColumn, int endLine, int endColumn) {
 	auto start = document.normalizeCoordinate(Coordinate(startLine, startColumn));
@@ -1103,11 +1003,6 @@ void TextEditor::selectRegion(int startLine, int startColumn, int endLine, int e
 
 	cursors.setCursor(start, end);
 }
-
-
-//
-//	TextEditor::selectToBrackets
-//
 
 void TextEditor::selectToBrackets(bool includeBrackets) {
 	if (!showMatchingBrackets) {
@@ -1127,11 +1022,6 @@ void TextEditor::selectToBrackets(bool includeBrackets) {
 		}
 	}
 }
-
-
-//
-//	TextEditor::growSelectionsToCurlyBrackets
-//
 
 void TextEditor::growSelectionsToCurlyBrackets() {
 	if (!showMatchingBrackets) {
@@ -1156,11 +1046,6 @@ void TextEditor::growSelectionsToCurlyBrackets() {
 		}
 	}
 }
-
-
-//
-//	TextEditor::shrinkSelectionsToCurlyBrackets
-//
 
 void TextEditor::shrinkSelectionsToCurlyBrackets() {
 	if (!showMatchingBrackets) {
@@ -1188,11 +1073,6 @@ void TextEditor::shrinkSelectionsToCurlyBrackets() {
 	}
 }
 
-
-//
-//	TextEditor::cut
-//
-
 void TextEditor::cut() {
 	// copy selections to clipboard and remove them
 	copy();
@@ -1201,11 +1081,6 @@ void TextEditor::cut() {
 	cursors.getCurrent().resetToStart();
 	endTransaction(transaction);
 }
-
-
-//
-//	TextEditor::copy
-//
 
 void TextEditor::copy() const {
 	// copy all selections and put them on the clipboard
@@ -1235,11 +1110,6 @@ void TextEditor::copy() const {
 	ImGui::SetClipboardText(text.c_str());
 }
 
-
-//
-//	TextEditor::paste
-//
-
 void TextEditor::paste() {
 	// ignore non-text clipboard content
 	auto clipboard = ImGui::GetClipboardText();
@@ -1251,22 +1121,12 @@ void TextEditor::paste() {
 	}
 }
 
-
-//
-//	TextEditor::undo
-//
-
 void TextEditor::undo() {
 	if (transactions.canUndo()) {
 		transactions.undo(document, cursors);
 		makeCursorVisible();
 	}
 }
-
-
-//
-//	TextEditor::redo
-//
 
 void TextEditor::redo() {
 	if (transactions.canRedo()) {
@@ -1275,22 +1135,12 @@ void TextEditor::redo() {
 	}
 }
 
-
-//
-//	TextEditor::getCursor
-//
-
 void TextEditor::getCursor(int& line, int& column, size_t cursor) const {
 	cursor = std::min(cursor, cursors.size() - 1);
 	auto pos = cursors[cursor].getInteractiveEnd();
 	line = pos.line;
 	column = pos.column;
 }
-
-
-//
-//	TextEditor::getCursor
-//
 
 void TextEditor::getCursor(int& startLine, int& startColumn, int& endLine, int& endColumn, size_t cursor) const {
 	cursor = std::min(cursor, cursors.size() - 1);
@@ -1302,20 +1152,10 @@ void TextEditor::getCursor(int& startLine, int& startColumn, int& endLine, int& 
 	endColumn = end.column;
 }
 
-
-//
-//	TextEditor::getCursorText
-//
-
 std::string TextEditor::getCursorText(size_t cursor) const {
 	cursor = std::min(cursor, cursors.size() - 1);
 	return document.getSectionText(cursors[cursor].getSelectionStart(), cursors[cursor].getSelectionEnd());
 }
-
-
-//
-//	TextEditor::GetWordAtScreenPos
-//
 
 std::string TextEditor::GetWordAtScreenPos(const ImVec2& screenPos) const {
 	// convert screen position to local coordinates using the origin saved during last Render()
@@ -1332,20 +1172,10 @@ std::string TextEditor::GetWordAtScreenPos(const ImVec2& screenPos) const {
 	return document.getSectionText(start, end);
 }
 
-
-//
-//	TextEditor::makeCursorVisible
-//
-
 void TextEditor::makeCursorVisible() {
 	ensureCursorIsVisible = true;
 	scrollToLineNumber = -1;
 }
-
-
-//
-//	TextEditor::scrollToLine
-//
 
 void TextEditor::scrollToLine(int line, Scroll alignment) {
 	ensureCursorIsVisible = false;
@@ -1353,22 +1183,12 @@ void TextEditor::scrollToLine(int line, Scroll alignment) {
 	scrollToAlignment = alignment;
 }
 
-
-//
-//	TextEditor::addMarker
-//
-
 void TextEditor::addMarker(int line, ImU32 lineNumberColor, ImU32 textColor, const std::string_view& lineNumberTooltip, const std::string_view& textTooltip) {
 	if (line >= 0 && line < document.lineCount()) {
 		markers.emplace_back(lineNumberColor, textColor, lineNumberTooltip, textTooltip);
 		document[line].marker = markers.size();
 	}
 }
-
-
-//
-//	TextEditor::clearMarkers
-//
 
 void TextEditor::clearMarkers() {
 	for (auto& line : document) {
@@ -1378,11 +1198,6 @@ void TextEditor::clearMarkers() {
 	markers.clear();
 }
 
-
-//
-//	TextEditor::moveUp
-//
-
 void TextEditor::moveUp(int lines, bool select) {
 	for (auto& cursor : cursors) {
 		cursor.update(document.getUp(cursor.getInteractiveEnd(), lines), select);
@@ -1390,11 +1205,6 @@ void TextEditor::moveUp(int lines, bool select) {
 
 	makeCursorVisible();
 }
-
-
-//
-//	TextEditor::moveDown
-//
 
 void TextEditor::moveDown(int lines, bool select) {
 	for (auto& cursor : cursors) {
@@ -1404,11 +1214,6 @@ void TextEditor::moveDown(int lines, bool select) {
 	makeCursorVisible();
 }
 
-
-//
-//	TextEditor::moveLeft
-//
-
 void TextEditor::moveLeft(bool select, bool wordMode) {
 	for (auto& cursor : cursors) {
 		cursor.update(document.getLeft(cursor.getInteractiveEnd(), wordMode), select);
@@ -1416,11 +1221,6 @@ void TextEditor::moveLeft(bool select, bool wordMode) {
 
 	makeCursorVisible();
 }
-
-
-//
-//	TextEditor::moveRight
-//
 
 void TextEditor::moveRight(bool select, bool wordMode) {
 	for (auto& cursor : cursors) {
@@ -1430,21 +1230,11 @@ void TextEditor::moveRight(bool select, bool wordMode) {
 	makeCursorVisible();
 }
 
-
-//
-//	TextEditor::moveToTop
-//
-
 void TextEditor::moveToTop(bool select) {
 	cursors.clearAdditional();
 	cursors.updateCurrentCursor(document.getTop(), select);
 	makeCursorVisible();
 }
-
-
-//
-//	TextEditor::moveToBottom
-//
 
 void TextEditor::moveToBottom(bool select) {
 	cursors.clearAdditional();
@@ -1452,21 +1242,11 @@ void TextEditor::moveToBottom(bool select) {
 	makeCursorVisible();
 }
 
-
-//
-//	TextEditor::moveToStartOfLine
-//
-
 void TextEditor::moveToStartOfLine(bool select) {
 	cursors.clearAdditional();
 	cursors.updateCurrentCursor(document.getStartOfLine(cursors.getCurrent().getInteractiveEnd()), select);
 	makeCursorVisible();
 }
-
-
-//
-//	TextEditor::moveToEndOfLine
-//
 
 void TextEditor::moveToEndOfLine(bool select) {
 	cursors.clearAdditional();
@@ -1474,21 +1254,11 @@ void TextEditor::moveToEndOfLine(bool select) {
 	makeCursorVisible();
 }
 
-
-//
-//	TextEditor::moveTo
-//
-
 void TextEditor::moveTo(Coordinate coordinate, bool select) {
 	cursors.clearAdditional();
 	cursors.updateCurrentCursor(coordinate, select);
 	makeCursorVisible();
 }
-
-
-//
-//	TextEditor::handleCharacter
-//
 
 void TextEditor::handleCharacter(ImWchar character) {
 	auto transaction = startTransaction(false);
@@ -1581,11 +1351,6 @@ void TextEditor::handleCharacter(ImWchar character) {
 	}
 }
 
-
-//
-//	TextEditor::handleBackspace
-//
-
 void TextEditor::handleBackspace(bool wordMode) {
 	auto transaction = startTransaction(false);
 
@@ -1600,11 +1365,6 @@ void TextEditor::handleBackspace(bool wordMode) {
 
 	endTransaction(transaction);
 }
-
-
-//
-//	TextEditor::handleDelete
-//
 
 void TextEditor::handleDelete(bool wordMode) {
 	auto transaction = startTransaction(false);
@@ -1621,11 +1381,6 @@ void TextEditor::handleDelete(bool wordMode) {
 	endTransaction(transaction);
 }
 
-
-//
-//	TextEditor::removeSelectedLines
-//
-
 void TextEditor::removeSelectedLines() {
 	auto transaction = startTransaction();
 
@@ -1641,11 +1396,6 @@ void TextEditor::removeSelectedLines() {
 	endTransaction(transaction);
 }
 
-
-//
-//	TextEditor::insertLineAbove
-//
-
 void TextEditor::insertLineAbove() {
 	auto transaction = startTransaction();
 
@@ -1658,11 +1408,6 @@ void TextEditor::insertLineAbove() {
 
 	endTransaction(transaction);
 }
-
-
-//
-//	TextEditor::insertLineBelow
-//
 
 void TextEditor::insertLineBelow() {
 	auto transaction = startTransaction();
@@ -1677,11 +1422,6 @@ void TextEditor::insertLineBelow() {
 
 	endTransaction(transaction);
 }
-
-
-//
-//	TextEditor::indentLines
-//
 
 void TextEditor::indentLines() {
 	auto transaction = startTransaction();
@@ -1708,11 +1448,6 @@ void TextEditor::indentLines() {
 
 	endTransaction(transaction);
 }
-
-
-//
-//	TextEditor::deindentLines
-//
 
 void TextEditor::deindentLines() {
 	auto transaction = startTransaction();
@@ -1747,11 +1482,6 @@ void TextEditor::deindentLines() {
 	endTransaction(transaction);
 }
 
-
-//
-//	Widget::moveUpLines
-//
-
 void TextEditor::moveUpLines() {
 	// don't move up if first line is in one of the cursors
 	if (cursors[0].getSelectionStart().line != 0) {
@@ -1781,11 +1511,6 @@ void TextEditor::moveUpLines() {
 	}
 }
 
-
-//
-//	TextEditor::moveDownLines
-//
-
 void TextEditor::moveDownLines() {
 	// don't move up if last line is in one of the cursors
 	if (!document.isLastLine(cursors[cursors.size() - 1].getSelectionStart().line)) {
@@ -1814,11 +1539,6 @@ void TextEditor::moveDownLines() {
 		endTransaction(transaction);
 	}
 }
-
-
-//
-//	TextEditor::toggleComments
-//
 
 void TextEditor::toggleComments() {
 	auto transaction = startTransaction();
@@ -1862,11 +1582,6 @@ void TextEditor::toggleComments() {
 	endTransaction(transaction);
 }
 
-
-//
-//	TextEditor::filterSelections
-//
-
 void TextEditor::filterSelections(std::function<std::string(std::string_view)> filter) {
 	auto transaction = startTransaction();
 
@@ -1897,11 +1612,6 @@ void TextEditor::filterSelections(std::function<std::string(std::string_view)> f
 	endTransaction(transaction);
 }
 
-
-//
-//	TextEditor::selectionToLowerCase
-//
-
 void TextEditor::selectionToLowerCase() {
 	FilterSelections([](const std::string_view& text) {
 		std::string result;
@@ -1919,11 +1629,6 @@ void TextEditor::selectionToLowerCase() {
 	});
 }
 
-
-//
-//	TextEditor::selectionToUpperCase
-//
-
 void TextEditor::selectionToUpperCase() {
 	FilterSelections([](const std::string_view& text) {
 		std::string result;
@@ -1940,11 +1645,6 @@ void TextEditor::selectionToUpperCase() {
 		return result;
 	});
 }
-
-
-//
-//	TextEditor::stripTrailingWhitespaces
-//
 
 void TextEditor::stripTrailingWhitespaces() {
 	auto transaction = startTransaction();
@@ -1986,11 +1686,6 @@ void TextEditor::stripTrailingWhitespaces() {
 	}
 }
 
-
-//
-//	TextEditor::filterLines
-//
-
 void TextEditor::filterLines(std::function<std::string(std::string_view)> filter) {
 	auto transaction = startTransaction();
 
@@ -2014,11 +1709,6 @@ void TextEditor::filterLines(std::function<std::string(std::string_view)> filter
 		cursors.setCursor(document.normalizeCoordinate(cursors.getCurrent().getSelectionEnd()));
 	}
 }
-
-
-//
-//	TextEditor::tabsToSpaces
-//
 
 void TextEditor::tabsToSpaces() {
 	filterLines([this](const std::string_view& input) {
@@ -2047,11 +1737,6 @@ void TextEditor::tabsToSpaces() {
 		return output;
 	});
 }
-
-
-//
-//	TextEditor::spacesToTabs
-//
 
 void TextEditor::spacesToTabs() {
 	FilterLines([this](const std::string_view& input) {
@@ -2111,11 +1796,6 @@ void TextEditor::spacesToTabs() {
 	});
 }
 
-
-//
-//	TextEditor::startTransaction
-//
-
 std::shared_ptr<TextEditor::Transaction> TextEditor::startTransaction(bool cancelsAutoComplete) {
 	if (cancelsAutoComplete) {
 		autocomplete.cancel();
@@ -2125,11 +1805,6 @@ std::shared_ptr<TextEditor::Transaction> TextEditor::startTransaction(bool cance
 	transaction->setBeforeState(cursors);
 	return transaction;
 }
-
-
-//
-//	TextEditor::endTransaction
-//
 
 bool TextEditor::endTransaction(std::shared_ptr<Transaction> transaction) {
 	if (transaction->actions() > 0) {
@@ -2143,13 +1818,15 @@ bool TextEditor::endTransaction(std::shared_ptr<Transaction> transaction) {
 				auto& change = changes.emplace_back();
 				change.insert = action.type == Action::Type::insertText;
 
-				change.startLine = static_cast<int>(action.start.line);
-				change.startColumn = static_cast<int>(action.start.column);
-				change.startIndex = static_cast<int>(document.getIndex(action.start));
+				auto normStart = document.normalizeCoordinate(action.start);
+				change.startLine = static_cast<int>(normStart.line);
+				change.startColumn = static_cast<int>(normStart.column);
+				change.startIndex = static_cast<int>(document.getIndex(normStart));
 
-				change.startLine = static_cast<int>(action.end.line);
-				change.startColumn = static_cast<int>(action.end.column);
-				change.startIndex = static_cast<int>(document.getIndex(action.end));
+				auto normEnd = document.normalizeCoordinate(action.end);
+				change.endLine = static_cast<int>(normEnd.line);
+				change.endColumn = static_cast<int>(normEnd.column);
+				change.endIndex = static_cast<int>(document.getIndex(normEnd));
 
 				change.text = action.text;
 			}

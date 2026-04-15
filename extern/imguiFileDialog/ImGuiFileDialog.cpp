@@ -3240,6 +3240,7 @@ bool IGFD::PlacesFeature::m_DrawPlacesPane(FileDialogInternal& vFileDialogIntern
                 }
                 if (!group_ptr->places.empty()) {
                     const auto& current_path = vFileDialogInternal.fileManager.GetCurrentPath();
+                    group_ptr->clipper.Ctx = GImGui;
                     group_ptr->clipper.Begin((int)group_ptr->places.size(), ImGui::GetTextLineHeightWithSpacing());
                     while (group_ptr->clipper.Step()) {
                         for (int i = group_ptr->clipper.DisplayStart; i < group_ptr->clipper.DisplayEnd; i++) {
@@ -3825,10 +3826,15 @@ bool IGFD::FileDialog::Display(const std::string& vKey, ImGuiWindowFlags vFlags,
     bool res = false;
 
     if (m_FileDialogInternal.showDialog && m_FileDialogInternal.dLGkey == vKey) {
-        if (m_FileDialogInternal.puUseCustomLocale) setlocale(m_FileDialogInternal.localeCategory, m_FileDialogInternal.localeBegin.c_str());
+        if (m_FileDialogInternal.puUseCustomLocale) {
+            setlocale(m_FileDialogInternal.localeCategory, m_FileDialogInternal.localeBegin.c_str());
+        }
 
         auto& fdFile   = m_FileDialogInternal.fileManager;
         auto& fdFilter = m_FileDialogInternal.filterManager;
+
+        m_FileListClipper.Ctx = GImGui;
+        m_PathListClipper.Ctx = GImGui;
 
         // to be sure than only one dialog is displayed per frame
         ImGuiContext& g = *GImGui;
