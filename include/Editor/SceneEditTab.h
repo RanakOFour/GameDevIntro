@@ -67,6 +67,8 @@ class SceneEditTab
 
     bool m_isDraggingEntity = false; ///< True while dragging the selected entity in the viewport.
     bool m_isDraggingGizmo  = false; ///< True while dragging a gizmo handle.
+    bool m_isPanningCamera  = false; ///< True while panning the camera via MMB drag.
+    Vector2 m_panAnchorWorld;        ///< World-space point locked to the mouse during MMB pan.
     Gizmo::Axis m_activeGizmoAxis = Gizmo::Axis::None; ///< Gizmo axis being dragged.
     Vector2 m_dragStartWorldPos;     ///< World position of the mouse when drag started.
     Vector2 m_dragStartEntityPos;    ///< Entity position when drag started (for undo).

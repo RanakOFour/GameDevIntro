@@ -502,6 +502,29 @@ void Editor::HandleInput()
 
     RE::IO::MouseInfo l_mouseInfo = m_engineContents.io->GetMouseInfo();
 
+    // Middle mouse button pan — anchor world point under cursor
+    RE::IO::MouseInfo l_lastMouseInfo = m_engineContents.io->GetLastFrameMouseInfo();
+    if (l_mouseInfo.MMBDown && !l_lastMouseInfo.MMBDown)
+    {
+        // MMB just pressed: record world point under mouse
+        Vector3 l_anchor = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
+        m_sceneEdit->m_panAnchorWorld = Vector2(l_anchor.x, l_anchor.y);
+        m_sceneEdit->m_isPanningCamera = true;
+    }
+    else if (l_mouseInfo.MMBDown && m_sceneEdit->m_isPanningCamera)
+    {
+        // MMB held: shift camera so anchor stays under mouse
+        Vector3 l_currentAtMouse = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
+        Vector3 l_camPos = m_sceneEdit->m_camera->GetPosition();
+        l_camPos.x -= l_currentAtMouse.x - m_sceneEdit->m_panAnchorWorld.x;
+        l_camPos.y -= l_currentAtMouse.y - m_sceneEdit->m_panAnchorWorld.y;
+        m_sceneEdit->m_camera->SetPosition(l_camPos);
+    }
+    else if (!l_mouseInfo.MMBDown)
+    {
+        m_sceneEdit->m_isPanningCamera = false;
+    }
+
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
         // First-frame LMB press - check for entity selection or gizmo interaction

@@ -64,7 +64,7 @@ R"lua(local PhysicsSync = Rule {
 function PhysicsSync:Init(_entityData)
     local transform = _entityData["Transform"]
     local phys      = _entityData["PhysicsBody"]
-    local body = Physics.CreateBody(transform.Position, phys.bodyType)
+    local body = Physics.CreateBody(transform.Position, transform.Rotation, phys.bodyType)
     local halfW = transform.Scale.x
     local halfH = transform.Scale.y
     Physics.AddBoxShape(body, halfW, halfH, phys.density, phys.friction, phys.restitution)
@@ -78,7 +78,7 @@ function PhysicsSync:Update(_entityData)
     local phys      = _entityData["PhysicsBody"]
     if phys._body ~= nil and phys._body:IsValid() then
         transform.Position = phys._body:GetPosition()
-        transform.Rotation = phys._body:GetAngle()
+        transform.Rotation = Math.RadToDeg(phys._body:GetAngle())
     end
 end
 
