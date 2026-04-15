@@ -7,11 +7,10 @@
 #include "Editor/SceneSerializer.h"
 #include "Editor/BuiltinCategories.h"
 #include "Editor/BuiltinRules.h"
+#include "Editor/Gizmo.h"
 #include "Editor/SceneSettings.h"
-
-#include "RanakEngine/IO.h"
-#include "RanakEngine/Core.h"
-#include "RanakEngine/Physics.h"
+    
+#include "RanakEngine/RanakEngine.h"
 
 #include "imguiFileDialog/ImGuiFileDialog.h"
 
@@ -506,49 +505,94 @@ void Editor::HandleInput()
 
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
-        // --- LMB press: select entity and begin drag ---
+        // First-frame LMB press - check for entity selection or gizmo interaction
         if (l_mouseInfo.LMBDown && !m_engineContents.io->GetLastFrameMouseInfo().LMBDown)
         {
             Vector3 l_mouseWorldPos = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
             l_mouseWorldPos.z = m_sceneEdit->m_camera->GetPosition().z;
-            RE::Core::Ray l_ray{
-                l_mouseWorldPos,
-                Vector3(0.0f, 0.0f, -1.0f)
-            };
-
-            RE::Core::RaycastHit l_hitInfo;
 
             auto l_scene = m_engineContents.core->GetScene().lock();
+            SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
 
-            int l_hitEntity = l_scene->Raycast(l_ray, l_hitInfo);
-            
-            if (l_hitEntity > -1)
+            // Gizmo hit test (has priority over scene pick)
+            bool l_gizmoHit = false;
+            if (!m_sceneEdit->m_isGameRunning && m_sceneEdit->m_selectedEntityId >= 0)
             {
-                m_sceneEdit->SelectEntity(l_hitEntity);
-                ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
-
-                RE::Core::EntityRegistry& l_registry = l_scene->GetRegistry();
-
-                Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
-
+                Vector2 l_entityWorldPos = l_scene->GetRegistry()
+                    .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                    .traverse_raw_get<Vector2>("Transform", "Position");
+                Vector2 l_entityWorldScale = l_scene->GetRegistry()
+                    .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                    .traverse_raw_get<Vector2>("Transform", "Scale");
+                
                 Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
+                Vector2 l_screenEdgeX = m_sceneEdit->m_camera->WorldToScreenPoint(
+                    l_entityWorldPos + Vector2(l_entityWorldScale.x, 0));
+                Vector2 l_screenEdgeY = m_sceneEdit->m_camera->WorldToScreenPoint(
+                    l_entityWorldPos + Vector2(0, l_entityWorldScale.y));
+                
+                float l_screenH = m_engineContents.io->GetWindow().lock()->GetScreenSize().y;
+                ImVec2 l_screenHE(std::abs(l_screenEdgeX.x - l_entityScreenPos.x),
+                                  std::abs(l_screenEdgeY.y - l_entityScreenPos.y));
+                
+                                  ImVec2 l_entityScreenIm(l_entityScreenPos.x, l_screenH - l_entityScreenPos.y);
 
-                m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                ImVec2 l_mouseScreenIm(l_mouseInfo.position.x, l_screenH - l_mouseInfo.position.y);
 
-                // Begin drag
-                m_sceneEdit->m_isDraggingEntity = true;
-                m_sceneEdit->m_dragStartWorldPos = Vector2(l_mouseWorldPos.x, l_mouseWorldPos.y);
-                m_sceneEdit->m_dragStartEntityPos = l_entityWorldPos;
+                Gizmo::Axis l_hitAxis = Gizmo::HitTest(
+                    l_ss.gizmoMode, l_entityScreenIm, l_screenHE, l_mouseScreenIm);
+
+                if (l_hitAxis != Gizmo::Axis::None)
+                {
+                    l_gizmoHit = true;
+                    m_sceneEdit->m_isDraggingGizmo  = true;
+                    m_sceneEdit->m_activeGizmoAxis  = l_hitAxis;
+                    m_sceneEdit->m_isDraggingEntity = true;
+                    m_sceneEdit->m_dragStartWorldPos  = Vector2(l_mouseWorldPos.x, l_mouseWorldPos.y);
+                    m_sceneEdit->m_dragStartEntityPos = l_entityWorldPos;
+                    m_sceneEdit->m_dragStartEntityScale = l_scene->GetRegistry()
+                        .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                        .traverse_raw_get<Vector2>("Transform", "Scale");
+                    m_sceneEdit->m_dragStartEntityRot = l_scene->GetRegistry()
+                        .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                        .traverse_raw_get<float>("Transform", "Rotation");
+                }
             }
-            else
+
+            // Scene raycast (only if gizmo was not hit)
+            if (!l_gizmoHit)
             {
-                m_sceneEdit->m_propertiesPanel.SetShown(false);
-            }
+                RE::Core::Ray l_ray{
+                    l_mouseWorldPos,
+                    Vector3(0.0f, 0.0f, -1.0f)
+                };
+                RE::Core::RaycastHit l_hitInfo;
+                int l_hitEntity = l_scene->Raycast(l_ray, l_hitInfo);
 
-            RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
+                if (l_hitEntity > -1)
+                {
+                    m_sceneEdit->SelectEntity(l_hitEntity);
+                    ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
+
+                    RE::Core::EntityRegistry& l_registry = l_scene->GetRegistry();
+
+                    Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
+
+                    Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
+
+                    m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                }
+                else
+                {
+                    m_sceneEdit->SelectEntity(-1);
+                    m_sceneEdit->m_propertiesPanel.SetShown(false);
+                }
+
+                RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
+            }
         }
 
-        // --- LMB held: drag entity ---
+        // --- LMB held: drag entity / gizmo ---
         if (l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity && m_sceneEdit->m_selectedEntityId >= 0)
         {
             Vector3 l_currentWorld = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
@@ -557,52 +601,128 @@ void Editor::HandleInput()
                 l_currentWorld.y - m_sceneEdit->m_dragStartWorldPos.y
             );
 
-            Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_delta;
-
             auto l_scene = m_engineContents.core->GetScene().lock();
             sol::table l_transform = l_scene->GetRegistry()
                 .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
                 .raw_get<sol::table>("Transform");
-            l_transform.raw_set("Position", l_newPos);
+
+            SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
+
+            if (m_sceneEdit->m_isDraggingGizmo)
+            {
+                Gizmo::Axis l_axis = m_sceneEdit->m_activeGizmoAxis;
+
+                if (l_axis == Gizmo::Axis::Rotate)
+                {
+                    // Rotation: angle from entity centre to mouse
+                    Vector2 l_entityPos = m_sceneEdit->m_dragStartEntityPos;
+
+                    float l_angle = std::atan2(
+                        l_currentWorld.y - l_entityPos.y,
+                        l_currentWorld.x - l_entityPos.x);
+                    
+                    float l_startAngle = std::atan2(
+                        m_sceneEdit->m_dragStartWorldPos.y - l_entityPos.y,
+                        m_sceneEdit->m_dragStartWorldPos.x - l_entityPos.x);
+                    
+                    float l_deltaAngle = l_angle - l_startAngle;
+                    
+                    // Wrap delta to [-PI, PI]
+                    l_deltaAngle = std::atan2(std::sin(l_deltaAngle), std::cos(l_deltaAngle));
+                    
+                    // Convert to degrees and add to start rotation
+                    float l_deltaDeg = l_deltaAngle * (180.0f / RE::Math::PI());
+                    float l_newRot = m_sceneEdit->m_dragStartEntityRot + l_deltaDeg;
+                    
+                    // Wrap to (-180, 180]
+                    if(l_newRot > 180.0f) l_newRot -= 360.0f;
+                    else if(l_newRot <= -180.0f) l_newRot += 360.0f;
+
+                    l_transform.raw_set("Rotation", l_newRot);
+                }
+                else if (l_axis == Gizmo::Axis::ScaleX || l_axis == Gizmo::Axis::ScaleY || l_axis == Gizmo::Axis::ScaleXY)
+                {
+                    // Scale: delta mapped to scale change
+                    Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
+                    Vector2 l_newScale = m_sceneEdit->m_dragStartEntityScale + l_constrained;
+                    
+                    // Clamp to prevent negative/zero scale
+                    if (l_newScale.x < 0.01f) l_newScale.x = 0.01f;
+                    if (l_newScale.y < 0.01f) l_newScale.y = 0.01f;
+                    l_transform.raw_set("Scale", l_newScale);
+                }
+                else
+                {
+                    // Translate with axis constraint
+                    Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
+                    Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_constrained;
+                    if (l_ss.snapEnabled)
+                        l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
+                    l_transform.raw_set("Position", l_newPos);
+                }
+            }
+            else
+            {
+                // Free drag (no gizmo)
+                Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_delta;
+                if (l_ss.snapEnabled)
+                    l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
+                l_transform.raw_set("Position", l_newPos);
+            }
         }
 
         // --- LMB released: end drag, push undo ---
         if (!l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity)
         {
             m_sceneEdit->m_isDraggingEntity = false;
+            m_sceneEdit->m_isDraggingGizmo  = false;
+            m_sceneEdit->m_activeGizmoAxis  = Gizmo::Axis::None;
 
             if (m_sceneEdit->m_selectedEntityId >= 0)
             {
                 auto l_scene = m_engineContents.core->GetScene().lock();
-                Vector2 l_finalPos = l_scene->GetRegistry()
+                sol::table l_transform = l_scene->GetRegistry()
                     .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
-                    .traverse_raw_get<Vector2>("Transform", "Position");
+                    .raw_get<sol::table>("Transform");
 
-                // Only push undo if position actually changed
-                Vector2 l_diff = l_finalPos - m_sceneEdit->m_dragStartEntityPos;
-                if (l_diff.x != 0.0f || l_diff.y != 0.0f)
+                Vector2 l_finalPos   = l_transform.raw_get<Vector2>("Position");
+                Vector2 l_finalScale = l_transform.raw_get<Vector2>("Scale");
+                float   l_finalRot   = l_transform.raw_get<float>("Rotation");
+
+                Vector2 l_oldPos   = m_sceneEdit->m_dragStartEntityPos;
+                Vector2 l_oldScale = m_sceneEdit->m_dragStartEntityScale;
+                float   l_oldRot   = m_sceneEdit->m_dragStartEntityRot;
+
+                // Only push undo if something changed
+                bool l_posChanged   = (l_finalPos.x != l_oldPos.x || l_finalPos.y != l_oldPos.y);
+                bool l_scaleChanged = (l_finalScale.x != l_oldScale.x || l_finalScale.y != l_oldScale.y);
+                bool l_rotChanged   = (l_finalRot != l_oldRot);
+
+                if (l_posChanged || l_scaleChanged || l_rotChanged)
                 {
                     int l_entityId = m_sceneEdit->m_selectedEntityId;
-                    Vector2 l_oldPos = m_sceneEdit->m_dragStartEntityPos;
-                    Vector2 l_newPos = l_finalPos;
                     Editor* l_self = this;
 
                     m_undoManager.PushCommand(
                         std::make_unique<LambdaCommand>(
-                            "Move Entity",
-                            [l_self, l_entityId, l_newPos]() {
+                            "Transform Entity",
+                            [l_self, l_entityId, l_finalPos, l_finalScale, l_finalRot]() {
                                 auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
                                 sol::table l_tf = l_sc->GetRegistry()
                                     .GetEntityAttributes(l_entityId)
                                     .raw_get<sol::table>("Transform");
-                                l_tf.raw_set("Position", l_newPos);
+                                l_tf.raw_set("Position", l_finalPos);
+                                l_tf.raw_set("Scale", l_finalScale);
+                                l_tf.raw_set("Rotation", l_finalRot);
                             },
-                            [l_self, l_entityId, l_oldPos]() {
+                            [l_self, l_entityId, l_oldPos, l_oldScale, l_oldRot]() {
                                 auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
                                 sol::table l_tf = l_sc->GetRegistry()
                                     .GetEntityAttributes(l_entityId)
                                     .raw_get<sol::table>("Transform");
                                 l_tf.raw_set("Position", l_oldPos);
+                                l_tf.raw_set("Scale", l_oldScale);
+                                l_tf.raw_set("Rotation", l_oldRot);
                             }
                         )
                     );
@@ -615,19 +735,22 @@ void Editor::HandleInput()
 
     if (!ImGui::GetIO().WantTextInput)
     {
+        // Gizmo mode shortcuts (W/E/R — Unity convention)
+        SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
+        if (m_engineContents.io->GetKeyDownThisFrame('w'))
+            l_ss.gizmoMode = GizmoMode::Translate;
+        if (m_engineContents.io->GetKeyDownThisFrame('e'))
+            l_ss.gizmoMode = GizmoMode::Rotate;
+        if (m_engineContents.io->GetKeyDownThisFrame('r'))
+            l_ss.gizmoMode = GizmoMode::Scale;
+
+        // Snap toggle (Ctrl+G)
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('g'))
+            l_ss.snapEnabled = !l_ss.snapEnabled;
+
         if (m_engineContents.io->GetKeyDownThisFrame('c'))
         {
             m_sceneEdit->m_categoryPanel.SetShown(!m_sceneEdit->m_categoryPanel.IsShown());
-        }
-
-        if (m_engineContents.io->GetKeyDownThisFrame('e'))
-        {
-            m_sceneEdit->m_entityPanel.SetShown(!m_sceneEdit->m_entityPanel.IsShown());
-        }
-
-        if (m_engineContents.io->GetKeyDownThisFrame('r'))
-        {
-            m_sceneEdit->m_rulesPanel.SetShown(!m_sceneEdit->m_rulesPanel.IsShown());
         }
 
         if (m_engineContents.io->GetKeyDownThisFrame('`'))

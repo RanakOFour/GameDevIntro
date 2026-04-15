@@ -10,6 +10,8 @@
 #include "imgui/imgui.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
+#include <sstream>
+
 TutorialPanel::TutorialPanel(Editor& _editor)
 : Panel("Tutorial", _editor)
 {
@@ -111,13 +113,33 @@ void TutorialPanel::ClearRegions()
 
 void TutorialPanel::ApplyForceState(const std::string& _state)
 {
-    if (_state.empty()) return;
-    m_editor.GetStateRegistry().Apply(_state);
+    if (_state.empty())
+    {
+        return;
+    }
+    // Support semicolon-delimited list of actions, e.g. "panel_close:X;panel_open:Y"
+    std::string l_token;
+    std::istringstream l_stream(_state);
+    while (std::getline(l_stream, l_token, ';'))
+    {
+        // Remove leading/trailing whitespace
+        auto l_start = l_token.find_first_not_of(" \t");
+        auto l_end   = l_token.find_last_not_of(" \t");
+        if (l_start != std::string::npos)
+        {
+            m_editor.GetStateRegistry()
+                    .Apply(l_token.substr(l_start, l_end - l_start + 1));
+        }
+    }
 }
 
 bool TutorialPanel::IsStateAchieved(const std::string& _state) const
 {
-    if (_state.empty()) return true;
+    if (_state.empty())
+    {
+        return true;
+    }
+    
     return m_editor.GetStateRegistry().Evaluate(_state);
 }
 
@@ -151,15 +173,21 @@ static bool ResolveHighlightRect(const std::string& _key,
 void TutorialPanel::DrawHighlightOverlay()
 {
     if (m_steps.empty() || m_currentStep >= (int)m_steps.size())
+    {
         return;
+    }
 
     const std::string& l_key = m_steps[m_currentStep].highlightKey;
     if (l_key.empty())
+    {
         return;
+    }
 
     ImRect l_rect;
     if (!ResolveHighlightRect(l_key, m_regions, l_rect))
+    {
         return;
+    }
 
     ImDrawList* l_dl = ImGui::GetForegroundDrawList();
     l_dl->AddRectFilled(l_rect.Min, l_rect.Max, IM_COL32(255, 200, 50, 40));
@@ -199,9 +227,13 @@ void TutorialPanel::Draw()
             if (l_rect.Contains(ImGui::GetMousePos()))
             {
                 if (l_isLast)
+                {
                     m_showPanel = false;
+                }
                 else
+                {
                     m_currentStep++;
+                }
             }
         }
     }
@@ -218,9 +250,13 @@ void TutorialPanel::Draw()
             if (l_winRect.Contains(ImGui::GetMousePos()))
             {
                 if (l_isLast)
+                {
                     m_showPanel = false;
+                }
                 else
+                {
                     m_currentStep++;
+                }
             }
         }
     }
@@ -238,9 +274,13 @@ void TutorialPanel::Draw()
         if (l_conditionMet && !m_waitSatisfiedAtEntry)
         {
             if (l_isLast)
+            {
                 m_showPanel = false;
+            }
             else
+            {
                 m_currentStep++;
+            }
         }
     }
 

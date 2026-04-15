@@ -68,15 +68,35 @@ void SceneEditTab::DrawEditorUI()
     // If the current tutorial step highlights a specific panel, ensure it is
     // visible before Draw() is called so FindWindowByName can locate it.
     const std::string& l_highlightKey = l_tutorial.GetCurrentHighlightKey();
-    if      (l_highlightKey == "Entity List")       m_entityPanel.SetShown(true);
-    else if (l_highlightKey == "Categories")        m_categoryPanel.SetShown(true);
-    else if (l_highlightKey == "Rules")             m_rulesPanel.SetShown(true);
-    else if (l_highlightKey == "Entity Properties") m_propertiesPanel.SetShown(true);
-    else if (l_highlightKey == "Camera")            m_cameraPanel.SetShown(true);
-    else if (l_highlightKey == "Console")           m_consolePanel.SetShown(true);
+    if(l_highlightKey == "Entity List")
+    {
+        m_entityPanel.SetShown(true);
+    }
+    else if (l_highlightKey == "Categories")
+    {
+        m_categoryPanel.SetShown(true);
+    }
+    else if (l_highlightKey == "Rules")
+    {
+        m_rulesPanel.SetShown(true);
+    }
+    else if (l_highlightKey == "Entity Properties")
+    {
+        m_propertiesPanel.SetShown(true);
+    }
+    else if (l_highlightKey == "Camera")
+    {
+        m_cameraPanel.SetShown(true);
+    }
+    else if (l_highlightKey == "Console")
+    {
+        m_consolePanel.SetShown(true);
+    }
 
     if (l_tutLocked)
+    {
         ImGui::BeginDisabled();
+    }
 
     m_entityPanel.DrawAsWindow();
     m_categoryPanel.DrawAsWindow();
@@ -87,7 +107,9 @@ void SceneEditTab::DrawEditorUI()
     m_consolePanel.DrawAsWindow();
 
     if (l_tutLocked)
+    {
         ImGui::EndDisabled();
+    }
 }
 
 void SceneEditTab::DrawContextMenu()
@@ -137,7 +159,6 @@ void SceneEditTab::DrawContextMenu()
             }
         }
 
-
         if(!m_entityPanel.IsShown())
         {
             if(ImGui::Button("Show Entity List", l_buttonSize))
@@ -174,11 +195,11 @@ void SceneEditTab::Draw()
     m_lastFrameTime = l_now;
 
     ImGuiIO& l_io = ImGui::GetIO();
-    const float l_playBtnW  = 64.0f;
-    const float l_stopBtnW  = 64.0f;
+    const float l_playBtnW = 64.0f;
+    const float l_stopBtnW = 64.0f;
     const float l_pauseBtnW = 80.0f;
-    const float l_spacing   = 8.0f;
-    const float l_toolW     = m_isGameRunning
+    const float l_spacing = 8.0f;
+    const float l_toolW = m_isGameRunning
         ? l_stopBtnW + l_spacing + l_pauseBtnW
         : l_playBtnW;
     ImGui::SetNextWindowPos(ImVec2((l_io.DisplaySize.x - l_toolW) * 0.5f, 24.0f));
@@ -194,7 +215,9 @@ void SceneEditTab::Draw()
         if (m_isGameRunning)
         {
             if (ImGui::Button("Stop", ImVec2(l_stopBtnW, 0.0f)))
+            {
                 Stop();
+            }
             ImGui::SameLine(0.0f, l_spacing);
             std::string l_pauseLabel = m_isGamePaused ? "Resume" : "Pause";
             if (ImGui::Button(l_pauseLabel.c_str(), ImVec2(l_pauseBtnW, 0.0f)))
@@ -205,7 +228,9 @@ void SceneEditTab::Draw()
         else
         {
             if (ImGui::Button("Play", ImVec2(l_playBtnW, 0.0f)))
+            {
                 Run();
+            }
         }
     }
     ImGui::End();
@@ -259,6 +284,28 @@ void SceneEditTab::Draw()
         l_scene->Draw();
     }
 
+    // Draw gizmo over selected entity (editor mode only).
+    if (!m_isGameRunning && m_selectedEntityId >= 0)
+    {
+        RE::Core::EntityRegistry& l_reg = l_scene->GetRegistry();
+        Vector2 l_entityPos = l_reg.GetEntityAttributes(m_selectedEntityId)
+                                  .traverse_raw_get<Vector2>("Transform", "Position");
+        Vector2 l_entityScale = l_reg.GetEntityAttributes(m_selectedEntityId)
+                                    .traverse_raw_get<Vector2>("Transform", "Scale");
+        Vector2 l_screenPos = m_camera->WorldToScreenPoint(l_entityPos);
+        Vector2 l_screenEdgeX = m_camera->WorldToScreenPoint(l_entityPos + Vector2(l_entityScale.x, 0));
+        Vector2 l_screenEdgeY = m_camera->WorldToScreenPoint(l_entityPos + Vector2(0, l_entityScale.y));
+        
+        float l_screenH = m_window->GetScreenSize().y;
+        ImVec2 l_screenHE(std::abs(l_screenEdgeX.x - l_screenPos.x),
+                          std::abs(l_screenEdgeY.y - l_screenPos.y));
+        
+        Gizmo::Draw(m_sceneSettings.gizmoMode,
+                     ImVec2(l_screenPos.x, l_screenH - l_screenPos.y),
+                     l_screenHE,
+                     m_activeGizmoAxis);
+    }
+
 	DrawEditorUI();
 }
 
@@ -270,8 +317,10 @@ void SceneEditTab::Run()
 
     // Apply scene gravity to the physics world before Init() runs.
     if (auto l_physics = RE::Physics::Manager::Get().lock())
+    {
         l_physics->SetGravity(Vector2(m_sceneSettings.gravityX, m_sceneSettings.gravityY));
-
+    }
+    
     auto l_scene = m_scene.lock();
     l_scene->Init();
 
@@ -336,18 +385,48 @@ int SceneEditTab::GetSelectedEntity()
 
 Panel* SceneEditTab::GetPanelByName(const std::string& _name)
 {
-    if (m_entityPanel.GetTitle()     == _name) return &m_entityPanel;
-    if (m_categoryPanel.GetTitle()   == _name) return &m_categoryPanel;
-    if (m_rulesPanel.GetTitle()      == _name) return &m_rulesPanel;
-    if (m_cameraPanel.GetTitle()     == _name) return &m_cameraPanel;
-    if (m_propertiesPanel.GetTitle() == _name) return &m_propertiesPanel;
+    if (m_entityPanel.GetTitle() == _name)
+    {
+        return &m_entityPanel;
+    }
+    else if (m_categoryPanel.GetTitle() == _name)
+    {
+        return &m_categoryPanel;
+    }
+    else if (m_rulesPanel.GetTitle() == _name)
+    {
+        return &m_rulesPanel;
+    }
+    else if (m_cameraPanel.GetTitle() == _name)
+    {
+        return &m_cameraPanel;
+    }
+    else if (m_propertiesPanel.GetTitle() == _name)
+    {
+        return &m_propertiesPanel;
+    }
+    else if (m_settingsPanel.GetTitle() == _name)
+    {
+        return &m_settingsPanel;
+    }
+    else if (m_consolePanel.GetTitle() == _name)
+    {
+        return &m_consolePanel;
+    }
+
     return nullptr;
 }
 
 void SceneEditTab::RegisterRule(const std::string& _name, const std::string& _filePath)
 {
     for (const auto& entry : m_ruleRegistry)
-        if (entry.name == _name) return; // already registered
+    {
+        if (entry.name == _name)
+        {
+            // Rule already registered
+            return;
+        }
+    }
 
     m_ruleRegistry.push_back({ _name, _filePath });
 }
@@ -368,10 +447,16 @@ void SceneEditTab::RebuildRegistryFromScene()
 
     for (auto& l_pair : l_rulesTable.pairs())
     {
-        if (l_pair.first.get_type() != sol::type::string) continue;
+        if (l_pair.first.get_type() != sol::type::string)
+        {
+            continue;
+        }
 
         const std::string l_name = l_pair.first.as<std::string>();
-        if (BuiltinRules::IsBuiltin(l_name)) continue;
+        if (BuiltinRules::IsBuiltin(l_name))
+        {
+            continue;
+        }
 
         std::shared_ptr<RE::Core::Rule> l_rulePtr =
             l_rulesTable.raw_get<std::shared_ptr<RE::Core::Rule>>(l_name);
@@ -380,7 +465,10 @@ void SceneEditTab::RebuildRegistryFromScene()
         if (l_rulePtr)
         {
             auto l_file = l_rulePtr->GetOriginFile().lock();
-            if (l_file) l_path = l_file->GetPath();
+            if (l_file) 
+            {
+                l_path = l_file->GetPath();
+            }
         }
 
         m_ruleRegistry.push_back({ l_name, l_path });
@@ -391,7 +479,10 @@ void SceneEditTab::ReapplyRegistryToScene()
 {
     auto& l_contents = m_editor.GetEngineContents();
     auto l_scene = l_contents.core->GetScene().lock();
-    if (!l_scene) return;
+    if (!l_scene)
+    {
+        return;
+    }
 
     sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
 
@@ -400,10 +491,14 @@ void SceneEditTab::ReapplyRegistryToScene()
         // Skip if already present in the scene.
         auto l_existing = l_rulesTable.raw_get<sol::object>(entry.name);
         if (l_existing.valid() && l_existing.get_type() != sol::type::nil)
+        {
             continue;
+        }
 
         if (entry.filePath.empty() || !std::filesystem::exists(entry.filePath))
+        {
             continue;
+        }
 
         auto l_file = l_contents.resources->Load<RE::Asset::LuaFile>(entry.filePath);
         RE::Core::Rule l_rule = l_contents.core->GetLuaContext()->CreateRule(l_file);

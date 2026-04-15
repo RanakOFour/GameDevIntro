@@ -5,6 +5,7 @@
 #include "RanakEngine/Math.h"
 
 #include "imgui/imgui.h"
+#include "imgui/misc/cpp/imgui_stdlib.h"
 
 SceneSettingsPanel::SceneSettingsPanel(Editor& _editor, SceneSettings* _settings)
 : Panel("Scene Settings", _editor)
@@ -48,5 +49,21 @@ void SceneSettingsPanel::Draw()
         m_settings->clearColorA = l_color[3];
         // Clear colour is read from m_settings every frame in Editor::Draw() — no
         // extra call needed.
+    }
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Gizmo / Snap");
+
+    const char* l_gizmoNames[] = { "Translate (W)", "Rotate (E)", "Scale (R)" };
+    int l_gizmoIdx = (int)(m_settings->gizmoMode);
+    if (ImGui::Combo("Gizmo Mode", &l_gizmoIdx, l_gizmoNames, IM_ARRAYSIZE(l_gizmoNames)))
+        m_settings->gizmoMode = (GizmoMode)(l_gizmoIdx);
+
+    ImGui::Checkbox("Snap to Grid (Ctrl+G)", &m_settings->snapEnabled);
+    if (m_settings->snapEnabled)
+    {
+        ImGui::DragFloat("Grid Size", &m_settings->snapGridSize, 0.1f, 0.1f, 100.0f, "%.2f");
+        if (m_settings->snapGridSize < 0.1f)
+            m_settings->snapGridSize = 0.1f;
     }
 }

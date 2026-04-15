@@ -12,6 +12,7 @@
 #include "Editor/SceneSettings.h"
 #include "Editor/SceneSettingsPanel.h"
 #include "Editor/ConsolePanel.h"
+#include "Editor/Gizmo.h"
 
 #include "imgui/imgui.h"
 
@@ -65,8 +66,12 @@ class SceneEditTab
     bool m_showContext = false; ///< Whether the right-click context menu is showing.
 
     bool m_isDraggingEntity = false; ///< True while dragging the selected entity in the viewport.
+    bool m_isDraggingGizmo  = false; ///< True while dragging a gizmo handle.
+    Gizmo::Axis m_activeGizmoAxis = Gizmo::Axis::None; ///< Gizmo axis being dragged.
     Vector2 m_dragStartWorldPos;     ///< World position of the mouse when drag started.
     Vector2 m_dragStartEntityPos;    ///< Entity position when drag started (for undo).
+    Vector2 m_dragStartEntityScale;  ///< Entity scale when drag started (for scale undo).
+    float   m_dragStartEntityRot = 0.0f; ///< Entity rotation when drag started (for rotate undo).
 
     /** @brief Persistent record of a user-loaded rule, independent of the active scene. */
     struct RuleRecord
