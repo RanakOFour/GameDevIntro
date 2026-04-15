@@ -232,16 +232,16 @@ void Editor::DrawMenuBar()
         ImGui::EndMainMenuBar();
     }
 
-    if (ImGuiFileDialog::Instance()->Display("SceneFileDlgKey"))
+    if ((m_showLoadDialog || m_showSaveDialog) && ImGuiFileDialog::Instance()->IsOpened("SceneFileDlgKey"))
     {
-        if (ImGuiFileDialog::Instance()->IsOk())
+        if(ImGuiFileDialog::Instance()->Display("SceneFileDlgKey", ImGuiWindowFlags_NoCollapse, ImVec2(700, 400)))
         {
             std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
             std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
             if (m_showLoadDialog)
             {
                 SceneSerializer::LoadFromFile(l_filePathName, m_engineContents,
-                                              &m_sceneEdit->GetSceneSettings());
+                                            &m_sceneEdit->GetSceneSettings());
 
                 // Re-add built-in rules after scene load (they are excluded from serialisation)
                 BuiltinRules::Load(m_engineContents);
@@ -260,11 +260,11 @@ void Editor::DrawMenuBar()
                 m_currentScenePath = l_filePathName;
                 SaveProjectInfo();
             }
-        }
 
-        ImGuiFileDialog::Instance()->Close();
-        m_showLoadDialog = false;
-        m_showSaveDialog = false;
+            ImGuiFileDialog::Instance()->Close();
+            m_showLoadDialog = false;
+            m_showSaveDialog = false;
+        }
     }
 }
 
@@ -334,10 +334,10 @@ void Editor::SaveProjectInfo()
     json l_projectInfo;
     l_projectInfo["currentScene"] = m_currentScenePath;
 
-    l_projectInfo["settings"]["camera"]["x"]           = s.cameraX;
-    l_projectInfo["settings"]["camera"]["y"]           = s.cameraY;
-    l_projectInfo["settings"]["camera"]["z"]           = s.cameraZ;
-    l_projectInfo["settings"]["camera"]["width"]       = s.cameraWidth;
+    l_projectInfo["settings"]["camera"]["x"] = s.cameraX;
+    l_projectInfo["settings"]["camera"]["y"] = s.cameraY;
+    l_projectInfo["settings"]["camera"]["z"] = s.cameraZ;
+    l_projectInfo["settings"]["camera"]["width"] = s.cameraWidth;
     l_projectInfo["settings"]["camera"]["perspective"] = s.cameraPerspective;
 
     std::ofstream l_file(m_project.GetProjectInfoPath());
@@ -391,17 +391,16 @@ void Editor::LoadProjectInfo()
 
         if (s.contains("camera"))
         {
-            ps.cameraX           = s["camera"].value("x",           ps.cameraX);
-            ps.cameraY           = s["camera"].value("y",           ps.cameraY);
-            ps.cameraZ           = s["camera"].value("z",           ps.cameraZ);
-            ps.cameraWidth       = s["camera"].value("width",       ps.cameraWidth);
+            ps.cameraX = s["camera"].value("x", ps.cameraX);
+            ps.cameraY = s["camera"].value("y", ps.cameraY);
+            ps.cameraZ = s["camera"].value("z", ps.cameraZ);
+            ps.cameraWidth = s["camera"].value("width", ps.cameraWidth);
             ps.cameraPerspective = s["camera"].value("perspective", ps.cameraPerspective);
         }
     }
 
     ApplyProjectSettings();
 
-    // --- Restore last open scene ---
     if (!l_projectInfo.contains("currentScene") || l_projectInfo["currentScene"].is_null())
     {
         return;
