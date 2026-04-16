@@ -71,13 +71,14 @@ private:
     void DrawSettingsDialog();
     /** @brief Applies the current ProjectSettings to the live engine subsystems. */
     void ApplyProjectSettings();
-    /** @brief Writes ProjectInfo.lua at the project root with the current editor state. */
-    void SaveProjectInfo();
     /** @brief Reads ProjectInfo.lua from the project root and restores editor state. */
     void LoadProjectInfo();
 
     Editor(RE::EngineContents engineContents, Project project);
     public:
+    /** @brief Writes ProjectInfo.json at the project root with the current editor state. */
+    void SaveProjectInfo();
+
     ~Editor();
 
     /**

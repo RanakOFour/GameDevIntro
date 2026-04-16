@@ -209,7 +209,7 @@ void RulesPanel::DrawLoadRuleDialog()
     ImGuiFileDialog::Instance()->OpenDialog("RuleFileDlgKey", "Choose File", ".lua", config);
 
 
-    if (ImGuiFileDialog::Instance()->Display("RuleFileDlgKey"))
+    if (ImGuiFileDialog::Instance()->Display("RuleFileDlgKey", ImGuiWindowFlags_None, ImVec2(600, 400)))
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {
@@ -262,6 +262,8 @@ void RulesPanel::CreateNewRule(const std::string _name)
     l_file.close();
 
     RE::Log::Message("Rule created: " + l_path.string());
+
+    m_editor.SaveProjectInfo();
     LoadRuleFromFile(l_path.string());
 }
 
@@ -279,6 +281,8 @@ void RulesPanel::LoadRuleFromFile(const std::string _path)
     m_editor.GetSceneEdit().RegisterRule(l_newRule.GetName(), _path);
 
     m_loadedRules.push_back(l_newRule.GetName());
+
+    m_editor.SaveProjectInfo();
     RE::Log::Message("Rule loaded from: " + _path);
 }
 

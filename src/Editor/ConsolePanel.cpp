@@ -6,10 +6,19 @@
 
 ConsolePanel::ConsolePanel(Editor& _editor)
     : Panel("Console", _editor)
+    , m_alive(std::make_shared<std::atomic<bool>>(true))
 {
     // Register listener with the engine log system.
+    // Capture a weak_ptr to the liveness flag so the callback is a no-op
+    // after this ConsolePanel is destroyed (the Monitor thread outlives it).
+    std::weak_ptr<std::atomic<bool>> l_weakAlive = m_alive;
     RanakEngine::Log::Manager::AddListener(
-        [this](RanakEngine::Log::MessageContent::Severity _sev, const std::string& _msg) {
+        [this, l_weakAlive](RanakEngine::Log::MessageContent::Severity _sev, const std::string& _msg) {
+            auto l_alive = l_weakAlive.lock();
+            if (!l_alive || !*l_alive)
+            {
+                return;
+            }
             std::lock_guard<std::mutex> l_lk(m_entriesMutex);
             m_entries.push_back({_sev, _msg});
         }
@@ -18,6 +27,7 @@ ConsolePanel::ConsolePanel(Editor& _editor)
 
 ConsolePanel::~ConsolePanel()
 {
+    *m_alive = false;
 }
 
 void ConsolePanel::ClearLog()
@@ -74,27 +84,43 @@ void ConsolePanel::Draw()
         {
             // Severity filter
             using Sev = RanakEngine::Log::MessageContent::Severity;
-            if (l_entry.severity == Sev::DEBUG   && !m_showDebug)   continue;
-            if (l_entry.severity == Sev::NORMAL  && !m_showNormal)  continue;
-            if (l_entry.severity == Sev::WARNING && !m_showWarning) continue;
-            if (l_entry.severity == Sev::ERRORLOG && !m_showError)  continue;
+            if (l_entry.severity == Sev::DEBUG && !m_showDebug)
+                continue;
+            if (l_entry.severity == Sev::NORMAL && !m_showNormal)
+                continue;
+            if (l_entry.severity == Sev::WARNING && !m_showWarning)
+                continue;
+            if (l_entry.severity == Sev::ERRORLOG && !m_showError)
+                continue;
 
             // Text filter
             if (!m_filterString.empty())
             {
                 if (l_entry.message.find(m_filterString) == std::string::npos)
+                {
                     continue;
+                }
             }
 
             ImVec4 l_color;
             const char* l_prefix;
             switch (l_entry.severity)
             {
-                case Sev::DEBUG:    l_color = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); l_prefix = "[DBG] "; break;
-                case Sev::NORMAL:   l_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); l_prefix = "[LOG] "; break;
-                case Sev::WARNING:  l_color = ImVec4(1.0f, 0.9f, 0.3f, 1.0f); l_prefix = "[WRN] "; break;
-                case Sev::ERRORLOG: l_color = ImVec4(1.0f, 0.3f, 0.3f, 1.0f); l_prefix = "[ERR] "; break;
-                default:            l_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); l_prefix = ""; break;
+                case Sev::DEBUG:
+                    l_color = ImVec4(0.6f, 0.6f, 0.6f, 1.0f); l_prefix = "[DBG] ";
+                    break;
+                case Sev::NORMAL:
+                    l_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); l_prefix = "[LOG] ";
+                    break;
+                case Sev::WARNING:
+                    l_color = ImVec4(1.0f, 0.9f, 0.3f, 1.0f); l_prefix = "[WRN] ";
+                    break;
+                case Sev::ERRORLOG:
+                    l_color = ImVec4(1.0f, 0.3f, 0.3f, 1.0f); l_prefix = "[ERR] ";
+                    break;
+                default:
+                    l_color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f); l_prefix = "";
+                    break;
             }
 
             ImGui::PushStyleColor(ImGuiCol_Text, l_color);
@@ -103,7 +129,9 @@ void ConsolePanel::Draw()
         }
 
         if (m_autoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY())
+        {
             ImGui::SetScrollHereY(1.0f);
+        }
     }
     ImGui::EndChild();
 }

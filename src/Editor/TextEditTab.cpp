@@ -350,4 +350,7 @@ void TextEditTab::SaveCurrentFile()
     }
 
     RE::Log::Message("Category saved and reloaded: " + m_fileToEdit->GetPath());
+
+    // Save project info to persist any updated category/rule paths
+    m_editor.SaveProjectInfo();
 }

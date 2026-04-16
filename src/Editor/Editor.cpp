@@ -21,6 +21,7 @@ using json = nlohmann::json;
 #include <GL/gl.h>
 #include <fstream>
 #include <filesystem>
+#include <sstream>
 
 Editor::Editor(RE::EngineContents engineContents, Project project)
 : m_state(State::SceneEdit)
@@ -342,6 +343,41 @@ void Editor::SaveProjectInfo()
     l_projectInfo["settings"]["camera"]["width"] = s.cameraWidth;
     l_projectInfo["settings"]["camera"]["perspective"] = s.cameraPerspective;
 
+    // Save user (non-built-in) categories with their source file paths.
+    {
+        auto l_luaContext = m_engineContents.core->GetLuaContext();
+        std::stringstream l_names(l_luaContext->GetCategoryNames());
+        std::string l_seg;
+        json l_cats = json::array();
+        while (std::getline(l_names, l_seg, ';'))
+        {
+            if (l_seg.empty() || BuiltinCategories::IsBuiltin(l_seg))
+                continue;
+            auto l_cat = l_luaContext->GetCategory(l_seg).lock();
+            if (!l_cat) continue;
+            auto l_originFile = l_cat->GetOriginFile().lock();
+            if (!l_originFile) continue;
+            json l_entry;
+            l_entry["name"] = l_seg;
+            l_entry["path"] = l_originFile->GetPath();
+            l_cats.push_back(l_entry);
+        }
+        l_projectInfo["categories"] = l_cats;
+    }
+
+    // Save user rules from the editor rule registry.
+    {
+        json l_rules = json::array();
+        for (const auto& rec : m_sceneEdit->GetRuleRegistry())
+        {
+            json l_entry;
+            l_entry["name"] = rec.name;
+            l_entry["path"] = rec.filePath;
+            l_rules.push_back(l_entry);
+        }
+        l_projectInfo["rules"] = l_rules;
+    }
+
     std::ofstream l_file(m_project.GetProjectInfoPath());
     if (!l_file.is_open())
     {
@@ -385,7 +421,7 @@ void Editor::LoadProjectInfo()
         return;
     }
 
-    // --- Restore project settings (safe: defaults are used for missing keys) ---
+    // Restore project settings
     if (l_projectInfo.contains("settings"))
     {
         const auto& s = l_projectInfo["settings"];
@@ -403,30 +439,87 @@ void Editor::LoadProjectInfo()
 
     ApplyProjectSettings();
 
-    if (!l_projectInfo.contains("currentScene") || l_projectInfo["currentScene"].is_null())
+    // Restore scene if present
+    if (l_projectInfo.contains("currentScene") && !l_projectInfo["currentScene"].is_null())
     {
-        return;
+        std::string l_scenePath = l_projectInfo["currentScene"].get<std::string>();
+        if (!l_scenePath.empty() && std::filesystem::exists(l_scenePath))
+        {
+            SceneSerializer::LoadFromFile(l_scenePath, m_engineContents,
+                                          &m_sceneEdit->GetSceneSettings());
+
+            // Re-add built-in rules after scene load (they are excluded from serialisation)
+            BuiltinRules::Load(m_engineContents);
+            // Rebuild the editor rule registry to match the newly loaded scene.
+            m_sceneEdit->RebuildRegistryFromScene();
+            m_sceneEdit->m_scene = m_engineContents.core->GetScene();
+            m_sceneEdit->m_entityPanel.RefreshEntityList();
+
+            m_currentScenePath = l_scenePath;
+            printf("Editor: Restored scene from ProjectInfo: %s\n", l_scenePath.c_str());
+        }
     }
 
-    std::string l_scenePath = l_projectInfo["currentScene"].get<std::string>();
-
-    if (l_scenePath.empty() || !std::filesystem::exists(l_scenePath))
+    // Restore user categories that aren't already registered
+    if (l_projectInfo.contains("categories") && l_projectInfo["categories"].is_array())
     {
-        return;
+        auto l_luaContext = m_engineContents.core->GetLuaContext();
+        for (const auto& l_entry : l_projectInfo["categories"])
+        {
+            std::string l_path = l_entry.value("path", "");
+            std::string l_name = l_entry.value("name", "");
+            if (l_path.empty() || !std::filesystem::exists(l_path))
+                continue;
+            // Skip if already loaded (e.g. referenced by the scene)
+            if (l_luaContext->GetCategory(l_name).lock())
+                continue;
+            auto l_catFile = m_engineContents.resources->Load<RE::Asset::LuaFile>(l_path);
+            l_luaContext->CreateCategory(l_catFile);
+            printf("Editor: Restored category '%s' from %s\n", l_name.c_str(), l_path.c_str());
+        }
     }
 
-    SceneSerializer::LoadFromFile(l_scenePath, m_engineContents,
-                                  &m_sceneEdit->GetSceneSettings());
+    // Restore user rules that aren't already in the scene / registry
+    if (l_projectInfo.contains("rules") && l_projectInfo["rules"].is_array())
+    {
+        auto l_scene      = m_engineContents.core->GetScene().lock();
+        auto l_luaContext = m_engineContents.core->GetLuaContext();
+        sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
 
-    // Re-add built-in rules after scene load (they are excluded from serialisation)
-    BuiltinRules::Load(m_engineContents);
-    // Rebuild the editor rule registry to match the newly loaded scene.
-    m_sceneEdit->RebuildRegistryFromScene();
-    m_sceneEdit->m_scene = m_engineContents.core->GetScene();
-    m_sceneEdit->m_entityPanel.RefreshEntityList();
+        for (const auto& l_entry : l_projectInfo["rules"])
+        {
+            std::string l_path = l_entry.value("path", "");
+            std::string l_name = l_entry.value("name", "");
+            if (l_path.empty() || !std::filesystem::exists(l_path))
+                continue;
 
-    m_currentScenePath = l_scenePath;
-    printf("Editor: Restored scene from ProjectInfo: %s\n", l_scenePath.c_str());
+            // Check if already in the registry (added by RebuildRegistryFromScene)
+            bool l_inRegistry = false;
+            for (const auto& rec : m_sceneEdit->GetRuleRegistry())
+            {
+                if (rec.name == l_name) { l_inRegistry = true; break; }
+            }
+
+            auto l_existing = l_rulesTable.raw_get<sol::object>(l_name);
+            bool l_inScene  = l_existing.valid() && l_existing.get_type() != sol::type::nil;
+
+            if (l_inScene)
+            {
+                // Present in scene but may be missing from registry if the scene was
+                // freshly loaded before the registry was rebuilt — register it.
+                if (!l_inRegistry)
+                    m_sceneEdit->RegisterRule(l_name, l_path);
+                continue;
+            }
+
+            // Not in scene: load the file and add the rule.
+            auto l_ruleFile = m_engineContents.resources->Load<RE::Asset::LuaFile>(l_path);
+            RE::Core::Rule l_rule = l_luaContext->CreateRule(l_ruleFile);
+            l_scene->AddRule(l_rule);
+            m_sceneEdit->RegisterRule(l_name, l_path);
+            printf("Editor: Restored rule '%s' from %s\n", l_name.c_str(), l_path.c_str());
+        }
+    }
 }
 
 void Editor::Draw()

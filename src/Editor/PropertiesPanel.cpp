@@ -178,7 +178,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             if (l_value.is<Vector2>())
             {
                 Vector2 l_val = l_value.as<Vector2>();
-                if (ImGui::DragFloat2(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
+                if (ImGui::InputFloat2(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
                 }
@@ -186,7 +186,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             else if (l_value.is<Vector3>())
             {
                 Vector3 l_val = l_value.as<Vector3>();
-                if (ImGui::DragFloat3(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
+                if (ImGui::InputFloat3(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
                 }
@@ -194,7 +194,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             else if (l_value.is<Vector4>())
             {
                 Vector4 l_val = l_value.as<Vector4>();
-                if (ImGui::DragFloat4(l_property.c_str(), &l_val.x, 0.1f, -std::numeric_limits<float>().infinity(), std::numeric_limits<float>().infinity(), "%.3f"))
+                if (ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
                 }

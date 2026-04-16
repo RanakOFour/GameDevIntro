@@ -195,7 +195,7 @@ void CategoryPanel::DrawLoadCategoryDialog()
     ImGuiFileDialog::Instance()->OpenDialog("CategoryFileDlgKey", "Choose File", ".lua", config);
 
 
-    if (ImGuiFileDialog::Instance()->Display("CategoryFileDlgKey"))
+    if (ImGuiFileDialog::Instance()->Display("CategoryFileDlgKey", ImGuiWindowFlags_None, ImVec2(600, 400)))
     {
         if (ImGuiFileDialog::Instance()->IsOk())
         {
@@ -243,6 +243,8 @@ void CategoryPanel::CreateNewCategory(const std::string _name)
     l_file.close();
 
     RE::Log::Message("Category created: " + l_path.string());
+
+    m_editor.SaveProjectInfo();
     LoadCategoryFromFile(l_path.string());
 }
 
@@ -255,6 +257,8 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
     auto l_categoryWPtr = l_luaContext->CreateCategory(l_categoryFile);
     
     m_loadedCategories.push_back(l_categoryWPtr.lock()->GetName());
+
+    m_editor.SaveProjectInfo();
     RE::Log::Message("Category loaded from: " + _path);
 }
 

@@ -7,6 +7,8 @@
 #include <vector>
 #include <string>
 #include <mutex>
+#include <atomic>
+#include <memory>
 
 /**
  * @class ConsolePanel
@@ -27,6 +29,10 @@ class ConsolePanel : public Panel
 
     std::vector<LogEntry> m_entries; ///< All received log entries.
     std::mutex m_entriesMutex;       ///< Protects m_entries (listener fires from log thread).
+
+    /// Shared liveness flag. Set to false in destructor so the log listener
+    /// becomes a no-op after this panel is destroyed, preventing use-after-free.
+    std::shared_ptr<std::atomic<bool>> m_alive;
 
     bool m_autoScroll = true;       ///< Scroll to bottom on new messages.
     bool m_showDebug   = true;
