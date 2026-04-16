@@ -3,6 +3,7 @@
 #include "Editor/StateRegistry.h"
 #include "Editor/SceneSettingsPanel.h"
 #include "Editor/BuiltinRules.h"
+#include "Editor/AssetBrowserPanel.h"
 
 #include <filesystem>
 
@@ -23,6 +24,7 @@ SceneEditTab::SceneEditTab(Editor& _editor)
 , m_sceneSettings()
 , m_settingsPanel(_editor, &m_sceneSettings)
 , m_consolePanel(_editor)
+, m_assetBrowserPanel(_editor)
 {
 	auto l_engineContents = _editor.GetEngineContents();
 
@@ -39,11 +41,21 @@ SceneEditTab::SceneEditTab(Editor& _editor)
     l_reg.RegisterCondition("game_running",    [l_self]{ return  l_self->m_isGameRunning; });
     l_reg.RegisterCondition("game_stopped",    [l_self]{ return !l_self->m_isGameRunning; });
     l_reg.RegisterCondition("game_paused",     [l_self]{ return  l_self->m_isGamePaused; });
-    l_reg.RegisterCondition("entity_selected", [l_self]{ return  l_self->m_selectedEntityId != -1; });
+    l_reg.RegisterCondition("entity_selected", [l_self]{ return !l_self->m_selectedEntities.empty(); });
     l_reg.RegisterAction("game_run",    [l_self]{ l_self->Run(); });
     l_reg.RegisterAction("game_stop",   [l_self]{ l_self->Stop(); });
     l_reg.RegisterAction("game_pause",  [l_self]{ l_self->Pause(); });
     l_reg.RegisterAction("game_resume", [l_self]{ l_self->Resume(); });
+
+    m_assetBrowserPanel.SetRootPath(_editor.GetProject().GetRootPath());
+
+    // Load editor icons for asset browser (user provides these textures)
+    std::string l_folderIcon = "./resources/Textures/folder_icon.png";
+    std::string l_fileIcon   = "./resources/Textures/file_icon.png";
+    if (std::filesystem::exists(l_folderIcon) && std::filesystem::exists(l_fileIcon))
+    {
+        m_assetBrowserPanel.LoadIcons(l_folderIcon, l_fileIcon);
+    }
 }
 
 SceneEditTab::~SceneEditTab()
@@ -107,6 +119,7 @@ void SceneEditTab::DrawEditorUI()
     m_propertiesPanel.DrawAsWindow();
     m_settingsPanel.DrawAsWindow();
     m_consolePanel.DrawAsWindow();
+    m_assetBrowserPanel.DrawAsWindow();
 
     if (l_tutLocked)
     {
@@ -142,14 +155,16 @@ void SceneEditTab::DrawContextMenu()
             m_propertiesPanel.SetPosition(ImVec2(l_mousePos.x + l_panelSize.x * 0.25f, l_mousePos.y - l_panelSize.y * 0.25f));
         }
 
-        if(m_selectedEntityId > -1)
+        if(!m_selectedEntities.empty())
         {
-            if(ImGui::Button("Delete Entity", l_buttonSize))
+            std::string l_deleteLabel = m_selectedEntities.size() > 1
+                ? "Delete " + std::to_string(m_selectedEntities.size()) + " Entities"
+                : "Delete Entity";
+            if(ImGui::Button(l_deleteLabel.c_str(), l_buttonSize))
             {
-                l_scene->RemoveEntity(m_selectedEntityId);
-                m_selectedEntityId = -1;
-
-                m_propertiesPanel.SetShown(false);
+                for (int l_id : m_selectedEntities)
+                    l_scene->RemoveEntity(l_id);
+                ClearSelection();
             }
         }
 
@@ -182,6 +197,14 @@ void SceneEditTab::DrawContextMenu()
             if(ImGui::Button("Show Rules List", l_buttonSize))
             {
                 m_rulesPanel.SetShown(true);
+            }
+        }
+
+        if(!m_assetBrowserPanel.IsShown())
+        {
+            if(ImGui::Button("Show Asset Browser", l_buttonSize))
+            {
+                m_assetBrowserPanel.SetShown(true);
             }
         }
 
@@ -290,6 +313,28 @@ void SceneEditTab::Draw()
     if (!m_isGameRunning && m_selectedEntityId >= 0)
     {
         RE::Core::EntityRegistry& l_reg = l_scene->GetRegistry();
+
+        // Draw selection highlight on all selected entities
+        for (int l_id : m_selectedEntities)
+        {
+            if (l_id == m_selectedEntityId) continue; // primary gets gizmo instead
+            Vector2 l_pos = l_reg.GetEntityAttributes(l_id)
+                                .traverse_raw_get<Vector2>("Transform", "Position");
+            Vector2 l_scale = l_reg.GetEntityAttributes(l_id)
+                                  .traverse_raw_get<Vector2>("Transform", "Scale");
+            Vector2 l_sp = m_camera->WorldToScreenPoint(l_pos);
+            Vector2 l_seX = m_camera->WorldToScreenPoint(l_pos + Vector2(l_scale.x, 0));
+            Vector2 l_seY = m_camera->WorldToScreenPoint(l_pos + Vector2(0, l_scale.y));
+            float l_sh = m_window->GetScreenSize().y;
+            ImVec2 l_center(l_sp.x, l_sh - l_sp.y);
+            ImVec2 l_half(std::abs(l_seX.x - l_sp.x), std::abs(l_seY.y - l_sp.y));
+            ImGui::GetForegroundDrawList()->AddRect(
+                ImVec2(l_center.x - l_half.x, l_center.y - l_half.y),
+                ImVec2(l_center.x + l_half.x, l_center.y + l_half.y),
+                IM_COL32(0, 200, 255, 180), 0.0f, 0, 2.0f);
+        }
+
+        // Draw gizmo on primary selected entity
         Vector2 l_entityPos = l_reg.GetEntityAttributes(m_selectedEntityId)
                                   .traverse_raw_get<Vector2>("Transform", "Position");
         Vector2 l_entityScale = l_reg.GetEntityAttributes(m_selectedEntityId)
@@ -306,6 +351,60 @@ void SceneEditTab::Draw()
                      ImVec2(l_screenPos.x, l_screenH - l_screenPos.y),
                      l_screenHE,
                      m_activeGizmoAxis);
+    }
+
+    // Draw drag-select rectangle
+    if (m_isDraggingRect)
+    {
+        ImVec2 l_min(std::min(m_dragRectStart.x, m_dragRectEnd.x),
+                     std::min(m_dragRectStart.y, m_dragRectEnd.y));
+        ImVec2 l_max(std::max(m_dragRectStart.x, m_dragRectEnd.x),
+                     std::max(m_dragRectStart.y, m_dragRectEnd.y));
+        ImGui::GetForegroundDrawList()->AddRect(l_min, l_max, IM_COL32(0, 200, 255, 200), 0.0f, 0, 1.5f);
+        ImGui::GetForegroundDrawList()->AddRectFilled(l_min, l_max, IM_COL32(0, 200, 255, 30));
+    }
+
+    // Viewport drop target: accept texture/model drops onto the scene
+    if (!m_isGameRunning && m_selectedEntityId >= 0)
+    {
+        ImGuiIO& l_dropIO = ImGui::GetIO();
+        ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(l_dropIO.DisplaySize);
+        ImGui::SetNextWindowBgAlpha(0.0f);
+        if (ImGui::Begin("##ViewportDropTarget", nullptr,
+            ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus |
+            ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoInputs |
+            ImGuiWindowFlags_NoDocking))
+        {
+            if (ImGui::BeginDragDropTarget())
+            {
+                auto l_applyPath = [&](const char* _payloadType, const char* _catName, const char* _fieldName)
+                {
+                    const ImGuiPayload* l_payload = ImGui::AcceptDragDropPayload(_payloadType);
+                    if (l_payload)
+                    {
+                        std::string l_path((const char*)l_payload->Data, l_payload->DataSize - 1);
+                        auto l_scn = m_scene.lock();
+                        if (l_scn)
+                        {
+                            sol::table l_attrs = l_scn->GetRegistry().GetEntityAttributes(m_selectedEntityId);
+                            sol::object l_catObj = l_attrs.raw_get<sol::object>(_catName);
+                            if (l_catObj.valid() && l_catObj.get_type() == sol::type::table)
+                            {
+                                sol::table l_cat = l_catObj.as<sol::table>();
+                                l_cat.raw_set(_fieldName, l_path);
+                            }
+                        }
+                    }
+                };
+
+                l_applyPath(AssetBrowserPanel::k_DragDropTexture, "Texture", "TexturePath");
+                l_applyPath(AssetBrowserPanel::k_DragDropModel, "Model", "ModelPath");
+                ImGui::EndDragDropTarget();
+            }
+        }
+        ImGui::End();
     }
 
 	DrawEditorUI();
@@ -370,14 +469,74 @@ void SceneEditTab::Stop()
     m_scene = l_engineContents.core->GetScene();
     m_entityPanel.RefreshEntityList();
     m_selectedEntityId = -1;
+    m_selectedEntities.clear();
     m_propertiesPanel.Reset();
     m_propertiesPanel.SetShown(false);
 }
 
 void SceneEditTab::SelectEntity(int _id)
 {
+    m_selectedEntities.clear();
+    if (_id >= 0)
+        m_selectedEntities.push_back(_id);
     m_selectedEntityId = _id;
     m_propertiesPanel.SetShown(_id >= 0);
+}
+
+void SceneEditTab::ToggleEntitySelection(int _id)
+{
+    auto l_it = std::find(m_selectedEntities.begin(), m_selectedEntities.end(), _id);
+    if (l_it != m_selectedEntities.end())
+    {
+        m_selectedEntities.erase(l_it);
+    }
+    else
+    {
+        m_selectedEntities.push_back(_id);
+    }
+
+    // Update primary selection
+    if (m_selectedEntities.empty())
+    {
+        m_selectedEntityId = -1;
+        m_propertiesPanel.SetShown(false);
+    }
+    else
+    {
+        m_selectedEntityId = m_selectedEntities.back();
+        m_propertiesPanel.SetShown(true);
+    }
+}
+
+void SceneEditTab::SelectAllEntities()
+{
+    auto l_scene = m_scene.lock();
+    if (!l_scene) return;
+
+    m_selectedEntities = l_scene->GetRegistry().GetAllRegisteredIds();
+    if (!m_selectedEntities.empty())
+    {
+        m_selectedEntityId = m_selectedEntities.front();
+        m_propertiesPanel.SetShown(true);
+    }
+    else
+    {
+        m_selectedEntityId = -1;
+        m_propertiesPanel.SetShown(false);
+    }
+}
+
+void SceneEditTab::ClearSelection()
+{
+    m_selectedEntities.clear();
+    m_selectedEntityId = -1;
+    m_propertiesPanel.SetShown(false);
+}
+
+bool SceneEditTab::IsEntitySelected(int _id) const
+{
+    return std::find(m_selectedEntities.begin(), m_selectedEntities.end(), _id)
+           != m_selectedEntities.end();
 }
 
 int SceneEditTab::GetSelectedEntity()
@@ -414,6 +573,10 @@ Panel* SceneEditTab::GetPanelByName(const std::string& _name)
     else if (m_consolePanel.GetTitle() == _name)
     {
         return &m_consolePanel;
+    }
+    else if (m_assetBrowserPanel.GetTitle() == _name)
+    {
+        return &m_assetBrowserPanel;
     }
 
     return nullptr;
@@ -506,4 +669,47 @@ void SceneEditTab::ReapplyRegistryToScene()
         RE::Core::Rule l_rule = l_contents.core->GetLuaContext()->CreateRule(l_file);
         l_scene->AddRule(l_rule);
     }
+}
+
+static const std::vector<int> s_emptyChildren;
+
+void SceneEditTab::SetEntityParent(int _childId, int _parentId)
+{
+    // Remove from previous parent's children list
+    auto l_oldParentIt = m_entityParent.find(_childId);
+    if (l_oldParentIt != m_entityParent.end())
+    {
+        int l_oldParent = l_oldParentIt->second;
+        auto& l_siblings = m_entityChildren[l_oldParent];
+        l_siblings.erase(std::remove(l_siblings.begin(), l_siblings.end(), _childId), l_siblings.end());
+        if (l_siblings.empty())
+            m_entityChildren.erase(l_oldParent);
+    }
+
+    if (_parentId >= 0)
+    {
+        m_entityParent[_childId] = _parentId;
+        m_entityChildren[_parentId].push_back(_childId);
+    }
+    else
+    {
+        m_entityParent.erase(_childId);
+    }
+}
+
+int SceneEditTab::GetEntityParent(int _entityId) const
+{
+    auto l_it = m_entityParent.find(_entityId);
+    return (l_it != m_entityParent.end()) ? l_it->second : -1;
+}
+
+const std::vector<int>& SceneEditTab::GetEntityChildren(int _entityId) const
+{
+    auto l_it = m_entityChildren.find(_entityId);
+    return (l_it != m_entityChildren.end()) ? l_it->second : s_emptyChildren;
+}
+
+bool SceneEditTab::IsRootEntity(int _entityId) const
+{
+    return m_entityParent.find(_entityId) == m_entityParent.end();
 }

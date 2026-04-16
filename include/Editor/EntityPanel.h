@@ -7,8 +7,10 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <string>
 
 class Editor;
+class SceneEditTab;
 
 /**
  * @class EntityPanel
@@ -22,6 +24,7 @@ class EntityPanel : public Panel
 {
     private:
     std::vector<int> m_cachedEntities; ///< Entity IDs cached from the registry each frame.
+    std::string m_searchFilter; ///< Text filter for narrowing the entity list.
 
     // Optional so empty constructor works
     // Reference wrapper because optional does not like type& reference
@@ -29,6 +32,13 @@ class EntityPanel : public Panel
 
     /** @brief Renders the entity list window. */
     void Draw() override;
+    
+    /**
+     * @brief Recursively draws a single entity as a tree node with its children.
+     * @param _sceneEdit The SceneEditTab for hierarchy queries.
+     * @param _entityId  The entity to render.
+     */
+    void DrawEntityTreeNode(SceneEditTab* _sceneEdit, int _entityId);
 
     public:
     /**

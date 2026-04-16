@@ -34,7 +34,10 @@ function EditorRender:Update(_entityData)
 end
 
 function EditorRender:Draw(_entityData)
-    Core.Camera:Draw(_entityData)
+
+    if(_entityData.Texture ~= nil or _entityData.model ~= nil) then
+        Core.Camera:Draw(_entityData)
+    end
 
     if self.fields.currentInput and not self.fields.lastFrameInput then
         self.fields.drawOutline = not self.fields.drawOutline

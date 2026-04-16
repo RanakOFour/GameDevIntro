@@ -59,6 +59,7 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
     RE::Log::Message("Editor initialized with UI panels");
 
     LoadProjectInfo();
+    LoadSavedLayouts();
 }
 
 Editor::~Editor()
@@ -84,6 +85,7 @@ void Editor::InitImGui()
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     
     io.ConfigDragClickToInputText = 0.0f;
 
@@ -205,6 +207,41 @@ void Editor::DrawMenuBar()
             if (ImGui::MenuItem("Console"))
             {
                 m_sceneEdit->m_consolePanel.SetShown(!m_sceneEdit->m_consolePanel.IsShown());
+            }
+
+            if (ImGui::MenuItem("Asset Browser"))
+            {
+                m_sceneEdit->m_assetBrowserPanel.SetShown(!m_sceneEdit->m_assetBrowserPanel.IsShown());
+            }
+
+            ImGui::Separator();
+
+            if (ImGui::BeginMenu("Layout"))
+            {
+                if (ImGui::MenuItem("Save Layout 1"))
+                    SaveLayout(0);
+                if (ImGui::MenuItem("Save Layout 2"))
+                    SaveLayout(1);
+                if (ImGui::MenuItem("Save Layout 3"))
+                    SaveLayout(2);
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Load Layout 1", nullptr, false, !m_savedLayouts[0].empty()))
+                    LoadLayout(0);
+                if (ImGui::MenuItem("Load Layout 2", nullptr, false, !m_savedLayouts[1].empty()))
+                    LoadLayout(1);
+                if (ImGui::MenuItem("Load Layout 3", nullptr, false, !m_savedLayouts[2].empty()))
+                    LoadLayout(2);
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("Reset Layout"))
+                {
+                    ImGui::LoadIniSettingsFromDisk("imgui.ini");
+                }
+
+                ImGui::EndMenu();
             }
 
             ImGui::EndMenu();
@@ -378,6 +415,28 @@ void Editor::SaveProjectInfo()
         l_projectInfo["rules"] = l_rules;
     }
 
+    // Save parent-child hierarchy.
+    {
+        json l_hierarchy = json::array();
+        auto l_scene = m_engineContents.core->GetScene().lock();
+        if (l_scene)
+        {
+            std::vector<int> l_allIds = l_scene->GetRegistry().GetAllRegisteredIds();
+            for (int l_id : l_allIds)
+            {
+                int l_parent = m_sceneEdit->GetEntityParent(l_id);
+                if (l_parent >= 0)
+                {
+                    json l_entry;
+                    l_entry["child"]  = l_id;
+                    l_entry["parent"] = l_parent;
+                    l_hierarchy.push_back(l_entry);
+                }
+            }
+        }
+        l_projectInfo["hierarchy"] = l_hierarchy;
+    }
+
     std::ofstream l_file(m_project.GetProjectInfoPath());
     if (!l_file.is_open())
     {
@@ -520,6 +579,20 @@ void Editor::LoadProjectInfo()
             printf("Editor: Restored rule '%s' from %s\n", l_name.c_str(), l_path.c_str());
         }
     }
+
+    // Restore parent-child hierarchy.
+    if (l_projectInfo.contains("hierarchy") && l_projectInfo["hierarchy"].is_array())
+    {
+        for (auto& l_entry : l_projectInfo["hierarchy"])
+        {
+            if (l_entry.contains("child") && l_entry.contains("parent"))
+            {
+                int l_child  = l_entry["child"].get<int>();
+                int l_parent = l_entry["parent"].get<int>();
+                m_sceneEdit->SetEntityParent(l_child, l_parent);
+            }
+        }
+    }
 }
 
 void Editor::Draw()
@@ -534,6 +607,10 @@ void Editor::Draw()
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
+
+    // Full-viewport dockspace (passthrough so scene renders behind)
+    ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
+                                 ImGuiDockNodeFlags_PassthruCentralNode);
 
     // Clear tutorial highlight regions registered last frame
     m_tutorialPanel.ClearRegions();
@@ -575,6 +652,9 @@ void Editor::Draw()
         if (l_tutWin)
             ImGui::BringWindowToDisplayFront(l_tutWin);
     }
+
+    // Status bar at the bottom of the viewport
+    DrawStatusBar();
 
     // Rendering
     ImGui::PopFont();
@@ -652,7 +732,7 @@ void Editor::HandleInput()
                 ImVec2 l_screenHE(std::abs(l_screenEdgeX.x - l_entityScreenPos.x),
                                   std::abs(l_screenEdgeY.y - l_entityScreenPos.y));
                 
-                                  ImVec2 l_entityScreenIm(l_entityScreenPos.x, l_screenH - l_entityScreenPos.y);
+                ImVec2 l_entityScreenIm(l_entityScreenPos.x, l_screenH - l_entityScreenPos.y);
 
                 ImVec2 l_mouseScreenIm(l_mouseInfo.position.x, l_screenH - l_mouseInfo.position.y);
 
@@ -673,6 +753,20 @@ void Editor::HandleInput()
                     m_sceneEdit->m_dragStartEntityRot = l_scene->GetRegistry()
                         .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
                         .traverse_raw_get<float>("Transform", "Rotation");
+
+                    // Snapshot all selected entities for multi-entity undo
+                    m_sceneEdit->m_dragStartTransforms.clear();
+                    for (int l_id : m_sceneEdit->m_selectedEntities)
+                    {
+                        sol::table l_tf = l_scene->GetRegistry()
+                            .GetEntityAttributes(l_id)
+                            .raw_get<sol::table>("Transform");
+                        m_sceneEdit->m_dragStartTransforms[l_id] = {
+                            l_tf.raw_get<Vector2>("Position"),
+                            l_tf.raw_get<Vector2>("Scale"),
+                            l_tf.raw_get<float>("Rotation")
+                        };
+                    }
                 }
             }
 
@@ -686,30 +780,79 @@ void Editor::HandleInput()
                 RE::Core::RaycastHit l_hitInfo;
                 int l_hitEntity = l_scene->Raycast(l_ray, l_hitInfo);
 
+                bool l_shiftHeld = ImGui::GetIO().KeyShift;
+
                 if (l_hitEntity > -1)
                 {
-                    m_sceneEdit->SelectEntity(l_hitEntity);
-                    ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
+                    if (l_shiftHeld)
+                    {
+                        // Shift+click: toggle entity in multi-selection
+                        m_sceneEdit->ToggleEntitySelection(l_hitEntity);
+                    }
+                    else
+                    {
+                        // Normal click: select only this entity
+                        m_sceneEdit->SelectEntity(l_hitEntity);
+                        ImVec2 l_panelSize = m_sceneEdit->m_propertiesPanel.GetSize();
 
-                    RE::Core::EntityRegistry& l_registry = l_scene->GetRegistry();
+                        RE::Core::EntityRegistry& l_registry = l_scene->GetRegistry();
 
-                    Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
+                        Vector2 l_entityWorldPos = l_registry.GetEntityAttributes(l_hitEntity).traverse_raw_get<Vector2>("Transform", "Position");
 
-                    Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
+                        Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
 
-                    m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                        m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                    }
+
+                    // Start entity drag for all selected entities
+                    if (m_sceneEdit->IsEntitySelected(l_hitEntity))
+                    {
+                        m_sceneEdit->m_isDraggingEntity = true;
+                        m_sceneEdit->m_dragStartWorldPos = Vector2(l_mouseWorldPos.x, l_mouseWorldPos.y);
+                        m_sceneEdit->m_dragStartEntityPos = l_scene->GetRegistry()
+                            .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
+                            .traverse_raw_get<Vector2>("Transform", "Position");
+
+                        // Snapshot all selected entities for multi-entity undo
+                        m_sceneEdit->m_dragStartTransforms.clear();
+                        for (int l_id : m_sceneEdit->m_selectedEntities)
+                        {
+                            sol::table l_tf = l_scene->GetRegistry()
+                                .GetEntityAttributes(l_id)
+                                .raw_get<sol::table>("Transform");
+                            m_sceneEdit->m_dragStartTransforms[l_id] = {
+                                l_tf.raw_get<Vector2>("Position"),
+                                l_tf.raw_get<Vector2>("Scale"),
+                                l_tf.raw_get<float>("Rotation")
+                            };
+                        }
+                    }
                 }
                 else
                 {
-                    m_sceneEdit->SelectEntity(-1);
-                    m_sceneEdit->m_propertiesPanel.SetShown(false);
+                    if (!l_shiftHeld)
+                    {
+                        m_sceneEdit->ClearSelection();
+                    }
+                    // Start drag-select rectangle
+                    float l_screenH = m_engineContents.io->GetWindow().lock()->GetScreenSize().y;
+                    m_sceneEdit->m_isDraggingRect = true;
+                    m_sceneEdit->m_dragRectStart = Vector2(l_mouseInfo.position.x, l_screenH - l_mouseInfo.position.y);
+                    m_sceneEdit->m_dragRectEnd = m_sceneEdit->m_dragRectStart;
                 }
 
                 RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
             }
         }
 
-        // --- LMB held: drag entity / gizmo ---
+        // --- LMB held: drag entity / gizmo / selection rectangle ---
+        if (l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingRect)
+        {
+            // Update drag-select rectangle end point
+            float l_screenH = m_engineContents.io->GetWindow().lock()->GetScreenSize().y;
+            m_sceneEdit->m_dragRectEnd = Vector2(l_mouseInfo.position.x, l_screenH - l_mouseInfo.position.y);
+        }
+
         if (l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity && m_sceneEdit->m_selectedEntityId >= 0)
         {
             Vector3 l_currentWorld = m_sceneEdit->m_camera->ScreenToWorldPoint(l_mouseInfo.position);
@@ -719,72 +862,82 @@ void Editor::HandleInput()
             );
 
             auto l_scene = m_engineContents.core->GetScene().lock();
-            sol::table l_transform = l_scene->GetRegistry()
-                .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
-                .raw_get<sol::table>("Transform");
-
             SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
 
             if (m_sceneEdit->m_isDraggingGizmo)
             {
                 Gizmo::Axis l_axis = m_sceneEdit->m_activeGizmoAxis;
 
-                if (l_axis == Gizmo::Axis::Rotate)
+                // Apply gizmo transform to all selected entities
+                for (int l_id : m_sceneEdit->m_selectedEntities)
                 {
-                    // Rotation: angle from entity centre to mouse
-                    Vector2 l_entityPos = m_sceneEdit->m_dragStartEntityPos;
+                    sol::table l_transform = l_scene->GetRegistry()
+                        .GetEntityAttributes(l_id)
+                        .raw_get<sol::table>("Transform");
+                    auto l_startIt = m_sceneEdit->m_dragStartTransforms.find(l_id);
+                    if (l_startIt == m_sceneEdit->m_dragStartTransforms.end()) continue;
+                    auto& l_start = l_startIt->second;
 
-                    float l_angle = std::atan2(
-                        l_currentWorld.y - l_entityPos.y,
-                        l_currentWorld.x - l_entityPos.x);
-                    
-                    float l_startAngle = std::atan2(
-                        m_sceneEdit->m_dragStartWorldPos.y - l_entityPos.y,
-                        m_sceneEdit->m_dragStartWorldPos.x - l_entityPos.x);
-                    
-                    float l_deltaAngle = l_angle - l_startAngle;
-                    
-                    // Wrap delta to [-PI, PI]
-                    l_deltaAngle = std::atan2(std::sin(l_deltaAngle), std::cos(l_deltaAngle));
-                    
-                    // Convert to degrees and add to start rotation
-                    float l_deltaDeg = l_deltaAngle * (180.0f / RE::Math::PI());
-                    float l_newRot = m_sceneEdit->m_dragStartEntityRot + l_deltaDeg;
-                    
-                    // Wrap to (-180, 180]
-                    if(l_newRot > 180.0f) l_newRot -= 360.0f;
-                    else if(l_newRot <= -180.0f) l_newRot += 360.0f;
+                    if (l_axis == Gizmo::Axis::Rotate)
+                    {
+                        Vector2 l_entityPos = m_sceneEdit->m_dragStartEntityPos;
 
-                    l_transform.raw_set("Rotation", l_newRot);
-                }
-                else if (l_axis == Gizmo::Axis::ScaleX || l_axis == Gizmo::Axis::ScaleY || l_axis == Gizmo::Axis::ScaleXY)
-                {
-                    // Scale: delta mapped to scale change
-                    Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
-                    Vector2 l_newScale = m_sceneEdit->m_dragStartEntityScale + l_constrained;
-                    
-                    // Clamp to prevent negative/zero scale
-                    if (l_newScale.x < 0.01f) l_newScale.x = 0.01f;
-                    if (l_newScale.y < 0.01f) l_newScale.y = 0.01f;
-                    l_transform.raw_set("Scale", l_newScale);
-                }
-                else
-                {
-                    // Translate with axis constraint
-                    Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
-                    Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_constrained;
-                    if (l_ss.snapEnabled)
-                        l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
-                    l_transform.raw_set("Position", l_newPos);
+                        float l_angle = std::atan2(
+                            l_currentWorld.y - l_entityPos.y,
+                            l_currentWorld.x - l_entityPos.x);
+                        
+                        float l_startAngle = std::atan2(
+                            m_sceneEdit->m_dragStartWorldPos.y - l_entityPos.y,
+                            m_sceneEdit->m_dragStartWorldPos.x - l_entityPos.x);
+                        
+                        float l_deltaAngle = l_angle - l_startAngle;
+                        l_deltaAngle = std::atan2(std::sin(l_deltaAngle), std::cos(l_deltaAngle));
+                        
+                        float l_deltaDeg = l_deltaAngle * (180.0f / RE::Math::PI());
+                        float l_newRot = l_start.rotation + l_deltaDeg;
+                        
+                        if(l_newRot > 180.0f) l_newRot -= 360.0f;
+                        else if(l_newRot <= -180.0f) l_newRot += 360.0f;
+
+                        l_transform.raw_set("Rotation", l_newRot);
+                    }
+                    else if (l_axis == Gizmo::Axis::ScaleX || l_axis == Gizmo::Axis::ScaleY || l_axis == Gizmo::Axis::ScaleXY)
+                    {
+                        Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
+                        Vector2 l_newScale = l_start.scale + l_constrained;
+                        
+                        if (l_newScale.x < 0.01f) l_newScale.x = 0.01f;
+                        if (l_newScale.y < 0.01f) l_newScale.y = 0.01f;
+                        l_transform.raw_set("Scale", l_newScale);
+                    }
+                    else
+                    {
+                        Vector2 l_constrained = Gizmo::ConstrainDelta(l_axis, l_delta);
+                        Vector2 l_newPos = l_start.position + l_constrained;
+                        if (l_ss.snapEnabled)
+                            l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
+                        l_transform.raw_set("Position", l_newPos);
+                    }
                 }
             }
             else
             {
-                // Free drag (no gizmo)
-                Vector2 l_newPos = m_sceneEdit->m_dragStartEntityPos + l_delta;
-                if (l_ss.snapEnabled)
-                    l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
-                l_transform.raw_set("Position", l_newPos);
+                // Free drag — move all selected entities
+                for (int l_id : m_sceneEdit->m_selectedEntities)
+                {
+                    auto l_startIt = m_sceneEdit->m_dragStartTransforms.find(l_id);
+                    if (l_startIt == m_sceneEdit->m_dragStartTransforms.end()) continue;
+                    auto& l_start = l_startIt->second;
+
+                    sol::table l_transform = l_scene->GetRegistry()
+                        .GetEntityAttributes(l_id)
+                        .raw_get<sol::table>("Transform");
+
+                    Vector2 l_newPos = l_start.position + l_delta;
+                    if (l_ss.snapEnabled)
+                        l_newPos = Gizmo::Snap(l_newPos, l_ss.snapGridSize);
+                    l_transform.raw_set("Position", l_newPos);
+                }
             }
         }
 
@@ -795,55 +948,128 @@ void Editor::HandleInput()
             m_sceneEdit->m_isDraggingGizmo  = false;
             m_sceneEdit->m_activeGizmoAxis  = Gizmo::Axis::None;
 
-            if (m_sceneEdit->m_selectedEntityId >= 0)
+            if (!m_sceneEdit->m_selectedEntities.empty())
             {
+                // Build per-entity old & new transform maps for undo
+                using DragStart = SceneEditTab::EntityDragStart;
                 auto l_scene = m_engineContents.core->GetScene().lock();
-                sol::table l_transform = l_scene->GetRegistry()
-                    .GetEntityAttributes(m_sceneEdit->m_selectedEntityId)
-                    .raw_get<sol::table>("Transform");
 
-                Vector2 l_finalPos   = l_transform.raw_get<Vector2>("Position");
-                Vector2 l_finalScale = l_transform.raw_get<Vector2>("Scale");
-                float   l_finalRot   = l_transform.raw_get<float>("Rotation");
+                struct TransformPair { DragStart oldT; DragStart newT; };
+                auto l_changes = std::make_shared<std::unordered_map<int, TransformPair>>();
 
-                Vector2 l_oldPos   = m_sceneEdit->m_dragStartEntityPos;
-                Vector2 l_oldScale = m_sceneEdit->m_dragStartEntityScale;
-                float   l_oldRot   = m_sceneEdit->m_dragStartEntityRot;
-
-                // Only push undo if something changed
-                bool l_posChanged   = (l_finalPos.x != l_oldPos.x || l_finalPos.y != l_oldPos.y);
-                bool l_scaleChanged = (l_finalScale.x != l_oldScale.x || l_finalScale.y != l_oldScale.y);
-                bool l_rotChanged   = (l_finalRot != l_oldRot);
-
-                if (l_posChanged || l_scaleChanged || l_rotChanged)
+                for (int l_id : m_sceneEdit->m_selectedEntities)
                 {
-                    int l_entityId = m_sceneEdit->m_selectedEntityId;
+                    auto l_startIt = m_sceneEdit->m_dragStartTransforms.find(l_id);
+                    if (l_startIt == m_sceneEdit->m_dragStartTransforms.end()) continue;
+
+                    sol::table l_tf = l_scene->GetRegistry()
+                        .GetEntityAttributes(l_id)
+                        .raw_get<sol::table>("Transform");
+
+                    DragStart l_new{
+                        l_tf.raw_get<Vector2>("Position"),
+                        l_tf.raw_get<Vector2>("Scale"),
+                        l_tf.raw_get<float>("Rotation")
+                    };
+
+                    bool l_changed = (l_new.position.x != l_startIt->second.position.x ||
+                                      l_new.position.y != l_startIt->second.position.y ||
+                                      l_new.scale.x    != l_startIt->second.scale.x ||
+                                      l_new.scale.y    != l_startIt->second.scale.y ||
+                                      l_new.rotation   != l_startIt->second.rotation);
+
+                    if (l_changed)
+                        (*l_changes)[l_id] = { l_startIt->second, l_new };
+                }
+
+                if (!l_changes->empty())
+                {
                     Editor* l_self = this;
 
                     m_undoManager.PushCommand(
                         std::make_unique<LambdaCommand>(
                             "Transform Entity",
-                            [l_self, l_entityId, l_finalPos, l_finalScale, l_finalRot]() {
+                            [l_self, l_changes]() {
                                 auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
-                                sol::table l_tf = l_sc->GetRegistry()
-                                    .GetEntityAttributes(l_entityId)
-                                    .raw_get<sol::table>("Transform");
-                                l_tf.raw_set("Position", l_finalPos);
-                                l_tf.raw_set("Scale", l_finalScale);
-                                l_tf.raw_set("Rotation", l_finalRot);
+                                for (auto& [l_id, l_pair] : *l_changes)
+                                {
+                                    sol::table l_tf = l_sc->GetRegistry()
+                                        .GetEntityAttributes(l_id)
+                                        .raw_get<sol::table>("Transform");
+                                    l_tf.raw_set("Position", l_pair.newT.position);
+                                    l_tf.raw_set("Scale",    l_pair.newT.scale);
+                                    l_tf.raw_set("Rotation", l_pair.newT.rotation);
+                                }
                             },
-                            [l_self, l_entityId, l_oldPos, l_oldScale, l_oldRot]() {
+                            [l_self, l_changes]() {
                                 auto l_sc = l_self->GetEngineContents().core->GetScene().lock();
-                                sol::table l_tf = l_sc->GetRegistry()
-                                    .GetEntityAttributes(l_entityId)
-                                    .raw_get<sol::table>("Transform");
-                                l_tf.raw_set("Position", l_oldPos);
-                                l_tf.raw_set("Scale", l_oldScale);
-                                l_tf.raw_set("Rotation", l_oldRot);
+                                for (auto& [l_id, l_pair] : *l_changes)
+                                {
+                                    sol::table l_tf = l_sc->GetRegistry()
+                                        .GetEntityAttributes(l_id)
+                                        .raw_get<sol::table>("Transform");
+                                    l_tf.raw_set("Position", l_pair.oldT.position);
+                                    l_tf.raw_set("Scale",    l_pair.oldT.scale);
+                                    l_tf.raw_set("Rotation", l_pair.oldT.rotation);
+                                }
                             }
                         )
                     );
                 }
+            }
+        }
+
+        // --- LMB released: finish drag-select rectangle ---
+        if (!l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingRect)
+        {
+            m_sceneEdit->m_isDraggingRect = false;
+
+            // Convert rectangle corners to world space and select all entities inside
+            float l_screenH = m_engineContents.io->GetWindow().lock()->GetScreenSize().y;
+            // m_dragRectStart/End are in ImGui screen space (Y=0 at top); convert back to SDL (Y=0 at bottom)
+            Vector2 l_sdlStart(m_sceneEdit->m_dragRectStart.x, l_screenH - m_sceneEdit->m_dragRectStart.y);
+            Vector2 l_sdlEnd(m_sceneEdit->m_dragRectEnd.x, l_screenH - m_sceneEdit->m_dragRectEnd.y);
+
+            Vector3 l_worldMin3 = m_sceneEdit->m_camera->ScreenToWorldPoint(
+                Vector2(std::min(l_sdlStart.x, l_sdlEnd.x), std::min(l_sdlStart.y, l_sdlEnd.y)));
+            Vector3 l_worldMax3 = m_sceneEdit->m_camera->ScreenToWorldPoint(
+                Vector2(std::max(l_sdlStart.x, l_sdlEnd.x), std::max(l_sdlStart.y, l_sdlEnd.y)));
+
+            float l_minX = std::min(l_worldMin3.x, l_worldMax3.x);
+            float l_maxX = std::max(l_worldMin3.x, l_worldMax3.x);
+            float l_minY = std::min(l_worldMin3.y, l_worldMax3.y);
+            float l_maxY = std::max(l_worldMin3.y, l_worldMax3.y);
+
+            auto l_scene = m_engineContents.core->GetScene().lock();
+            RE::Core::EntityRegistry& l_reg = l_scene->GetRegistry();
+            std::vector<int> l_allIds = l_reg.GetAllRegisteredIds();
+
+            bool l_shiftHeld = ImGui::GetIO().KeyShift;
+            if (!l_shiftHeld)
+                m_sceneEdit->m_selectedEntities.clear();
+
+            for (int l_id : l_allIds)
+            {
+                Vector2 l_pos = l_reg.GetEntityAttributes(l_id)
+                    .traverse_raw_get<Vector2>("Transform", "Position");
+                if (l_pos.x >= l_minX && l_pos.x <= l_maxX &&
+                    l_pos.y >= l_minY && l_pos.y <= l_maxY)
+                {
+                    if (!m_sceneEdit->IsEntitySelected(l_id))
+                        m_sceneEdit->m_selectedEntities.push_back(l_id);
+                }
+            }
+
+            // Update primary selection
+            if (!m_sceneEdit->m_selectedEntities.empty())
+            {
+                m_sceneEdit->m_selectedEntityId = m_sceneEdit->m_selectedEntities.back();
+                m_sceneEdit->m_propertiesPanel.SetShown(true);
+            }
+            else
+            {
+                m_sceneEdit->m_selectedEntityId = -1;
+                m_sceneEdit->m_propertiesPanel.SetShown(false);
             }
         }
 
@@ -865,7 +1091,7 @@ void Editor::HandleInput()
         if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('g'))
             l_ss.snapEnabled = !l_ss.snapEnabled;
 
-        if (m_engineContents.io->GetKeyDownThisFrame('c'))
+        if (!ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('c'))
         {
             m_sceneEdit->m_categoryPanel.SetShown(!m_sceneEdit->m_categoryPanel.IsShown());
         }
@@ -895,6 +1121,38 @@ void Editor::HandleInput()
             m_undoManager.Undo();
         }
 
+        // Select all entities (Ctrl+A)
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('a'))
+        {
+            m_sceneEdit->SelectAllEntities();
+        }
+
+        // Copy/Paste/Duplicate shortcuts
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('c'))
+        {
+            CopySelectedEntities();
+        }
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('v'))
+        {
+            PasteEntities();
+        }
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('d'))
+        {
+            DuplicateEntities();
+        }
+
+        // Delete selected entities (Delete key)
+        if (m_engineContents.io->GetKeyDownThisFrame(127) && !m_sceneEdit->m_selectedEntities.empty())
+        {
+            // Delete all selected entities
+            std::vector<int> l_toDelete = m_sceneEdit->m_selectedEntities;
+            for (int l_id : l_toDelete)
+            {
+                m_sceneEdit->m_entityPanel.RemoveEntity(l_id);
+            }
+            m_sceneEdit->ClearSelection();
+        }
+
         // Tab input to switch between scene and text edit
         if(m_engineContents.io->GetKeyDownThisFrame('\t'))
         {
@@ -915,4 +1173,236 @@ void Editor::HandleInput()
 SceneEditTab& Editor::GetSceneEdit()
 {
     return *m_sceneEdit;
+}
+
+void Editor::CopySelectedEntities()
+{
+    m_clipboard.clear();
+    auto l_scene = m_engineContents.core->GetScene().lock();
+    if (!l_scene) return;
+
+    for (int l_id : m_sceneEdit->GetSelectedEntities())
+    {
+        EntitySnapshot l_snap;
+        l_snap.name = l_scene->GetRegistry().GetEntityName(l_id);
+        sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_id);
+        for (auto& l_catPair : l_attrs)
+        {
+            std::string l_catName = l_catPair.first.as<std::string>();
+            sol::table l_fields = l_catPair.second.as<sol::table>();
+            std::vector<std::pair<std::string, sol::object>> l_fieldSnap;
+            for (auto& l_fp : l_fields)
+                l_fieldSnap.emplace_back(l_fp.first.as<std::string>(), l_fp.second);
+            l_snap.categories.emplace_back(l_catName, std::move(l_fieldSnap));
+        }
+        m_clipboard.push_back(std::move(l_snap));
+    }
+
+    RE::Log::Message("Copied " + std::to_string(m_clipboard.size()) + " entities");
+}
+
+void Editor::PasteEntities()
+{
+    if (m_clipboard.empty()) return;
+
+    auto l_scene = m_engineContents.core->GetScene().lock();
+    if (!l_scene) return;
+
+    m_sceneEdit->ClearSelection();
+    std::vector<int> l_newIds;
+
+    for (auto& l_snap : m_clipboard)
+    {
+        int l_newId = l_scene->AddEntity();
+
+        for (auto& [l_catName, l_fields] : l_snap.categories)
+        {
+            if (l_catName != "Transform")
+                l_scene->AddToCategory(l_newId, l_catName);
+        }
+
+        sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_newId);
+        for (auto& [l_catName, l_fields] : l_snap.categories)
+        {
+            sol::object l_catObj = l_attrs.raw_get<sol::object>(l_catName.c_str());
+            if (!l_catObj.valid() || l_catObj.get_type() != sol::type::table)
+                continue;
+            sol::table l_catAttrs = l_catObj.as<sol::table>();
+            for (auto& [l_fname, l_fval] : l_fields)
+                l_catAttrs[l_fname] = l_fval;
+        }
+
+        // Offset position so paste isn't exactly on top of original
+        sol::table l_transform = l_attrs.raw_get<sol::table>("Transform");
+        Vector2 l_pos = l_transform.raw_get<Vector2>("Position");
+        l_transform.raw_set("Position", Vector2(l_pos.x + 1.0f, l_pos.y + 1.0f));
+
+        if (!l_snap.name.empty())
+            l_scene->RenameEntity(l_newId, l_snap.name + " (Copy)");
+
+        l_newIds.push_back(l_newId);
+    }
+
+    m_sceneEdit->GetEntityPanel().RefreshEntityList();
+    for (int l_id : l_newIds)
+        m_sceneEdit->m_selectedEntities.push_back(l_id);
+    if (!l_newIds.empty())
+    {
+        m_sceneEdit->m_selectedEntityId = l_newIds.front();
+        m_sceneEdit->m_propertiesPanel.SetShown(true);
+    }
+
+    RE::Log::Message("Pasted " + std::to_string(l_newIds.size()) + " entities");
+}
+
+void Editor::DuplicateEntities()
+{
+    // Duplicate = copy then paste in one step
+    CopySelectedEntities();
+    PasteEntities();
+}
+
+void Editor::DrawStatusBar()
+{
+    ImGuiIO& l_io = ImGui::GetIO();
+    float l_barHeight = ImGui::GetFrameHeight();
+
+    ImGui::SetNextWindowPos(ImVec2(0, l_io.DisplaySize.y - l_barHeight));
+    ImGui::SetNextWindowSize(ImVec2(l_io.DisplaySize.x, l_barHeight));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.12f, 0.12f, 0.14f, 1.0f));
+
+    if (ImGui::Begin("##StatusBar", nullptr,
+        ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoDocking))
+    {
+        // Play/Edit indicator
+        if (m_sceneEdit->IsGameRunning())
+        {
+            ImGui::TextColored(ImVec4(0.2f, 0.9f, 0.2f, 1.0f), m_sceneEdit->IsGamePaused() ? "PAUSED" : "PLAYING");
+        }
+        else
+        {
+            ImGui::TextColored(ImVec4(0.5f, 0.7f, 1.0f, 1.0f), "EDIT");
+        }
+
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(0.0f, 20.0f);
+
+        auto l_scene = m_engineContents.core->GetScene().lock();
+
+        int l_entityCount = l_scene->GetRegistry().GetEntityCount();
+        ImGui::Text("Entities: %d", l_entityCount);
+
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(0.0f, 20.0f);
+
+        // Selected entity info
+        const auto& l_sel = m_sceneEdit->GetSelectedEntities();
+        if (l_sel.empty())
+        {
+            ImGui::TextDisabled("No selection");
+        }
+        else if (l_sel.size() == 1)
+        {
+            std::string l_name = l_scene ? l_scene->GetRegistry().GetEntityName(l_sel[0]) : "";
+            ImGui::Text("Selected: %s (#%d)", l_name.c_str(), l_sel[0]);
+        }
+        else
+        {
+            ImGui::Text("Selected: %d entities", (int)l_sel.size());
+        }
+
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(0.0f, 20.0f);
+
+        // Tool mode
+        const SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
+        const char* l_modeName = "Translate";
+        if (l_ss.gizmoMode == GizmoMode::Rotate)  l_modeName = "Rotate";
+        if (l_ss.gizmoMode == GizmoMode::Scale)   l_modeName = "Scale";
+        ImGui::Text("Tool: %s", l_modeName);
+
+        ImGui::SameLine(0.0f, 20.0f);
+        ImGui::SeparatorEx(ImGuiSeparatorFlags_Vertical);
+        ImGui::SameLine(0.0f, 20.0f);
+
+        // Snap state
+        if (l_ss.snapEnabled)
+            ImGui::Text("Snap: %.1f", l_ss.snapGridSize);
+        else
+            ImGui::TextDisabled("Snap: Off");
+
+        // FPS on the right side
+        ImGui::SameLine(l_io.DisplaySize.x - 80.0f);
+        ImGui::Text("%.0f FPS", l_io.Framerate);
+    }
+    ImGui::End();
+
+    ImGui::PopStyleColor();
+    ImGui::PopStyleVar(3);
+}
+
+void Editor::SaveLayout(int _slot)
+{
+    if (_slot < 0 || _slot >= 3) return;
+
+    const char* l_data = ImGui::SaveIniSettingsToMemory();
+    m_savedLayouts[_slot] = std::string(l_data);
+
+    // Persist to file
+    std::string l_path = m_project.GetRootPath() + "/layout_" + std::to_string(_slot) + ".ini";
+    std::ofstream l_file(l_path);
+    if (l_file.is_open())
+    {
+        l_file << m_savedLayouts[_slot];
+        l_file.close();
+    }
+
+    RE::Log::Message("Saved layout to slot " + std::to_string(_slot + 1));
+}
+
+void Editor::LoadLayout(int _slot)
+{
+    if (_slot < 0 || _slot >= 3) return;
+
+    if (m_savedLayouts[_slot].empty())
+    {
+        // Try loading from file
+        std::string l_path = m_project.GetRootPath() + "/layout_" + std::to_string(_slot) + ".ini";
+        std::ifstream l_file(l_path);
+        if (l_file.is_open())
+        {
+            std::stringstream l_buf;
+            l_buf << l_file.rdbuf();
+            m_savedLayouts[_slot] = l_buf.str();
+        }
+    }
+
+    if (!m_savedLayouts[_slot].empty())
+    {
+        ImGui::LoadIniSettingsFromMemory(m_savedLayouts[_slot].c_str(), m_savedLayouts[_slot].size());
+        RE::Log::Message("Loaded layout from slot " + std::to_string(_slot + 1));
+    }
+}
+
+void Editor::LoadSavedLayouts()
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        std::string l_path = m_project.GetRootPath() + "/layout_" + std::to_string(i) + ".ini";
+        std::ifstream l_file(l_path);
+        if (l_file.is_open())
+        {
+            std::stringstream l_buf;
+            l_buf << l_file.rdbuf();
+            m_savedLayouts[i] = l_buf.str();
+        }
+    }
 }

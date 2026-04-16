@@ -1,6 +1,7 @@
 #include "Editor/PropertiesPanel.h"
 #include "Editor/Editor.h"
 #include "Editor/SceneEditTab.h"
+#include "Editor/AssetBrowserPanel.h"
 
 #include "RanakEngine/RanakEngine.h"
 
@@ -171,6 +172,22 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             {
                 _attributes[l_property] = m_stringValueMap[l_key];
             }
+
+            // Accept drag-drop of textures and models onto Path properties
+            if (l_isPath && ImGui::BeginDragDropTarget())
+            {
+                const ImGuiPayload* l_payload = ImGui::AcceptDragDropPayload(AssetBrowserPanel::k_DragDropTexture);
+                if (!l_payload)
+                    l_payload = ImGui::AcceptDragDropPayload(AssetBrowserPanel::k_DragDropModel);
+
+                if (l_payload)
+                {
+                    std::string l_droppedPath((const char*)l_payload->Data, l_payload->DataSize - 1);
+                    m_stringValueMap[l_key] = l_droppedPath;
+                    _attributes[l_property] = l_droppedPath;
+                }
+                ImGui::EndDragDropTarget();
+            }
         }
         break;
         case sol::type::userdata:
@@ -211,6 +228,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 void PropertiesPanel::Draw()
 {
     int l_selectedEntity = m_editor.GetSceneEdit().GetSelectedEntity();
+    const auto& l_selectedEntities = m_editor.GetSceneEdit().GetSelectedEntities();
 
     auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
     if (l_scene)
@@ -226,7 +244,18 @@ void PropertiesPanel::Draw()
     }
 
     ImGui::SetWindowSize(m_size);
-    if (l_selectedEntity > -1)
+    if (l_selectedEntities.size() > 1)
+    {
+        ImGui::Text("%d entities selected", (int)l_selectedEntities.size());
+        ImGui::Separator();
+
+        // Show properties of the primary selected entity
+        if (l_selectedEntity > -1)
+        {
+            DrawEntityProperties(l_selectedEntity);
+        }
+    }
+    else if (l_selectedEntity > -1)
     {
         ImGui::Text("Entity ID: %d", l_selectedEntity);
         ImGui::Separator();

@@ -58,6 +58,11 @@ void EntityPanel::Draw()
 
     if (ImGui::BeginChild("EntityListPanel", ImVec2(0, 0), true))
     {
+        // Search filter
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputTextWithHint("##EntitySearch", "Search entities...", &m_searchFilter);
+        ImGui::Separator();
+
         // Button row: Add Entity and conditionally Remove Selected
         float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) / 2.0f;
 
@@ -66,13 +71,18 @@ void EntityPanel::Draw()
             AddEntity();
         }
 
-        // Only show Remove button when an entity is selected
-        if (l_selectedEntity >= 0)
+        // Only show Remove button when entities are selected
+        if (!l_sceneEdit->GetSelectedEntities().empty())
         {
             ImGui::SameLine();
             if (ImGui::Button("- Remove Entity", ImVec2(buttonWidth, 0)))
             {
-                RemoveEntity(l_selectedEntity);
+                std::vector<int> l_toRemove = l_sceneEdit->GetSelectedEntities();
+                for (int l_id : l_toRemove)
+                {
+                    RemoveEntity(l_id);
+                }
+                l_sceneEdit->ClearSelection();
             }
         }
 
@@ -81,16 +91,42 @@ void EntityPanel::Draw()
         // Entity list
         if (ImGui::BeginChild("EntityList", ImVec2(0, 0), true))
         {
-            for (int l_entityId : m_cachedEntities)
-            {
-                bool selected = (l_selectedEntity == l_entityId);
-                std::string l_entityName = m_registry.value()
-                                                        .get()
-                                                        .GetEntityName(l_entityId);
+            // Lowercase search filter for case-insensitive matching
+            std::string l_filterLower = m_searchFilter;
+            std::transform(l_filterLower.begin(), l_filterLower.end(), l_filterLower.begin(), ::tolower);
 
-                if (ImGui::Selectable(l_entityName.c_str(), selected))
+            if (!l_filterLower.empty())
+            {
+                // Flat filtered list
+                for (int l_entityId : m_cachedEntities)
                 {
-                    l_sceneEdit->SelectEntity(l_entityId);
+                    std::string l_entityName = m_registry.value()
+                                                            .get()
+                                                            .GetEntityName(l_entityId);
+
+                    std::string l_nameLower = l_entityName;
+                    std::transform(l_nameLower.begin(), l_nameLower.end(), l_nameLower.begin(), ::tolower);
+                    if (l_nameLower.find(l_filterLower) == std::string::npos)
+                        continue;
+
+                    bool selected = l_sceneEdit->IsEntitySelected(l_entityId);
+                    if (ImGui::Selectable(l_entityName.c_str(), selected))
+                    {
+                        if (ImGui::GetIO().KeyShift)
+                            l_sceneEdit->ToggleEntitySelection(l_entityId);
+                        else
+                            l_sceneEdit->SelectEntity(l_entityId);
+                    }
+                }
+            }
+            else
+            {
+                // Hierarchical tree view: only draw root entities, recurse into children
+                for (int l_entityId : m_cachedEntities)
+                {
+                    if (!l_sceneEdit->IsRootEntity(l_entityId))
+                        continue;
+                    DrawEntityTreeNode(l_sceneEdit, l_entityId);
                 }
             }
             ImGui::EndChild();
@@ -98,6 +134,78 @@ void EntityPanel::Draw()
 
         ImGui::EndChild();
     }
+}
+
+void EntityPanel::DrawEntityTreeNode(SceneEditTab* _sceneEdit, int _entityId)
+{
+    std::string l_entityName = m_registry.value().get().GetEntityName(_entityId);
+    const auto& l_children = _sceneEdit->GetEntityChildren(_entityId);
+    bool l_hasChildren = !l_children.empty();
+    bool l_selected = _sceneEdit->IsEntitySelected(_entityId);
+
+    ImGuiTreeNodeFlags l_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+    if (l_selected)
+        l_flags |= ImGuiTreeNodeFlags_Selected;
+    if (!l_hasChildren)
+        l_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+    ImGui::PushID(_entityId);
+    bool l_open = ImGui::TreeNodeEx(l_entityName.c_str(), l_flags);
+
+    // Click handling
+    if (ImGui::IsItemClicked(0) && !ImGui::IsItemToggledOpen())
+    {
+        if (ImGui::GetIO().KeyShift)
+            _sceneEdit->ToggleEntitySelection(_entityId);
+        else
+            _sceneEdit->SelectEntity(_entityId);
+    }
+
+    // Drag source for reparenting
+    if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+    {
+        ImGui::SetDragDropPayload("ENTITY_REPARENT", &_entityId, sizeof(int));
+        ImGui::Text("Move %s", l_entityName.c_str());
+        ImGui::EndDragDropSource();
+    }
+
+    // Drop target for reparenting
+    if (ImGui::BeginDragDropTarget())
+    {
+        if (const ImGuiPayload* l_payload = ImGui::AcceptDragDropPayload("ENTITY_REPARENT"))
+        {
+            int l_draggedId = *(const int*)l_payload->Data;
+            if (l_draggedId != _entityId)
+            {
+                _sceneEdit->SetEntityParent(l_draggedId, _entityId);
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    // Context menu for unparenting
+    if (ImGui::BeginPopupContextItem())
+    {
+        if (_sceneEdit->GetEntityParent(_entityId) >= 0)
+        {
+            if (ImGui::MenuItem("Unparent"))
+            {
+                _sceneEdit->SetEntityParent(_entityId, -1);
+            }
+        }
+        ImGui::EndPopup();
+    }
+
+    if (l_open && l_hasChildren)
+    {
+        for (int l_childId : l_children)
+        {
+            DrawEntityTreeNode(_sceneEdit, l_childId);
+        }
+        ImGui::TreePop();
+    }
+
+    ImGui::PopID();
 }
 
 // Shared helpers for snapshotting and restoring entity state across undo/redo.
@@ -203,6 +311,17 @@ void EntityPanel::AddEntity()
 void EntityPanel::RemoveEntity(int _id)
 {
     auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+    auto& l_sceneEdit = m_editor.GetSceneEdit();
+
+    // Remove children first (cascade delete)
+    std::vector<int> l_children = l_sceneEdit.GetEntityChildren(_id);
+    for (int l_childId : l_children)
+    {
+        RemoveEntity(l_childId);
+    }
+
+    // Clean up hierarchy
+    l_sceneEdit.SetEntityParent(_id, -1);
 
     // Snapshot BEFORE removal so undo can restore the entity fully.
     auto l_snapshot     = std::make_shared<std::vector<CatEntry>>();

@@ -59,6 +59,16 @@ private:
     TutorialPanel m_tutorialPanel; ///< In-editor guided tutorial overlay (universal across tabs).
     UndoManager m_undoManager;      ///< Undo/redo command stack.
 
+    /** @brief Snapshot of a single entity's categories and field values for clipboard. */
+    struct EntitySnapshot
+    {
+        std::string name;
+        std::vector<std::pair<std::string, std::vector<std::pair<std::string, sol::object>>>> categories;
+    };
+    std::vector<EntitySnapshot> m_clipboard; ///< Copy buffer for copy/paste.
+
+    std::string m_savedLayouts[3]; ///< In-memory layout presets.
+
     /** @brief Initialises Dear ImGui (context, style, SDL3/OpenGL backends). */
     void InitImGui();
     /** @brief Tears down Dear ImGui and releases its resources. */
@@ -69,10 +79,14 @@ private:
     void DrawMenuBar();
     /** @brief Renders the Project Settings modal dialog (opened from the menu bar). */
     void DrawSettingsDialog();
+    /** @brief Renders the status bar at the bottom of the viewport. */
+    void DrawStatusBar();
     /** @brief Applies the current ProjectSettings to the live engine subsystems. */
     void ApplyProjectSettings();
     /** @brief Reads ProjectInfo.lua from the project root and restores editor state. */
     void LoadProjectInfo();
+    /** @brief Loads saved layout .ini files from the project directory. */
+    void LoadSavedLayouts();
 
     Editor(RE::EngineContents engineContents, Project project);
     public:
@@ -113,6 +127,18 @@ private:
     StateRegistry& GetStateRegistry() { return m_stateRegistry; }
     /** @brief Returns a reference to the undo/redo manager. */
     UndoManager& GetUndoManager() { return m_undoManager; }
+
+    /** @brief Copies the currently selected entities to the clipboard. */
+    void CopySelectedEntities();
+    /** @brief Pastes entities from the clipboard with an offset. */
+    void PasteEntities();
+    /** @brief Duplicates the currently selected entities in-place. */
+    void DuplicateEntities();
+
+    /** @brief Saves the current ImGui docking layout to the given slot (0-2). */
+    void SaveLayout(int _slot);
+    /** @brief Loads an ImGui docking layout from the given slot (0-2). */
+    void LoadLayout(int _slot);
 };
 
 #endif

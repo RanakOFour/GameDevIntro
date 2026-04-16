@@ -12,6 +12,7 @@
 #include "Editor/SceneSettings.h"
 #include "Editor/SceneSettingsPanel.h"
 #include "Editor/ConsolePanel.h"
+#include "Editor/AssetBrowserPanel.h"
 #include "Editor/Gizmo.h"
 
 #include "imgui/imgui.h"
@@ -21,6 +22,8 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <unordered_map>
 
 /**
  * @class SceneEditTab
@@ -53,10 +56,12 @@ class SceneEditTab
     PropertiesPanel   m_propertiesPanel;  ///< Selected-entity field editor.
     SceneSettingsPanel m_settingsPanel;   ///< Per-scene physics and render settings.
     ConsolePanel      m_consolePanel;     ///< Log message console.
+    AssetBrowserPanel m_assetBrowserPanel; ///< Project file browser.
 
     SceneSettings m_sceneSettings; ///< Live physics/render settings for this scene.
 
-    int  m_selectedEntityId = -1; ///< ID of the currently selected entity, or -1 for none.
+    int  m_selectedEntityId = -1; ///< ID of the primary selected entity, or -1 for none.
+    std::vector<int> m_selectedEntities; ///< All currently selected entity IDs (multi-select).
 
     bool m_isGameRunning = false; ///< True while the scene simulation is playing.
     bool m_isGamePaused  = false; ///< True while the simulation is paused (running but frozen).
@@ -64,6 +69,10 @@ class SceneEditTab
     std::string m_savedSceneState; ///< Serialized scene snapshot taken when Play is pressed.
 
     bool m_showContext = false; ///< Whether the right-click context menu is showing.
+
+    bool m_isDraggingRect     = false; ///< True while drawing a drag-select rectangle.
+    Vector2 m_dragRectStart;             ///< Screen-space start of the drag-select rectangle.
+    Vector2 m_dragRectEnd;               ///< Screen-space end of the drag-select rectangle.
 
     bool m_isDraggingEntity = false; ///< True while dragging the selected entity in the viewport.
     bool m_isDraggingGizmo  = false; ///< True while dragging a gizmo handle.
@@ -74,6 +83,19 @@ class SceneEditTab
     Vector2 m_dragStartEntityPos;    ///< Entity position when drag started (for undo).
     Vector2 m_dragStartEntityScale;  ///< Entity scale when drag started (for scale undo).
     float   m_dragStartEntityRot = 0.0f; ///< Entity rotation when drag started (for rotate undo).
+
+    /** @brief Per-entity transform snapshot at drag start, for multi-entity undo. */
+    struct EntityDragStart
+    {
+        Vector2 position;
+        Vector2 scale;
+        float   rotation;
+    };
+    std::unordered_map<int, EntityDragStart> m_dragStartTransforms; ///< Per-entity drag start transforms.
+
+    // --- Parent-child hierarchy (editor-level, not in the engine) ---
+    std::unordered_map<int, int> m_entityParent;              ///< Child ID -> Parent ID.
+    std::unordered_map<int, std::vector<int>> m_entityChildren; ///< Parent ID -> Children IDs.
 
     /** @brief Persistent record of a user-loaded rule, independent of the active scene. */
     struct RuleRecord
@@ -115,12 +137,32 @@ class SceneEditTab
 
     /**
      * @brief Selects the given entity and shows the PropertiesPanel.
-     * @param _id Entity ID to select.
+     * @param _id Entity ID to select (-1 to clear selection).
      */
     void SelectEntity(int _id);
+    /**
+     * @brief Toggles the given entity in the multi-selection.
+     * @param _id Entity ID to toggle.
+     */
+    void ToggleEntitySelection(int _id);
+    /**
+     * @brief Selects all entities in the current scene.
+     */
+    void SelectAllEntities();
+    /**
+     * @brief Clears the entire multi-selection.
+     */
+    void ClearSelection();
+    /**
+     * @brief Returns true if the given entity is in the selection.
+     * @param _id Entity ID to check.
+     */
+    bool IsEntitySelected(int _id) const;
     
-    /** @brief Returns the ID of the currently selected entity, or -1. */
+    /** @brief Returns the ID of the primary selected entity, or -1. */
     int GetSelectedEntity();
+    /** @brief Returns all selected entity IDs. */
+    const std::vector<int>& GetSelectedEntities() const { return m_selectedEntities; }
     /** @brief Returns true while the scene simulation is playing. */
     bool IsGameRunning() const { return m_isGameRunning; }
     /** @brief Returns true while the simulation is paused. */
@@ -137,6 +179,27 @@ class SceneEditTab
     EntityPanel& GetEntityPanel() { return m_entityPanel; }
     /** @brief Returns reference to properties panel. */
     PropertiesPanel& GetPropertiesPanel() { return m_propertiesPanel; }
+
+    // --- Parent-child hierarchy ---
+
+    /**
+     * @brief Sets the parent of an entity. Pass -1 to unparent.
+     * @param _childId  The entity to reparent.
+     * @param _parentId The new parent entity ID, or -1 to make it a root.
+     */
+    void SetEntityParent(int _childId, int _parentId);
+    /**
+     * @brief Returns the parent of the given entity, or -1 if root.
+     */
+    int GetEntityParent(int _entityId) const;
+    /**
+     * @brief Returns the children of the given entity.
+     */
+    const std::vector<int>& GetEntityChildren(int _entityId) const;
+    /**
+     * @brief Returns true if the entity has no parent (is a root entity).
+     */
+    bool IsRootEntity(int _entityId) const;
 
     /**
      * @brief Adds a user-loaded rule to the persistent registry.
