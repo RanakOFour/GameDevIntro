@@ -100,7 +100,7 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     ImGui::SetCursorPosX(l_rowX);
     ImGui::Text("Mode:");
     ImGui::SameLine();
-    if (ImGui::Checkbox("Tutorial", &_state.tutorial))  _state.tutorial = !_state.tutorial;
+    ImGui::Checkbox("Tutorial", &_state.tutorial);
 
     ImGui::Spacing();
 

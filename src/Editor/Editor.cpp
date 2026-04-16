@@ -149,7 +149,15 @@ void Editor::DrawMenuBar()
         {
             if (ImGui::MenuItem("New Scene", "Ctrl+N"))
             {
-                
+                if(m_currentScenePath != "")
+                {
+                    SceneSerializer::SaveToFile(m_currentScenePath, m_engineContents,
+                                                m_sceneEdit->GetSceneSettings());
+                }
+
+                std::shared_ptr<RE::Core::Scene> newScene = std::make_shared<RE::Core::Scene>();
+                m_engineContents.core->SetScene(newScene);
+                m_currentScenePath = "";
             }
             if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
             {
