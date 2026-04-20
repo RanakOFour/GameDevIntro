@@ -17,7 +17,12 @@
 #include <filesystem>
 #include <set>
 #include <iomanip>
+
+#if LINUX
 #include <unistd.h>
+#else
+#include <Windows.h>
+#endif
 
 std::string SceneSerializer::SolObjectToLua(const sol::object& _value)
 {

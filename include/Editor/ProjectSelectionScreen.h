@@ -43,6 +43,9 @@ class ProjectSelectionScreen
     };
 
     private:
+
+    inline static std::string m_documentsPath = "";
+
     enum class Page { Main, NewProject, LoadProject };
 
     struct State

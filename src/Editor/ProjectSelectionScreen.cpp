@@ -10,24 +10,36 @@
 #include <fstream>
 #include <algorithm>
 
+#if _WIN32
+#include <stdlib.h>
+#include <stdio.h>
+#include <shlobj_core.h>
+#include <direct.h>
+#endif
+
 static std::string g_newProjectDialogName("PSS_NewProjectDir");
 static std::string g_loadProjectDialogName("PSS_LoadProjectDir");
 static constexpr int k_maxRecentProjects = 10;
 
 std::string ProjectSelectionScreen::GetDataDir()
 {
-#if defined(_WIN32)
-    const char* l_appDataRaw = std::getenv("APPDATA");
-    const std::string l_appData = l_appDataRaw ? l_appDataRaw : "";
-    std::filesystem::path l_base = l_appData.empty()
-        ? std::filesystem::path(".")
-        : std::filesystem::path(l_appData);
+    std::filesystem::path l_base;
+#if _WIN32
+    PWSTR l_appdata;
+    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &l_appdata) == S_OK) {
+        char l_pathAsString[MAX_PATH];
+        wcstombs(l_pathAsString, l_appdata, MAX_PATH);
+        printf("Appdata path: %s", l_pathAsString);
+        l_base = std::filesystem::path(l_pathAsString);
+    }
+    else {
+        fprintf(stderr, "Could not find appdata path!\n");
+    }
 #else
     const char* l_xdgRaw  = std::getenv("XDG_DATA_HOME");
     const char* l_homeRaw = std::getenv("HOME");
     const std::string l_xdg  = l_xdgRaw  ? l_xdgRaw  : "";
     const std::string l_home = l_homeRaw ? l_homeRaw : "";
-    std::filesystem::path l_base;
     if (!l_xdg.empty())
         l_base = std::filesystem::path(l_xdg);
     else if (!l_home.empty())
@@ -103,6 +115,26 @@ bool ProjectSelectionScreen::DrawCentredButton(const std::string& _label, ImVec2
 
 void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
 {
+    if (m_documentsPath == "")
+    {
+#if _WIN32
+        m_documentsPath.resize(MAX_PATH);
+        PWSTR l_documents;
+        if (SHGetKnownFolderPath(FOLDERID_LocalDocuments, KF_FLAG_CREATE, NULL, &l_documents) == S_OK) {
+            char l_pathAsString[MAX_PATH];
+            wcstombs(m_documentsPath.data(), l_documents, MAX_PATH);
+            m_documentsPath += "\\Documents";
+            printf("Documents path: %s", m_documentsPath.c_str());
+        }
+        else {
+            fprintf(stderr, "Could not find appdata path!\n");
+        }
+#else
+        const char* l_homeChar = std::getenv("HOME");
+        m_documentsPath = std::string(l_homeChar) + "\\Documents";;
+#endif
+    }
+
     const float k_leftW  = 300.0f;
     const float k_rightW = _displaySize.x - k_leftW;
     const float k_height = _displaySize.y;
@@ -264,6 +296,8 @@ void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
 
 void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
 {
+    _state.location = m_documentsPath;
+
     ImGui::SetCursorPosY(_displaySize.y * 0.28f);
 
     DrawCentredTitle("Start New Project", _displaySize);
@@ -283,9 +317,7 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     if (ImGui::Button("Browse...##newloc", ImVec2(l_browseW, 0)))
     {
         IGFD::FileDialogConfig cfg;
-        const char* l_home = std::getenv("HOME");
-        std::string l_docsPath = l_home ? std::string(l_home) + "/Documents" : ".";
-        cfg.path = _state.location.empty() ? l_docsPath : _state.location;
+        cfg.path = _state.location.empty() ? m_documentsPath : _state.location;
         ImGuiFileDialog::Instance()->OpenDialog(g_newProjectDialogName, "Choose Location", nullptr, cfg);
     }
 
@@ -360,6 +392,7 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
 
 void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
 {
+    _state.loadDir = m_documentsPath;
     ImGui::SetCursorPosY(_displaySize.y * 0.32f);
 
     DrawCentredTitle("Load Project", _displaySize);
@@ -379,9 +412,6 @@ void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
     if (ImGui::Button("Browse...##loaddir", ImVec2(l_browseW, 0)))
     {
         IGFD::FileDialogConfig cfg;
-        const char* l_home = std::getenv("HOME");
-        std::string l_docsPath = l_home ? std::string(l_home) + "/Documents" : ".";
-        cfg.path = _state.loadDir.empty() ? l_docsPath : _state.loadDir;
         ImGuiFileDialog::Instance()->OpenDialog(g_loadProjectDialogName, "Choose Project Directory", nullptr, cfg);
     }
 
