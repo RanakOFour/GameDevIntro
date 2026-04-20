@@ -23,6 +23,7 @@ class PropertiesPanel : public Panel
 	private:
 	std::map<std::string, std::string> m_stringValueMap; ///< Scratchpad for string field edits.
 	std::map<int, std::string> m_entityNameMap;          ///< Optional display name per entity ID.
+	int m_lastSelectedEntity = -1;                       ///< Tracks selection changes for cache invalidation.
 
 	bool m_showAddToCategory; ///< Whether the "Assign to Category" sub-panel is expanded.
 

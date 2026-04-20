@@ -14,6 +14,7 @@
 #include "imguiFileDialog/ImGuiFileDialog.h"
 
 #include <string>
+#include <vector>
 
 /**
  * @class ProjectSelectionScreen
@@ -57,6 +58,8 @@ class ProjectSelectionScreen
         bool decided         = false;
         
         Result result        { Action::Exit, Project{} };
+
+        std::vector<std::string> recentProjects; ///< Most-recent-first list of project root paths.
     };
 
     static void DrawMain       (State& _state, ImVec2 _displaySize);
@@ -67,6 +70,15 @@ class ProjectSelectionScreen
 
     static void DrawCentredTitle (const std::string& _text, ImVec2 _displaySize);
     static bool DrawCentredButton(const std::string& _label, ImVec2 _btnSize);
+
+    /** @brief Returns the app data directory (same base as built-in categories/rules). */
+    static std::string GetDataDir();
+    /** @brief Loads the recent-projects list from disk into _state.recentProjects. */
+    static void LoadRecentProjects(State& _state);
+    /** @brief Writes _state.recentProjects to disk. */
+    static void SaveRecentProjects(const State& _state);
+    /** @brief Pushes _path to the front of the recent list, removing duplicates. */
+    static void AddRecentProject(State& _state, const std::string& _path);
 
     public:
 

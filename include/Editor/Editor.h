@@ -7,6 +7,9 @@
 #include "Editor/StateRegistry.h"
 #include "Editor/TutorialPanel.h"
 #include "Editor/UndoManager.h"
+#include "Editor/TopBar.h"
+#include "Editor/ThemeManager.h"
+#include "Editor/ThemeSettingsPanel.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
@@ -41,6 +44,12 @@ public:
 private:
     std::shared_ptr<SceneEditTab> m_sceneEdit; ///< The 2D scene-editing tab.
     std::shared_ptr<TextEditTab>  m_textEdit;  ///< The Lua source-file editing tab.
+
+    StateRegistry m_stateRegistry; ///< Named conditions and actions registered by all editor subsystems.
+
+    TopBar         m_topBar;        ///< The main menu bar.
+    ThemeManager   m_themeManager;  ///< Colour theme preset manager.
+    ThemeSettingsPanel m_themeSettingsPanel; ///< Theme colour editing panel.
     ImFont* m_font;                            ///< Custom font loaded for the editor UI.
 
     RE::EngineContents m_engineContents; ///< Aggregated engine systems.
@@ -48,10 +57,6 @@ private:
 
     State m_state; ///< The current editor state (active tab).
 
-    StateRegistry m_stateRegistry; ///< Named conditions and actions registered by all editor subsystems.
-
-    bool m_showLoadDialog = false;   ///< True when the "Load Category" file dialog is open.
-    bool m_showSaveDialog = false;   ///< True when the "Create Category" dialog is open.
     bool m_showSettingsDialog = false; ///< True when the Project Settings modal should be drawn.
 
     std::string m_currentScenePath; ///< Absolute path to the currently loaded scene file, or empty.
@@ -75,8 +80,6 @@ private:
     void CleanupImGui();
     /** @brief Polls SDL events and forwards them to ImGui and the scene camera. */
     void HandleInput();
-    /** @brief Renders the application menu bar (universal across tabs). */
-    void DrawMenuBar();
     /** @brief Renders the Project Settings modal dialog (opened from the menu bar). */
     void DrawSettingsDialog();
     /** @brief Renders the status bar at the bottom of the viewport. */
@@ -127,6 +130,25 @@ private:
     StateRegistry& GetStateRegistry() { return m_stateRegistry; }
     /** @brief Returns a reference to the undo/redo manager. */
     UndoManager& GetUndoManager() { return m_undoManager; }
+
+    /** @brief Returns the path to the currently loaded scene. */
+    const std::string& GetCurrentScenePath() const { return m_currentScenePath; }
+    /** @brief Sets the current scene path. */
+    void SetCurrentScenePath(const std::string& _path) { m_currentScenePath = _path; }
+
+    /** @brief Opens the Project Settings modal dialog. */
+    void ShowProjectSettingsDialog() { m_showSettingsDialog = true; }
+    /** @brief Opens the Theme Settings panel. */
+    void ShowThemeSettingsPanel() { m_themeSettingsPanel.SetShown(true); }
+
+    /** @brief Returns true if the given layout slot has saved data. */
+    bool HasLayout(int _slot) const { return !m_savedLayouts[_slot].empty(); }
+
+    /** @brief Returns a reference to the ThemeManager. */
+    ThemeManager& GetThemeManager() { return m_themeManager; }
+
+    /** @brief Returns a reference to the engine-owned UI renderer. */
+    RE::UI::UIRenderer& GetUIRenderer() { return *RE::UI::GetRenderer().lock(); }
 
     /** @brief Copies the currently selected entities to the clipboard. */
     void CopySelectedEntities();

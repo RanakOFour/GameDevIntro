@@ -24,6 +24,7 @@ RulesPanel::RulesPanel(Editor& _editor)
 , m_newRuleName("")
 , m_loadedRules()
 , m_activeRules()
+, m_selectedRuleIndex(-1)
 {
 }
 
@@ -62,7 +63,11 @@ void RulesPanel::RefreshRuleList()
 
 void RulesPanel::Draw()
 {
-    RefreshRuleList();
+    if (m_needsRefresh)
+    {
+        RefreshRuleList();
+        m_needsRefresh = false;
+    }
 
     // Create and Load buttons
     if (ImGui::Button("Create", ImVec2((ImGui::GetContentRegionAvail().x - 5) * 0.5f, 0)))
@@ -91,8 +96,9 @@ void RulesPanel::Draw()
     // Active rules list
     if (ImGui::BeginChild("RulesList", ImVec2(0, 0), true))
     {
-        for (auto& l_ruleName : m_loadedRules)
+        for (int i = 0; i < m_loadedRules.size(); i++)
         {
+            std::string l_ruleName = m_loadedRules[i];
             bool l_isBuiltin = BuiltinRules::IsBuiltin(l_ruleName);
 
             // Hide built-ins unless checkbox is set
@@ -126,8 +132,11 @@ void RulesPanel::Draw()
             }
             else
             {
-                ImGui::Text("%s", l_active ? l_ruleName.c_str()
-                                           : (l_ruleName + " (Inactive)").c_str());
+                std::string displayName = l_ruleName + (l_active ? "" : " (Inactive)");
+                if (ImGui::Selectable(displayName.c_str(), m_selectedRuleIndex == i))
+                {
+                    SelectRule(i);
+                }
             }
 
             // Toggle button — available for all rules including built-ins
@@ -282,6 +291,7 @@ void RulesPanel::LoadRuleFromFile(const std::string _path)
 
     m_loadedRules.push_back(l_newRule.GetName());
 
+    m_needsRefresh = true;
     m_editor.SaveProjectInfo();
     RE::Log::Message("Rule loaded from: " + _path);
 }
@@ -292,8 +302,24 @@ void RulesPanel::RemoveRule(const std::string _ruleName)
     if (it != m_loadedRules.end())
     {
         m_loadedRules.erase(it);
+        m_needsRefresh = true;
         RE::Log::Message("Rule removed: " + _ruleName);
     }
+}
+
+void RulesPanel::SelectRule(int _idx)
+{
+    m_selectedRuleIndex = _idx;
+
+    sol::table l_sceneTable = m_editor.GetEngineContents().core->GetScene().lock()->GetSceneTable();
+    auto l_rulePtr = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", m_loadedRules[_idx]);
+    if (l_rulePtr)
+        m_selectedRuleFile = l_rulePtr->GetOriginFile().lock();
+}
+
+std::weak_ptr<RE::Asset::LuaFile> RulesPanel::GetSelectedFile()
+{
+    return m_selectedRuleFile;
 }
 
 bool RulesPanel::IsDialogOpen()

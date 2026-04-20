@@ -28,9 +28,13 @@ class RulesPanel : public Panel
 
     std::string m_newRuleName; ///< Name typed in the create-rule dialog.
 
+    int m_selectedRuleIndex = -1; ///< Index of the currently selected rule in the active list.
+    std::shared_ptr<RE::Asset::LuaFile> m_selectedRuleFile; ///< Source .lua file of the selected rule.
+
     bool m_showCreateDialog; ///< Whether the "Create New Rule" modal is open.
     bool m_showLoadDialog;   ///< Whether the file-open dialog is in progress.
     bool m_showBuiltins;     ///< Whether built-in rules are visible in the list.
+    bool m_needsRefresh = true; ///< Whether the rule list needs re-querying.
 
     /** @brief Re-queries the scene for the current active and loaded rule lists. */
     void RefreshRuleList();
@@ -55,6 +59,10 @@ class RulesPanel : public Panel
      */
     void SelectRule(int _idx);
     /**
+     * @brief Returns the source LuaFile of the currently selected rule.
+     */
+    std::weak_ptr<RE::Asset::LuaFile> GetSelectedFile();
+    /**
      * @brief Returns the name of the rule at the given index.
      * @param _idx Index into the active-rules list.
      */
@@ -78,6 +86,9 @@ class RulesPanel : public Panel
 
     /** @brief Returns true while either the create or load dialog is open. */
     bool IsDialogOpen();
+
+    /** @brief Marks the rule list for re-querying next frame. */
+    void MarkDirty() { m_needsRefresh = true; }
 };
 
 #endif

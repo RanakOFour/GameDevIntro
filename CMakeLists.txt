@@ -47,3 +47,25 @@ elseif(WIN32)
                        "${CMAKE_CURRENT_SOURCE_DIR}/resources"
                        $<TARGET_FILE_DIR:GameDevIntro>/resources)
 endif()
+
+# ── Standalone player executable ──────────────────────────────────────────────
+# No ImGui — uses pure-GL UIRenderer for screen-space UI.
+
+add_executable(GamePlayer "src/player_main.cpp")
+
+target_include_directories(GamePlayer PUBLIC include extern)
+
+target_link_libraries(GamePlayer PUBLIC RanakEngine)
+
+if(UNIX)
+    target_link_directories(GamePlayer PUBLIC lib/unix)
+    target_link_libraries(GamePlayer PUBLIC GL GLEW SDL3 ${LUA_LIBRARIES})
+elseif(WIN32)
+    target_link_directories(GamePlayer PUBLIC lib/win/release)
+    target_link_libraries(GamePlayer PUBLIC opengl32 glew32 SDL3 lua)
+
+    add_custom_command(TARGET GamePlayer POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_directory
+                       "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
+                       $<TARGET_FILE_DIR:GamePlayer>)
+endif()

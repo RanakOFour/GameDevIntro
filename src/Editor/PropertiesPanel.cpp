@@ -2,6 +2,7 @@
 #include "Editor/Editor.h"
 #include "Editor/SceneEditTab.h"
 #include "Editor/AssetBrowserPanel.h"
+#include "Editor/UndoManager.h"
 
 #include "RanakEngine/RanakEngine.h"
 
@@ -44,16 +45,79 @@ void PropertiesPanel::DrawEntityProperties(int _id)
     sol::table l_entityData = m_registry.value().get().GetEntityAttributes(_id);
 
     // Display each category and its attributes
+    std::string l_categoryToRemove;
+
     for (auto& l_pair : l_entityData)
     {
         std::string l_categoryName = l_pair.first.as<std::string>();
         sol::table l_attributes = l_pair.second.as<sol::table>();
 
-        if (ImGui::CollapsingHeader(l_categoryName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        ImGui::PushID(l_categoryName.c_str());
+
+        bool l_headerOpen = ImGui::CollapsingHeader("##cat", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap);
+
+        // Draw remove button on the same line (except for Transform which is mandatory)
+        ImGui::SameLine();
+        ImGui::TextUnformatted(l_categoryName.c_str());
+        if (l_categoryName != "Transform")
+        {
+            ImGui::SameLine(ImGui::GetContentRegionAvail().x - 10.0f);
+            if (ImGui::SmallButton("X"))
+            {
+                l_categoryToRemove = l_categoryName;
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Remove from %s", l_categoryName.c_str());
+        }
+
+        if (l_headerOpen)
         {
             ImGui::Indent();
             DrawCategoryAttributes(_id, l_categoryName, l_attributes);
             ImGui::Unindent();
+        }
+
+        ImGui::PopID();
+    }
+
+    // Process removal outside the iteration to avoid invalidating the table
+    if (!l_categoryToRemove.empty())
+    {
+        auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+        if (l_scene)
+        {
+            // Snapshot field values for undo
+            sol::table l_catData = l_entityData.raw_get<sol::table>(l_categoryToRemove);
+            auto l_fieldSnap = std::make_shared<std::vector<std::pair<std::string, sol::object>>>();
+            for (auto& l_fp : l_catData)
+                l_fieldSnap->emplace_back(l_fp.first.as<std::string>(), l_fp.second);
+
+            l_scene->RemoveFromCategory(_id, l_categoryToRemove);
+
+            int l_entityId = _id;
+            std::string l_catName = l_categoryToRemove;
+            Editor* l_edRaw = &m_editor;
+            m_editor.GetUndoManager().PushCommand(
+                std::make_unique<LambdaCommand>("Remove " + l_catName,
+                    [l_edRaw, l_entityId, l_catName]() {
+                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
+                        if (l_sc) l_sc->RemoveFromCategory(l_entityId, l_catName);
+                    },
+                    [l_edRaw, l_entityId, l_catName, l_fieldSnap]() {
+                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
+                        if (l_sc)
+                        {
+                            l_sc->AddToCategory(l_entityId, l_catName);
+                            sol::table l_attrs = l_sc->GetRegistry().GetEntityAttributes(l_entityId);
+                            sol::object l_catObj = l_attrs.raw_get<sol::object>(l_catName);
+                            if (l_catObj.valid() && l_catObj.get_type() == sol::type::table)
+                            {
+                                sol::table l_cat = l_catObj.as<sol::table>();
+                                for (auto& [l_fn, l_fv] : *l_fieldSnap)
+                                    l_cat[l_fn] = l_fv;
+                            }
+                        }
+                    }));
         }
     }
 }
@@ -114,27 +178,51 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
         case sol::type::number:
             if (l_value.is<int>())
             {
-                int l_val = l_value.as<int>();
+                int l_old = l_value.as<int>();
+                int l_val = l_old;
                 if (ImGui::InputInt(l_property.c_str(), &l_val))
                 {
                     _attributes[l_property] = l_val;
+                    int l_new = l_val;
+                    sol::table l_tbl = _attributes;
+                    std::string l_prop = l_property;
+                    m_editor.GetUndoManager().PushCommand(
+                        std::make_unique<LambdaCommand>("Edit " + l_prop,
+                            [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                            [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
                 }
             }
             else if (l_value.is<float>())
             {
-                float l_val = l_value.as<float>();
+                float l_old = l_value.as<float>();
+                float l_val = l_old;
                 if (ImGui::InputFloat(l_property.c_str(), &l_val, 0.1f, 0.0f, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
+                    float l_new = l_val;
+                    sol::table l_tbl = _attributes;
+                    std::string l_prop = l_property;
+                    m_editor.GetUndoManager().PushCommand(
+                        std::make_unique<LambdaCommand>("Edit " + l_prop,
+                            [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                            [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
                 }
             }
             break;
         case sol::type::boolean:
         {
-            bool l_val = l_value.as<bool>();
+            bool l_old = l_value.as<bool>();
+            bool l_val = l_old;
             if (ImGui::Checkbox(l_property.c_str(), &l_val))
             {
                 _attributes[l_property] = l_val;
+                bool l_new = l_val;
+                sol::table l_tbl = _attributes;
+                std::string l_prop = l_property;
+                m_editor.GetUndoManager().PushCommand(
+                    std::make_unique<LambdaCommand>("Edit " + l_prop,
+                        [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                        [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
             }
         }
         break;
@@ -168,9 +256,19 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
                 ImGui::SameLine();
             }
             
+            std::string l_oldStr = l_value.as<std::string>();
             if (ImGui::InputText(l_property.c_str(), &m_stringValueMap[l_key], ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 _attributes[l_property] = m_stringValueMap[l_key];
+                std::string l_newStr = m_stringValueMap[l_key];
+                sol::table l_tbl = _attributes;
+                std::string l_prop = l_property;
+                std::string l_k = l_key;
+                auto l_mapPtr = &m_stringValueMap;
+                m_editor.GetUndoManager().PushCommand(
+                    std::make_unique<LambdaCommand>("Edit " + l_prop,
+                        [l_tbl, l_prop, l_newStr, l_mapPtr, l_k]() mutable { l_tbl[l_prop] = l_newStr; (*l_mapPtr)[l_k] = l_newStr; },
+                        [l_tbl, l_prop, l_oldStr, l_mapPtr, l_k]() mutable { l_tbl[l_prop] = l_oldStr; (*l_mapPtr)[l_k] = l_oldStr; }));
             }
 
             // Accept drag-drop of textures and models onto Path properties
@@ -191,29 +289,52 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
         }
         break;
         case sol::type::userdata:
-            // Assuming Vector2 is exposed as userdata
             if (l_value.is<Vector2>())
             {
-                Vector2 l_val = l_value.as<Vector2>();
+                Vector2 l_old = l_value.as<Vector2>();
+                Vector2 l_val = l_old;
                 if (ImGui::InputFloat2(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
+                    Vector2 l_new = l_val;
+                    sol::table l_tbl = _attributes;
+                    std::string l_prop = l_property;
+                    m_editor.GetUndoManager().PushCommand(
+                        std::make_unique<LambdaCommand>("Edit " + l_prop,
+                            [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                            [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
                 }
             }
             else if (l_value.is<Vector3>())
             {
-                Vector3 l_val = l_value.as<Vector3>();
+                Vector3 l_old = l_value.as<Vector3>();
+                Vector3 l_val = l_old;
                 if (ImGui::InputFloat3(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
+                    Vector3 l_new = l_val;
+                    sol::table l_tbl = _attributes;
+                    std::string l_prop = l_property;
+                    m_editor.GetUndoManager().PushCommand(
+                        std::make_unique<LambdaCommand>("Edit " + l_prop,
+                            [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                            [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
                 }
             }
             else if (l_value.is<Vector4>())
             {
-                Vector4 l_val = l_value.as<Vector4>();
+                Vector4 l_old = l_value.as<Vector4>();
+                Vector4 l_val = l_old;
                 if (ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
+                    Vector4 l_new = l_val;
+                    sol::table l_tbl = _attributes;
+                    std::string l_prop = l_property;
+                    m_editor.GetUndoManager().PushCommand(
+                        std::make_unique<LambdaCommand>("Edit " + l_prop,
+                            [l_tbl, l_prop, l_new]() mutable { l_tbl[l_prop] = l_new; },
+                            [l_tbl, l_prop, l_old]() mutable { l_tbl[l_prop] = l_old; }));
                 }
             }
             break;
@@ -229,6 +350,13 @@ void PropertiesPanel::Draw()
 {
     int l_selectedEntity = m_editor.GetSceneEdit().GetSelectedEntity();
     const auto& l_selectedEntities = m_editor.GetSceneEdit().GetSelectedEntities();
+
+    // Invalidate string cache when selection changes
+    if (l_selectedEntity != m_lastSelectedEntity)
+    {
+        m_stringValueMap.clear();
+        m_lastSelectedEntity = l_selectedEntity;
+    }
 
     auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
     if (l_scene)
@@ -268,7 +396,22 @@ void PropertiesPanel::Draw()
         if (ImGui::InputText("Name", &m_entityNameMap[l_selectedEntity], ImGuiInputTextFlags_EnterReturnsTrue))
         {
             sol::table l_entityTable = m_registry.value().get().GetEntityTable().raw_get<sol::table>(l_selectedEntity);
-            l_entityTable["name"] = m_entityNameMap[l_selectedEntity];
+            std::string l_newName = m_entityNameMap[l_selectedEntity];
+            std::string l_oldName = l_entityTable.raw_get_or<std::string>("name", "");
+            l_entityTable["name"] = l_newName;
+
+            int l_eid = l_selectedEntity;
+            auto* l_nameMap = &m_entityNameMap;
+            m_editor.GetUndoManager().PushCommand(
+                std::make_unique<LambdaCommand>("Rename Entity",
+                    [l_entityTable, l_eid, l_newName, l_nameMap]() mutable {
+                        l_entityTable["name"] = l_newName;
+                        (*l_nameMap)[l_eid] = l_newName;
+                    },
+                    [l_entityTable, l_eid, l_oldName, l_nameMap]() mutable {
+                        l_entityTable["name"] = l_oldName;
+                        (*l_nameMap)[l_eid] = l_oldName;
+                    }));
         }
 
         ImGui::Separator();
@@ -306,17 +449,29 @@ void PropertiesPanel::Draw()
                     }
                 }
 
-                //Only show unknown categories
                 if (l_showCategory)
                 {
                     if (ImGui::MenuItem(l_categoryName.c_str()))
                     {
-                        // Peak cache optimisation. A s_ptr<LuaContext> would probably be best
-                        auto l_category = m_editor.GetEngineContents()
-                            .core->GetLuaContext()
-                            ->GetCategory(l_categoryName).lock();
+                        auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+                        if (l_scene)
+                        {
+                            l_scene->AddToCategory(l_selectedEntity, l_categoryName);
 
-                        m_registry.value().get().AddToCategory(l_selectedEntity, l_category->GetSignature());
+                            int l_eid = l_selectedEntity;
+                            std::string l_catName = l_categoryName;
+                            Editor* l_edRaw = &m_editor;
+                            m_editor.GetUndoManager().PushCommand(
+                                std::make_unique<LambdaCommand>("Add " + l_catName,
+                                    [l_edRaw, l_eid, l_catName]() {
+                                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
+                                        if (l_sc) l_sc->AddToCategory(l_eid, l_catName);
+                                    },
+                                    [l_edRaw, l_eid, l_catName]() {
+                                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
+                                        if (l_sc) l_sc->RemoveFromCategory(l_eid, l_catName);
+                                    }));
+                        }
                         m_showAddToCategory = false;
                     }
                 }

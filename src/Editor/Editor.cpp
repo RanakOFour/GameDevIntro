@@ -25,11 +25,11 @@ using json = nlohmann::json;
 
 Editor::Editor(RE::EngineContents engineContents, Project project)
 : m_state(State::SceneEdit)
-, m_showLoadDialog(false)
-, m_showSaveDialog(false)
 , m_engineContents(std::move(engineContents))
 , m_project(std::move(project))
 , m_tutorialPanel(*this)
+, m_topBar(*this)
+, m_themeSettingsPanel(*this, m_themeManager)
 {
     RE::Log::Message("Engine already initialised; Editor taking ownership");
 
@@ -60,6 +60,9 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 
     LoadProjectInfo();
     LoadSavedLayouts();
+
+    // Apply saved theme (or default) after ImGui context is ready.
+    m_themeManager.ApplyPreset(m_themeManager.GetActiveIndex());
 }
 
 Editor::~Editor()
@@ -139,181 +142,6 @@ void Editor::Run()
     }
 
     printf("Editor no longer running\n");
-}
-
-void Editor::DrawMenuBar()
-{
-    if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("File"))
-        {
-            if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-            {
-                if(m_currentScenePath != "")
-                {
-                    SceneSerializer::SaveToFile(m_currentScenePath, m_engineContents,
-                                                m_sceneEdit->GetSceneSettings());
-                }
-
-                std::shared_ptr<RE::Core::Scene> newScene = std::make_shared<RE::Core::Scene>();
-                m_engineContents.core->SetScene(newScene);
-                m_currentScenePath = "";
-            }
-            if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
-            {
-                IGFD::FileDialogConfig config;
-                config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
-                ImGuiFileDialog::Instance()->OpenDialog("SceneFileDlgKey", "Choose File", ".lua", config);
-                m_showLoadDialog = true;
-                m_showSaveDialog = false;
-            }
-            if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-            {
-                IGFD::FileDialogConfig config;
-                config.path = m_project.IsOpen() ? m_project.GetScenesDir() : ".";
-                ImGuiFileDialog::Instance()->OpenDialog("SceneFileDlgKey", "Choose File", ".lua", config);
-                m_showLoadDialog = false;
-                m_showSaveDialog = true;
-            }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Exit", "Ctrl+Q"))
-            {
-                SDL_Event l_quitEvent;
-                l_quitEvent.type = SDL_EVENT_QUIT;
-                SDL_PushEvent(&l_quitEvent);
-            }
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Edit"))
-        {
-            std::string l_undoLabel = m_undoManager.CanUndo()
-                ? "Undo " + m_undoManager.GetUndoDescription()
-                : "Undo";
-            std::string l_redoLabel = m_undoManager.CanRedo()
-                ? "Redo " + m_undoManager.GetRedoDescription()
-                : "Redo";
-
-            if (ImGui::MenuItem(l_undoLabel.c_str(), "Ctrl+Z", false, m_undoManager.CanUndo()))
-                m_undoManager.Undo();
-            if (ImGui::MenuItem(l_redoLabel.c_str(), "Ctrl+Shift+Z", false, m_undoManager.CanRedo()))
-                m_undoManager.Redo();
-
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("View"))
-        {
-            ImGui::MenuItem("Show Grid");
-            ImGui::MenuItem("Show Gizmos");
-
-            if (ImGui::MenuItem("Camera Settings"))
-            {
-                m_sceneEdit->m_cameraPanel.SetShown(true);
-            }
-
-            if (ImGui::MenuItem("Console"))
-            {
-                m_sceneEdit->m_consolePanel.SetShown(!m_sceneEdit->m_consolePanel.IsShown());
-            }
-
-            if (ImGui::MenuItem("Asset Browser"))
-            {
-                m_sceneEdit->m_assetBrowserPanel.SetShown(!m_sceneEdit->m_assetBrowserPanel.IsShown());
-            }
-
-            ImGui::Separator();
-
-            if (ImGui::BeginMenu("Layout"))
-            {
-                if (ImGui::MenuItem("Save Layout 1"))
-                    SaveLayout(0);
-                if (ImGui::MenuItem("Save Layout 2"))
-                    SaveLayout(1);
-                if (ImGui::MenuItem("Save Layout 3"))
-                    SaveLayout(2);
-
-                ImGui::Separator();
-
-                if (ImGui::MenuItem("Load Layout 1", nullptr, false, !m_savedLayouts[0].empty()))
-                    LoadLayout(0);
-                if (ImGui::MenuItem("Load Layout 2", nullptr, false, !m_savedLayouts[1].empty()))
-                    LoadLayout(1);
-                if (ImGui::MenuItem("Load Layout 3", nullptr, false, !m_savedLayouts[2].empty()))
-                    LoadLayout(2);
-
-                ImGui::Separator();
-
-                if (ImGui::MenuItem("Reset Layout"))
-                {
-                    ImGui::LoadIniSettingsFromDisk("imgui.ini");
-                }
-
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Settings"))
-        {
-            if (ImGui::MenuItem("Project Settings"))
-                m_showSettingsDialog = true;
-            if (ImGui::MenuItem("Scene Settings"))
-                m_sceneEdit->m_settingsPanel.SetShown(true);
-            ImGui::EndMenu();
-        }
-
-        if (ImGui::BeginMenu("Tutorials"))
-        {
-            if (ImGui::MenuItem("Getting Started"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/GettingStarted.lua");
-            if (ImGui::MenuItem("Creating Categories"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Categories.lua");
-            if (ImGui::MenuItem("Writing Rules"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Rules.lua");
-            if (ImGui::MenuItem("Build Asteroids"))
-                m_tutorialPanel.LoadTutorial("./resources/Tutorials/Asteroids.lua");
-            ImGui::EndMenu();
-        }
-
-        ImGui::EndMainMenuBar();
-    }
-
-    if ((m_showLoadDialog || m_showSaveDialog) && ImGuiFileDialog::Instance()->IsOpened("SceneFileDlgKey"))
-    {
-        if(ImGuiFileDialog::Instance()->Display("SceneFileDlgKey", ImGuiWindowFlags_NoCollapse, ImVec2(700, 400)))
-        {
-            std::string l_filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-            std::string l_filePathDir = ImGuiFileDialog::Instance()->GetCurrentPath();
-            if (m_showLoadDialog)
-            {
-                SceneSerializer::LoadFromFile(l_filePathName, m_engineContents,
-                                            &m_sceneEdit->GetSceneSettings());
-
-                // Re-add built-in rules after scene load (they are excluded from serialisation)
-                BuiltinRules::Load(m_engineContents);
-                // Rebuild the editor rule registry to match the newly loaded scene.
-                m_sceneEdit->RebuildRegistryFromScene();
-                m_sceneEdit->m_scene = m_engineContents.core->GetScene();
-                m_sceneEdit->m_entityPanel.RefreshEntityList();
-
-                m_currentScenePath = l_filePathName;
-                SaveProjectInfo();
-            }
-            else
-            {
-                SceneSerializer::SaveToFile(l_filePathName, m_engineContents,
-                                            m_sceneEdit->GetSceneSettings());
-                m_currentScenePath = l_filePathName;
-                SaveProjectInfo();
-            }
-
-            ImGuiFileDialog::Instance()->Close();
-            m_showLoadDialog = false;
-            m_showSaveDialog = false;
-        }
-    }
 }
 
 void Editor::ApplyProjectSettings()
@@ -510,7 +338,7 @@ void Editor::LoadProjectInfo()
     if (l_projectInfo.contains("currentScene") && !l_projectInfo["currentScene"].is_null())
     {
         std::string l_scenePath = l_projectInfo["currentScene"].get<std::string>();
-        if (!l_scenePath.empty() && std::filesystem::exists(l_scenePath))
+        if (!l_scenePath.empty() && std::filesystem::is_regular_file(l_scenePath))
         {
             SceneSerializer::LoadFromFile(l_scenePath, m_engineContents,
                                           &m_sceneEdit->GetSceneSettings());
@@ -535,7 +363,7 @@ void Editor::LoadProjectInfo()
         {
             std::string l_path = l_entry.value("path", "");
             std::string l_name = l_entry.value("name", "");
-            if (l_path.empty() || !std::filesystem::exists(l_path))
+            if (l_path.empty() || !std::filesystem::is_regular_file(l_path))
                 continue;
             // Skip if already loaded (e.g. referenced by the scene)
             if (l_luaContext->GetCategory(l_name).lock())
@@ -557,7 +385,7 @@ void Editor::LoadProjectInfo()
         {
             std::string l_path = l_entry.value("path", "");
             std::string l_name = l_entry.value("name", "");
-            if (l_path.empty() || !std::filesystem::exists(l_path))
+            if (l_path.empty() || !std::filesystem::is_regular_file(l_path))
                 continue;
 
             // Check if already in the registry (added by RebuildRegistryFromScene)
@@ -624,7 +452,7 @@ void Editor::Draw()
     m_tutorialPanel.ClearRegions();
 
     // Menu bar and tutorial panel are universal across all tabs
-    DrawMenuBar();
+    m_topBar.Draw();
 
     // Project Settings modal — drawn outside menu bar so it renders correctly.
     DrawSettingsDialog();
@@ -660,6 +488,9 @@ void Editor::Draw()
         if (l_tutWin)
             ImGui::BringWindowToDisplayFront(l_tutWin);
     }
+
+    // Theme settings panel (dockable window).
+    m_themeSettingsPanel.DrawAsWindow();
 
     // Status bar at the bottom of the viewport
     DrawStatusBar();
@@ -853,7 +684,7 @@ void Editor::HandleInput()
             }
         }
 
-        // --- LMB held: drag entity / gizmo / selection rectangle ---
+        // LMB held: drag entity / gizmo / selection rectangle
         if (l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingRect)
         {
             // Update drag-select rectangle end point
@@ -949,7 +780,7 @@ void Editor::HandleInput()
             }
         }
 
-        // --- LMB released: end drag, push undo ---
+        // LMB released: end drag, push undo
         if (!l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingEntity)
         {
             m_sceneEdit->m_isDraggingEntity = false;
@@ -1027,7 +858,7 @@ void Editor::HandleInput()
             }
         }
 
-        // --- LMB released: finish drag-select rectangle ---
+        // LMB released: finish drag-select rectangle
         if (!l_mouseInfo.LMBDown && m_sceneEdit->m_isDraggingRect)
         {
             m_sceneEdit->m_isDraggingRect = false;
@@ -1112,11 +943,7 @@ void Editor::HandleInput()
         // ESC input to close all panels and context menus
         if (m_engineContents.io->GetKeyDownThisFrame((char)27))
         {
-            m_sceneEdit->m_categoryPanel.SetShown(false);
-            m_sceneEdit->m_entityPanel.SetShown(false);
-            m_sceneEdit->m_rulesPanel.SetShown(false);
-            m_sceneEdit->m_propertiesPanel.SetShown(false);
-            m_sceneEdit->m_showContext = false;
+            m_sceneEdit->CloseAllPanels();
         }
 
         // Undo / Redo shortcuts
@@ -1149,6 +976,22 @@ void Editor::HandleInput()
             DuplicateEntities();
         }
 
+        // Quick-Save (Ctrl+S)
+        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('s'))
+        {
+            if (!m_currentScenePath.empty())
+            {
+                SceneSerializer::SaveToFile(m_currentScenePath, m_engineContents,
+                                            m_sceneEdit->GetSceneSettings());
+                SaveProjectInfo();
+                RE::Log::Message("Scene saved: " + m_currentScenePath);
+            }
+            else
+            {
+                m_topBar.OpenSaveDialog();
+            }
+        }
+
         // Delete selected entities (Delete key)
         if (m_engineContents.io->GetKeyDownThisFrame(127) && !m_sceneEdit->m_selectedEntities.empty())
         {
@@ -1166,6 +1009,7 @@ void Editor::HandleInput()
         {
             if(m_state == State::SceneEdit)
             {
+                m_sceneEdit->CloseAllPanels();
                 SetState(State::TextEdit);
             }
             else
@@ -1194,13 +1038,33 @@ void Editor::CopySelectedEntities()
         EntitySnapshot l_snap;
         l_snap.name = l_scene->GetRegistry().GetEntityName(l_id);
         sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_id);
+        sol::state_view l_lua(l_attrs.lua_state());
         for (auto& l_catPair : l_attrs)
         {
             std::string l_catName = l_catPair.first.as<std::string>();
             sol::table l_fields = l_catPair.second.as<sol::table>();
             std::vector<std::pair<std::string, sol::object>> l_fieldSnap;
             for (auto& l_fp : l_fields)
-                l_fieldSnap.emplace_back(l_fp.first.as<std::string>(), l_fp.second);
+            {
+                sol::object l_val = l_fp.second;
+                // Deep-copy primitive and Vector types so the clipboard
+                // is independent of the source entity's Lua table.
+                if (l_val.is<int>())
+                    l_val = sol::make_object(l_lua, l_val.as<int>());
+                else if (l_val.is<float>())
+                    l_val = sol::make_object(l_lua, l_val.as<float>());
+                else if (l_val.is<bool>())
+                    l_val = sol::make_object(l_lua, l_val.as<bool>());
+                else if (l_val.is<std::string>())
+                    l_val = sol::make_object(l_lua, l_val.as<std::string>());
+                else if (l_val.is<Vector2>())
+                    l_val = sol::make_object(l_lua, l_val.as<Vector2>());
+                else if (l_val.is<Vector3>())
+                    l_val = sol::make_object(l_lua, l_val.as<Vector3>());
+                else if (l_val.is<Vector4>())
+                    l_val = sol::make_object(l_lua, l_val.as<Vector4>());
+                l_fieldSnap.emplace_back(l_fp.first.as<std::string>(), l_val);
+            }
             l_snap.categories.emplace_back(l_catName, std::move(l_fieldSnap));
         }
         m_clipboard.push_back(std::move(l_snap));

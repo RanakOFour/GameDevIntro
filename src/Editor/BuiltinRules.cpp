@@ -7,10 +7,6 @@
 #include <cstdlib>
 #include <cstdio>
 
-// ---------------------------------------------------------------------------
-// Embedded Lua sources (keep in sync with resources/Rules/ counterparts)
-// ---------------------------------------------------------------------------
-
 static const std::string k_editorRenderSrc =
 R"lua(local EditorRender = Rule {
     categories = {"Transform"},
@@ -109,13 +105,87 @@ end
 return Rendering
 )lua";
 
-// ---------------------------------------------------------------------------
+static const std::string k_uiRenderingSrc =
+R"lua(local UIRendering = Rule {
+    categories = { "Transform" },
+    fields = {}
+}
+
+function UIRendering:Update(_entityData)
+    local t = _entityData["Transform"]
+
+    -- UIButton interaction
+    local btn = _entityData["UIButton"]
+    if btn ~= nil and btn.visible then
+        local x = t.Position.x + btn.anchorX * UI.GetScreenWidth()
+        local y = t.Position.y + btn.anchorY * UI.GetScreenHeight()
+        btn.hovered = UI.IsHovered(x, y, btn.width, btn.height)
+        btn.pressed = UI.IsClicked(x, y, btn.width, btn.height)
+    end
+end
+
+function UIRendering:Draw(_entityData)
+    local t = _entityData["Transform"]
+
+    -- UIPanel: filled rectangle
+    local panel = _entityData["UIPanel"]
+    if panel ~= nil and panel.visible then
+        local x = t.Position.x + panel.anchorX * UI.GetScreenWidth()
+        local y = t.Position.y + panel.anchorY * UI.GetScreenHeight()
+        UI.DrawRect(x, y, panel.width, panel.height,
+                    panel.colorR, panel.colorG, panel.colorB, panel.colorA)
+    end
+
+    -- UIButton: rect with hover highlight + centered label
+    local btn = _entityData["UIButton"]
+    if btn ~= nil and btn.visible then
+        local x = t.Position.x + btn.anchorX * UI.GetScreenWidth()
+        local y = t.Position.y + btn.anchorY * UI.GetScreenHeight()
+        local r, g, b, a
+        if btn.hovered then
+            r, g, b, a = btn.hoverR, btn.hoverG, btn.hoverB, btn.hoverA
+        else
+            r, g, b, a = btn.colorR, btn.colorG, btn.colorB, btn.colorA
+        end
+        UI.DrawRect(x, y, btn.width, btn.height, r, g, b, a)
+        -- Label centered inside the button
+        UI.DrawText(x + btn.width * 0.5, y + btn.height * 0.5,
+                    1.0, 1.0, 1.0, 1.0,
+                    btn.label, 16.0, true)
+    end
+
+    -- UIImage: textured quad
+    local img = _entityData["UIImage"]
+    if img ~= nil and img.visible then
+        local x = t.Position.x + img.anchorX * UI.GetScreenWidth()
+        local y = t.Position.y + img.anchorY * UI.GetScreenHeight()
+        if img.asset ~= nil then
+            UI.DrawImage(img.asset:GetID(), x, y, img.width, img.height,
+                         img.tintR, img.tintG, img.tintB, img.tintA)
+        end
+    end
+
+    -- UIText: text rendering
+    local txt = _entityData["UIText"]
+    if txt ~= nil and txt.visible then
+        local x = t.Position.x + txt.anchorX * UI.GetScreenWidth()
+        local y = t.Position.y + txt.anchorY * UI.GetScreenHeight()
+        UI.DrawText(x, y,
+                    txt.colorR, txt.colorG, txt.colorB, txt.colorA,
+                    txt.text, txt.fontSize, false)
+    end
+end
+
+return UIRendering
+)lua";
+
 
 const std::vector<BuiltinRules::Entry>& BuiltinRules::GetEntries()
 {
     static const std::vector<Entry> l_entries = {
         { "EditorRender", k_editorRenderSrc },
         { "PhysicsSync",  k_physicsSyncSrc  },
+        { "UIRendering",  k_uiRenderingSrc  },
     };
     return l_entries;
 }

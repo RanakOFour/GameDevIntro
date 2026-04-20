@@ -56,6 +56,4 @@ void CameraPanel::Draw()
 
         l_camera->SetCameraWidth(l_cameraWidth);
     }
-
-    ImGui::SetWindowSize(ImVec2(270, 125));
 }

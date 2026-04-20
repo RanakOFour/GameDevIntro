@@ -51,6 +51,72 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
             "    _body       = Field(nil, { hidden = true })\n"
             "}\n"
         },
+        // ── UI categories ────────────────────────────────────────────────
+        {
+            "UIText",
+            "return Category {\n"
+            "    text      = \"\",\n"
+            "    fontSize  = 16.0,\n"
+            "    colorR    = 1.0,\n"
+            "    colorG    = 1.0,\n"
+            "    colorB    = 1.0,\n"
+            "    colorA    = 1.0,\n"
+            "    anchorX   = 0.0,\n"
+            "    anchorY   = 0.0,\n"
+            "    visible   = true\n"
+            "}\n"
+        },
+        {
+            "UIButton",
+            "return Category {\n"
+            "    label     = \"Button\",\n"
+            "    width     = 120.0,\n"
+            "    height    = 40.0,\n"
+            "    colorR    = 0.2,\n"
+            "    colorG    = 0.4,\n"
+            "    colorB    = 0.7,\n"
+            "    colorA    = 1.0,\n"
+            "    hoverR    = 0.3,\n"
+            "    hoverG    = 0.5,\n"
+            "    hoverB    = 0.8,\n"
+            "    hoverA    = 1.0,\n"
+            "    anchorX   = 0.0,\n"
+            "    anchorY   = 0.0,\n"
+            "    pressed   = Field(false, { hidden = true }),\n"
+            "    hovered   = Field(false, { hidden = true }),\n"
+            "    visible   = true\n"
+            "}\n"
+        },
+        {
+            "UIPanel",
+            "return Category {\n"
+            "    width     = 200.0,\n"
+            "    height    = 150.0,\n"
+            "    colorR    = 0.12,\n"
+            "    colorG    = 0.12,\n"
+            "    colorB    = 0.16,\n"
+            "    colorA    = 0.9,\n"
+            "    anchorX   = 0.0,\n"
+            "    anchorY   = 0.0,\n"
+            "    visible   = true\n"
+            "}\n"
+        },
+        {
+            "UIImage",
+            "return Category {\n"
+            "    texturePath = \"\",\n"
+            "    width       = 64.0,\n"
+            "    height      = 64.0,\n"
+            "    tintR       = 1.0,\n"
+            "    tintG       = 1.0,\n"
+            "    tintB       = 1.0,\n"
+            "    tintA       = 1.0,\n"
+            "    anchorX     = 0.0,\n"
+            "    anchorY     = 0.0,\n"
+            "    visible     = true,\n"
+            "    asset       = Field(nil, { hidden = true })\n"
+            "}\n"
+        },
     };
     return l_entries;
 }

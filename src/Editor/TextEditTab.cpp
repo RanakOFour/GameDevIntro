@@ -125,7 +125,7 @@ void DrawCategoryAttributes(std::string _categoryName, sol::table _attributes)
         {
             // Use ID+Category+AttributeName as key, should be specific enough
 
-            ImGui::Text(l_value.as<std::string>().c_str());
+            ImGui::TextUnformatted(l_value.as<std::string>().c_str());
         }
         break;
         case sol::type::userdata:
@@ -215,12 +215,16 @@ void TextEditTab::Draw()
 
             if(ImGui::BeginChild("TextEditor", ImVec2(0, 0)))
             {
-                auto l_catFile = m_categoryPanel.GetSelectedFile().lock();
-                if(l_catFile.get() != m_fileToEdit.get())
+                auto l_activeFile = m_rulesPanel.IsShown()
+                    ? m_rulesPanel.GetSelectedFile().lock()
+                    : m_categoryPanel.GetSelectedFile().lock();
+
+                if(l_activeFile.get() != m_fileToEdit.get())
                 {
                     m_textEditor.ClearText();
-                    m_fileToEdit = l_catFile;
-                    m_textEditor.SetText(m_fileToEdit->GetCode());
+                    m_fileToEdit = l_activeFile;
+                    if (m_fileToEdit)
+                        m_textEditor.SetText(m_fileToEdit->GetCode());
                 }
 
                 if(m_fileToEdit != nullptr)
@@ -300,7 +304,37 @@ void TextEditTab::SaveCurrentFile()
 
     auto l_category = RE::Core::LuaContext::Instance().lock()
                         ->GetCategory(m_fileToEdit->GetName()).lock();
-    if (!l_category) return;
+    if (!l_category)
+    {
+        // Not a category — check if it is a rule and hot-reload it.
+        auto l_scene     = m_editor.GetEngineContents().core->GetScene().lock();
+        auto l_luaCtx    = RE::Core::LuaContext::Instance().lock();
+        std::string l_ruleName = m_fileToEdit->GetName();
+
+        sol::table l_sceneTable = l_scene->GetSceneTable();
+        auto l_existingRule = l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
+
+        if (!l_existingRule)
+        {
+            RE::Log::Warning("SaveCurrentFile: no rule named '" + l_ruleName + "' found in scene.");
+            return;
+        }
+
+        bool l_wasActive = l_existingRule->GetActive();
+        l_scene->RemoveRule(*l_existingRule);
+
+        RE::Core::Rule l_newRule = l_luaCtx->CreateRule(m_fileToEdit);
+        l_newRule.SetActive(l_wasActive);
+        l_scene->AddRule(l_newRule);
+
+        // Clear the dirty flag (Reload() sets m_toBeReloaded=false; ReloadCategory is
+        // a no-op for rules since GetCategory() returns null).
+        m_fileToEdit->Reload();
+
+        RE::Log::Message("Rule saved and reloaded: " + m_fileToEdit->GetPath());
+        m_editor.SaveProjectInfo();
+        return;
+    }
 
     std::string l_catName      = l_category->GetName();
     std::bitset<1024> l_catSig = l_category->GetSignature();

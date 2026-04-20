@@ -34,6 +34,7 @@ class CategoryPanel : public Panel
     bool m_showCreateDialog; ///< Whether the "Create New Category" modal is open.
     bool m_showLoadDialog;   ///< Whether the file-open dialog is in progress.
     bool m_showBuiltins;     ///< Whether built-in categories are visible in the list.
+    bool m_needsRefresh = true; ///< Whether the category list needs re-querying.
 
     /** @brief Re-queries the engine for the current list of registered category names. */
     void RefreshCategoryList();
@@ -88,6 +89,9 @@ class CategoryPanel : public Panel
 
     /** @brief Returns true while either the create or load dialog is open. */
     bool IsDialogOpen();
+
+    /** @brief Marks the category list for re-querying next frame. */
+    void MarkDirty() { m_needsRefresh = true; }
 };
 
 #endif

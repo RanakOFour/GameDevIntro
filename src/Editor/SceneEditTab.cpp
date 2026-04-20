@@ -243,12 +243,14 @@ void SceneEditTab::Draw()
             {
                 Stop();
             }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Stop simulation and restore scene");
             ImGui::SameLine(0.0f, l_spacing);
             std::string l_pauseLabel = m_isGamePaused ? "Resume" : "Pause";
             if (ImGui::Button(l_pauseLabel.c_str(), ImVec2(l_pauseBtnW, 0.0f)))
             {
                 if (m_isGamePaused) Resume(); else Pause();
             }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip(m_isGamePaused ? "Resume simulation" : "Pause simulation");
         }
         else
         {
@@ -256,6 +258,7 @@ void SceneEditTab::Draw()
             {
                 Run();
             }
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Start simulation");
         }
     }
     ImGui::End();
@@ -272,7 +275,7 @@ void SceneEditTab::Draw()
     }
 
     // Render the infinite grid first (before ImGui)
-    if (!m_isGameRunning)
+    if (!m_isGameRunning && m_sceneSettings.showGrid)
     {
         glBindVertexArray(m_dummyGridVAO);
 
@@ -306,18 +309,34 @@ void SceneEditTab::Draw()
     
     if (l_scene)
     {
+        // Begin screen-space UI rendering (sets ortho projection, reads mouse).
+        Vector2 l_screenSize = m_window->GetScreenSize();
+        m_editor.GetUIRenderer().BeginFrame(l_screenSize.x, l_screenSize.y);
+
         l_scene->Draw();
+
+        m_editor.GetUIRenderer().EndFrame();
     }
 
     // Draw gizmo over selected entity (editor mode only).
-    if (!m_isGameRunning && m_selectedEntityId >= 0)
+    if (!m_isGameRunning && m_sceneSettings.showGizmos && m_selectedEntityId >= 0)
     {
         RE::Core::EntityRegistry& l_reg = l_scene->GetRegistry();
+
+        // Validate primary selected entity still exists
+        if (!l_reg.GetEntityTable().raw_get<sol::object>(m_selectedEntityId).valid())
+        {
+            m_selectedEntityId = -1;
+            m_selectedEntities.clear();
+        }
+        else
+        {
 
         // Draw selection highlight on all selected entities
         for (int l_id : m_selectedEntities)
         {
             if (l_id == m_selectedEntityId) continue; // primary gets gizmo instead
+            if (!l_reg.GetEntityTable().raw_get<sol::object>(l_id).valid()) continue;
             Vector2 l_pos = l_reg.GetEntityAttributes(l_id)
                                 .traverse_raw_get<Vector2>("Transform", "Position");
             Vector2 l_scale = l_reg.GetEntityAttributes(l_id)
@@ -351,6 +370,7 @@ void SceneEditTab::Draw()
                      ImVec2(l_screenPos.x, l_screenH - l_screenPos.y),
                      l_screenHE,
                      m_activeGizmoAxis);
+        } // else (entity exists)
     }
 
     // Draw drag-select rectangle

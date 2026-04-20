@@ -2,7 +2,6 @@
 #include "Editor/Editor.h"
 #include "Editor/SceneEditTab.h"
 #include "Editor/UndoManager.h"
-#include "Editor/Editor.h"
 
 #include "imgui/imgui.h"
 
@@ -47,7 +46,6 @@ void EntityPanel::RefreshEntityList()
 
 void EntityPanel::Draw()
 {
-    ImGui::SetWindowSize(ImVec2(300, 600));
     auto l_sceneEdit = &m_editor.GetSceneEdit();
     int l_selectedEntity = l_sceneEdit->GetSelectedEntity();
 
@@ -289,14 +287,14 @@ void EntityPanel::AddEntity()
     m_editor.GetUndoManager().PushCommand(
         std::make_unique<LambdaCommand>(
             "Create Entity",
-            // --- Redo: recreate entity and restore snapshot ---
+            // Redo: recreate entity and restore snapshot
             [l_edRaw, l_currentId, l_snapshot, l_snapshotName]() {
                 auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
                 int l_redoId = RestoreEntity(*l_sc, *l_snapshotName, *l_snapshot, l_currentId);
                 l_edRaw->GetSceneEdit().GetEntityPanel().RefreshEntityList();
                 l_edRaw->GetSceneEdit().SelectEntity(l_redoId);
             },
-            // --- Undo: snapshot current state then remove ---
+            // Undo: snapshot current state then remove
             [l_edRaw, l_currentId, l_snapshot, l_snapshotName]() {
                 auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
                 SnapshotEntity(*l_sc, *l_currentId, *l_snapshotName, *l_snapshot);
@@ -342,14 +340,14 @@ void EntityPanel::RemoveEntity(int _id)
     l_edRaw->GetUndoManager().PushCommand(
         std::make_unique<LambdaCommand>(
             "Delete Entity",
-            // --- Redo: remove entity again ---
+            // Redo: remove entity again
             [l_edRaw, l_currentId]() {
                 auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
                 l_sc->RemoveEntity(*l_currentId);
                 l_edRaw->GetSceneEdit().GetEntityPanel().RefreshEntityList();
                 l_edRaw->GetSceneEdit().SelectEntity(-1);
             },
-            // --- Undo: recreate entity and restore snapshot ---
+            // Undo: recreate entity and restore snapshot
             [l_edRaw, l_currentId, l_snapshot, l_snapshotName]() {
                 auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
                 int l_undoId = RestoreEntity(*l_sc, *l_snapshotName, *l_snapshot, l_currentId);

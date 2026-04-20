@@ -38,6 +38,7 @@
 class SceneEditTab
 {
     friend Editor;
+    friend class TopBar;
     
     private:
 	Editor& m_editor;                         ///< Back-reference to the owning Editor.
@@ -93,7 +94,7 @@ class SceneEditTab
     };
     std::unordered_map<int, EntityDragStart> m_dragStartTransforms; ///< Per-entity drag start transforms.
 
-    // --- Parent-child hierarchy (editor-level, not in the engine) ---
+    // Parent-child hierarchy (editor-level, not in the engine)
     std::unordered_map<int, int> m_entityParent;              ///< Child ID -> Parent ID.
     std::unordered_map<int, std::vector<int>> m_entityChildren; ///< Parent ID -> Children IDs.
 
@@ -180,7 +181,9 @@ class SceneEditTab
     /** @brief Returns reference to properties panel. */
     PropertiesPanel& GetPropertiesPanel() { return m_propertiesPanel; }
 
-    // --- Parent-child hierarchy ---
+    void CloseAllPanels() { m_entityPanel.SetShown(false); m_categoryPanel.SetShown(false); m_rulesPanel.SetShown(false); m_cameraPanel.SetShown(false); m_propertiesPanel.SetShown(false); m_settingsPanel.SetShown(false); m_consolePanel.SetShown(false); m_assetBrowserPanel.SetShown(false); };
+
+    // Parent-child hierarchy
 
     /**
      * @brief Sets the parent of an entity. Pass -1 to unparent.

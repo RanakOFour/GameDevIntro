@@ -7,9 +7,85 @@
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
+#include <fstream>
+#include <algorithm>
 
 static std::string g_newProjectDialogName("PSS_NewProjectDir");
 static std::string g_loadProjectDialogName("PSS_LoadProjectDir");
+static constexpr int k_maxRecentProjects = 10;
+
+std::string ProjectSelectionScreen::GetDataDir()
+{
+#if defined(_WIN32)
+    const char* l_appDataRaw = std::getenv("APPDATA");
+    const std::string l_appData = l_appDataRaw ? l_appDataRaw : "";
+    std::filesystem::path l_base = l_appData.empty()
+        ? std::filesystem::path(".")
+        : std::filesystem::path(l_appData);
+#else
+    const char* l_xdgRaw  = std::getenv("XDG_DATA_HOME");
+    const char* l_homeRaw = std::getenv("HOME");
+    const std::string l_xdg  = l_xdgRaw  ? l_xdgRaw  : "";
+    const std::string l_home = l_homeRaw ? l_homeRaw : "";
+    std::filesystem::path l_base;
+    if (!l_xdg.empty())
+        l_base = std::filesystem::path(l_xdg);
+    else if (!l_home.empty())
+        l_base = std::filesystem::path(l_home) / ".local" / "share";
+    else
+        l_base = std::filesystem::path(".");
+#endif
+    return (l_base / "GameDevIntro").string();
+}
+
+void ProjectSelectionScreen::LoadRecentProjects(State& _state)
+{
+    _state.recentProjects.clear();
+    std::filesystem::path l_path = std::filesystem::path(GetDataDir()) / "RecentProjects.txt";
+    std::ifstream l_file(l_path);
+    if (!l_file.is_open())
+        return;
+
+    std::string l_line;
+    while (std::getline(l_file, l_line))
+    {
+        if (!l_line.empty())
+            _state.recentProjects.push_back(l_line);
+    }
+}
+
+void ProjectSelectionScreen::SaveRecentProjects(const State& _state)
+{
+    std::filesystem::path l_dir(GetDataDir());
+    std::filesystem::create_directories(l_dir);
+
+    std::filesystem::path l_path = l_dir / "RecentProjects.txt";
+    std::ofstream l_file(l_path, std::ios::trunc);
+    if (!l_file.is_open())
+        return;
+
+    for (const auto& l_proj : _state.recentProjects)
+        l_file << l_proj << "\n";
+}
+
+void ProjectSelectionScreen::AddRecentProject(State& _state, const std::string& _path)
+{
+    std::string l_canonical = std::filesystem::weakly_canonical(_path).string();
+
+    // Remove any existing duplicate
+    _state.recentProjects.erase(
+        std::remove(_state.recentProjects.begin(), _state.recentProjects.end(), l_canonical),
+        _state.recentProjects.end());
+
+    // Insert at front
+    _state.recentProjects.insert(_state.recentProjects.begin(), l_canonical);
+
+    // Cap the list
+    if ((int)_state.recentProjects.size() > k_maxRecentProjects)
+        _state.recentProjects.resize(k_maxRecentProjects);
+
+    SaveRecentProjects(_state);
+}
 
 void ProjectSelectionScreen::DrawCentredTitle(const std::string& _text, ImVec2 _displaySize)
 {
@@ -27,37 +103,163 @@ bool ProjectSelectionScreen::DrawCentredButton(const std::string& _label, ImVec2
 
 void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
 {
-    // Centre the block vertically
-    float l_blockH = 60.0f + 20.0f + 3.0f * 50.0f + 2.0f * 12.0f;
-    ImGui::SetCursorPosY((_displaySize.y - l_blockH) * 0.5f);
+    const float k_leftW  = 300.0f;
+    const float k_rightW = _displaySize.x - k_leftW;
+    const float k_height = _displaySize.y;
+    const float k_pad    = 32.0f;
 
-    DrawCentredTitle("Game Dev Intro", _displaySize);
-    ImGui::Spacing(); ImGui::Spacing();
-
-    ImVec2 l_btnPosition(280.0f, 50.0f);
-
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.45f, 0.75f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.55f, 0.90f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.15f, 0.35f, 0.60f, 1.0f));
-
-    if (DrawCentredButton("Start New Project", l_btnPosition))
-        _state.page = Page::NewProject;
-    ImGui::Spacing();
-    if (DrawCentredButton("Load Project", l_btnPosition))
-        _state.page = Page::LoadProject;
-
-    ImGui::PopStyleColor(3);
-    ImGui::Spacing();
-
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.60f, 0.18f, 0.18f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.80f, 0.25f, 0.25f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.45f, 0.12f, 0.12f, 1.0f));
-    if (DrawCentredButton("Exit", l_btnPosition))
+    // Left sidebar: title + buttons
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.09f, 0.09f, 0.12f, 1.0f));
+    if (ImGui::BeginChild("##LeftPanel", ImVec2(k_leftW, k_height), false,
+                           ImGuiWindowFlags_NoScrollbar))
     {
-        _state.result  = { Action::Exit, Project{} };
-        _state.decided = true;
+        ImGui::SetCursorPosY(k_height * 0.26f);
+
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.94f, 0.94f, 0.98f, 1.0f));
+        ImGui::TextUnformatted("Game Dev Intro");
+        ImGui::PopStyleColor();
+
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.44f, 0.48f, 0.60f, 1.0f));
+        ImGui::TextUnformatted("Project Manager");
+        ImGui::PopStyleColor();
+
+        ImGui::Spacing(); ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.22f, 0.26f, 0.38f, 1.0f));
+        ImGui::Separator();
+        ImGui::PopStyleColor();
+        ImGui::Spacing(); ImGui::Spacing(); ImGui::Spacing();
+
+        const ImVec2 k_btnSize(k_leftW - k_pad * 2.0f, 40.0f);
+
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.40f, 0.68f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.50f, 0.80f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.15f, 0.32f, 0.54f, 1.0f));
+        if (ImGui::Button("New Project", k_btnSize))
+            _state.page = Page::NewProject;
+        ImGui::PopStyleColor(3);
+
+        ImGui::Spacing();
+
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.17f, 0.19f, 0.26f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.22f, 0.26f, 0.38f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.13f, 0.15f, 0.21f, 1.0f));
+        if (ImGui::Button("Open Project", k_btnSize))
+            _state.page = Page::LoadProject;
+        ImGui::PopStyleColor(3);
+
+        // Exit — anchored to bottom of sidebar
+        ImGui::SetCursorPosY(k_height - 56.0f);
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.36f, 0.12f, 0.12f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.52f, 0.17f, 0.17f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.28f, 0.09f, 0.09f, 1.0f));
+        if (ImGui::Button("Exit", k_btnSize))
+        {
+            _state.result  = { Action::Exit, Project{} };
+            _state.decided = true;
+        }
+        ImGui::PopStyleColor(3);
     }
-    ImGui::PopStyleColor(3);
+    ImGui::EndChild();
+    ImGui::PopStyleColor(); // ChildBg
+
+    ImGui::SameLine(0.0f, 0.0f);
+
+    // Right panel: recent projects
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.13f, 0.13f, 0.17f, 1.0f));
+    if (ImGui::BeginChild("##RightPanel", ImVec2(k_rightW, k_height), false,
+                           ImGuiWindowFlags_NoScrollbar))
+    {
+        ImGui::SetCursorPosY(36.0f);
+        ImGui::SetCursorPosX(k_pad);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.60f, 0.64f, 0.76f, 1.0f));
+        ImGui::TextUnformatted("Recent Projects");
+        ImGui::PopStyleColor();
+
+        ImGui::Spacing();
+        ImGui::PushStyleColor(ImGuiCol_Separator, ImVec4(0.20f, 0.22f, 0.32f, 1.0f));
+        ImGui::Separator();
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+
+        const float l_listW = k_rightW - k_pad * 2.0f;
+        const float l_listH = k_height - ImGui::GetCursorPosY() - 10.0f;
+        ImGui::SetCursorPosX(k_pad);
+
+        ImGui::PushStyleColor(ImGuiCol_ChildBg,       ImVec4(0.00f, 0.00f, 0.00f, 0.00f));
+        ImGui::PushStyleColor(ImGuiCol_Header,        ImVec4(0.17f, 0.19f, 0.28f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.21f, 0.25f, 0.40f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_HeaderActive,  ImVec4(0.20f, 0.38f, 0.62f, 1.0f));
+        if (ImGui::BeginChild("##RecentList", ImVec2(l_listW, l_listH), false))
+        {
+            if (_state.recentProjects.empty())
+            {
+                ImGui::Spacing();
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.34f, 0.36f, 0.46f, 1.0f));
+                ImGui::TextUnformatted("No recent projects.");
+                ImGui::PopStyleColor();
+            }
+            else
+            {
+                for (int i = 0; i < (int)_state.recentProjects.size(); i++)
+                {
+                    const std::string& l_projPath = _state.recentProjects[i];
+                    std::string l_name = std::filesystem::path(l_projPath).filename().string();
+
+                    ImGui::PushID(i);
+
+                    float l_rowY = ImGui::GetCursorPosY();
+                    bool l_clicked = ImGui::Selectable("##row", false,
+                                                        ImGuiSelectableFlags_AllowOverlap,
+                                                        ImVec2(l_listW, 52.0f));
+
+                    // Project name
+                    ImGui::SetCursorPosY(l_rowY + 5.0f);
+                    ImGui::SetCursorPosX(10.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.90f, 0.92f, 0.96f, 1.0f));
+                    ImGui::TextUnformatted(l_name.c_str());
+                    ImGui::PopStyleColor();
+
+                    // Full path (muted)
+                    ImGui::SetCursorPosY(l_rowY + 28.0f);
+                    ImGui::SetCursorPosX(10.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.38f, 0.41f, 0.52f, 1.0f));
+                    ImGui::TextUnformatted(l_projPath.c_str());
+                    ImGui::PopStyleColor();
+
+                    ImGui::SetCursorPosY(l_rowY + 54.0f);
+                    ImGui::Dummy(ImVec2(0.0f, 0.0f)); // Required: claim the extended boundary
+
+                    if (l_clicked)
+                    {
+                        if (std::filesystem::is_directory(l_projPath) && Project::IsValid(l_projPath))
+                        {
+                            AddRecentProject(_state, l_projPath);
+                            _state.result  = { Action::StartSandbox, Project(l_projPath) };
+                            _state.decided = true;
+                        }
+                        else
+                        {
+                            _state.recentProjects.erase(_state.recentProjects.begin() + i);
+                            SaveRecentProjects(_state);
+                            ImGui::PopID();
+                            break;
+                        }
+                    }
+
+                    ImGui::PopID();
+                }
+            }
+        }
+        ImGui::EndChild();
+        ImGui::PopStyleColor(4);
+    }
+    ImGui::EndChild();
+    ImGui::PopStyleColor(); // ChildBg
 }
 
 void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
@@ -117,9 +319,9 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     float l_pairW = 240.0f * 2.0f + 16.0f;
     ImGui::SetCursorPosX((_displaySize.x - l_pairW) * 0.5f);
 
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.18f, 0.55f, 0.25f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.25f, 0.70f, 0.35f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.12f, 0.40f, 0.18f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.40f, 0.68f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.50f, 0.80f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.15f, 0.32f, 0.54f, 1.0f));
     if (ImGui::Button("Create Project", ImVec2(240.0f, 50.0f)))
     {
         _state.errorMsg.clear();
@@ -133,6 +335,7 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
             {
                 std::filesystem::path l_fullPath = std::filesystem::path(_state.location) / _state.name;
                 Project l_project   = Project::Create(l_fullPath.string());
+                AddRecentProject(_state, l_fullPath.string());
                 _state.result  = { _state.tutorial ? Action::StartTutorial
                                                  : Action::StartSandbox,
                                   l_project };
@@ -197,9 +400,9 @@ void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
     float l_pairW = 240.0f * 2.0f + 16.0f;
     ImGui::SetCursorPosX((_displaySize.x - l_pairW) * 0.5f);
 
-    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.45f, 0.75f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.30f, 0.55f, 0.90f, 1.0f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.15f, 0.35f, 0.60f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.20f, 0.40f, 0.68f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.27f, 0.50f, 0.80f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.15f, 0.32f, 0.54f, 1.0f));
     if (ImGui::Button("Load", ImVec2(240.0f, 50.0f)))
     {
         _state.errorMsg.clear();
@@ -212,6 +415,7 @@ void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
             _state.errorMsg = "Not a valid project (missing Categories / Rules / Scenes).";
         else
         {
+            AddRecentProject(_state, l_dir);
             _state.result  = { Action::StartSandbox, Project(l_dir) };
             _state.decided = true;
         }
@@ -272,6 +476,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
     ImFont* l_font = io.Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
 
     State l_state;
+    LoadRecentProjects(l_state);
 
     while (!l_state.decided && !_engineContents.io->GetQuitSignal())
     {
@@ -279,7 +484,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
         for (const SDL_Event& ev : l_events)
             ImGui_ImplSDL3_ProcessEvent(&ev);
 
-        glClearColor(0.08f, 0.08f, 0.12f, 1.0f);
+        glClearColor(0.09f, 0.09f, 0.12f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -302,7 +507,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
             ImGuiWindowFlags_NoSavedSettings   |
             ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.08f, 0.08f, 0.12f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.09f, 0.09f, 0.12f, 1.0f));
         ImGui::Begin("##ProjectSelectionScreen", nullptr, l_flags);
 
         switch (l_state.page)

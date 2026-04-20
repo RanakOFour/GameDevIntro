@@ -55,7 +55,11 @@ void CategoryPanel::RefreshCategoryList()
 
 void CategoryPanel::Draw()
 {
-    RefreshCategoryList();
+    if (m_needsRefresh)
+    {
+        RefreshCategoryList();
+        m_needsRefresh = false;
+    }
     
     float buttonWidth = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
     // Create and Load buttons
@@ -258,6 +262,7 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
     
     m_loadedCategories.push_back(l_categoryWPtr.lock()->GetName());
 
+    m_needsRefresh = true;
     m_editor.SaveProjectInfo();
     RE::Log::Message("Category loaded from: " + _path);
 }

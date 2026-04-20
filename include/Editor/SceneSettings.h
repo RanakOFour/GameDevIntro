@@ -35,6 +35,8 @@ struct SceneSettings
     GizmoMode gizmoMode = GizmoMode::Translate; ///< Active gizmo tool.
     bool  snapEnabled   = false;                ///< Whether snap-to-grid is active.
     float snapGridSize  = 1.0f;                 ///< Grid cell size for snap (world units).
+    bool  showGrid      = true;                 ///< Whether the editor grid is drawn.
+    bool  showGizmos    = true;                 ///< Whether entity selection gizmos are drawn.
 };
 
 #endif

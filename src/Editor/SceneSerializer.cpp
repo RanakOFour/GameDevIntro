@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <set>
 #include <iomanip>
+#include <unistd.h>
 
 std::string SceneSerializer::SolObjectToLua(const sol::object& _value)
 {
@@ -135,9 +136,11 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents,
     (*l_state)["LoadCategory"] =
         [&_contents](const std::string& _name, const std::string& _code)
     {
-        // Use the category name as the filename stem so GetName() returns the
-        // correct name without any prefix/suffix mangling.
-        std::filesystem::path l_tmpPath = std::filesystem::temp_directory_path() / (_name + ".lua");
+        // Use a unique subdirectory so concurrent editors don't collide.
+        std::filesystem::path l_tmpDir = std::filesystem::temp_directory_path()
+            / ("gdi_" + std::to_string(::getpid()));
+        std::filesystem::create_directories(l_tmpDir);
+        std::filesystem::path l_tmpPath = l_tmpDir / (_name + ".lua");
 
         {
             std::ofstream l_out(l_tmpPath);
@@ -157,7 +160,10 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents,
     (*l_state)["LoadRule"] =
         [&_contents](const std::string& _name, const std::string& _code)
     {
-        std::filesystem::path l_tmpPath = std::filesystem::temp_directory_path() / (_name + ".lua");
+        std::filesystem::path l_tmpDir = std::filesystem::temp_directory_path()
+            / ("gdi_" + std::to_string(::getpid()));
+        std::filesystem::create_directories(l_tmpDir);
+        std::filesystem::path l_tmpPath = l_tmpDir / (_name + ".lua");
 
         {
             std::ofstream l_out(l_tmpPath);
@@ -199,6 +205,11 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents,
             return;
         }
 
+        if (!std::filesystem::is_regular_file(_path))
+        {
+            RE::Log::Message("ERROR: Category path is not a regular file: " + _path);
+            return;
+        }
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(_path);
         if (l_file.expired())
         {
@@ -216,6 +227,11 @@ void SceneSerializer::RegisterConstructorHelpers(RE::EngineContents& _contents,
     {
         try
         {
+            if (!std::filesystem::is_regular_file(_path))
+            {
+                RE::Log::Message("ERROR: Rule path is not a regular file: " + _path);
+                return;
+            }
             auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(_path);
             if (l_file.expired())
             {
@@ -331,9 +347,6 @@ std::string SceneSerializer::Serialize(RE::EngineContents& _contents,
         }
     }
 
-    // ------------------------------------------------------------------
-    // 3. Embed rule source code.
-    // ------------------------------------------------------------------
     out << "-- ========================================\n";
     out << "-- RULES\n";
     out << "-- ========================================\n\n";
@@ -509,6 +522,11 @@ void SceneSerializer::LoadFromFile(const std::string& _filePath,
                                    RE::EngineContents& _contents,
                                    SceneSettings* _outSettings)
 {
+    if (!std::filesystem::is_regular_file(_filePath))
+    {
+        RE::Log::Message("ERROR: Scene path is not a regular file: " + _filePath);
+        return;
+    }
     std::ifstream l_file(_filePath);
     if (!l_file.is_open())
     {
