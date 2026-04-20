@@ -500,6 +500,10 @@ void Editor::Draw()
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+    // Flush deferred game-UI draw commands on top of all editor panels.
+    if (auto l_ui = RE::UI::GetRenderer().lock())
+        l_ui->Flush();
+
     m_engineContents.io->GetWindow().lock()->Swap();
 }
 

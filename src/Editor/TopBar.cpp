@@ -56,6 +56,11 @@ void TopBar::Draw()
                 std::shared_ptr<RE::Core::Scene> newScene = std::make_shared<RE::Core::Scene>();
                 m_editor.GetEngineContents().core->SetScene(newScene);
                 m_editor.SetCurrentScenePath("");
+
+                BuiltinRules::Load(m_editor.GetEngineContents());
+                m_editor.GetSceneEdit().RebuildRegistryFromScene();
+                m_editor.GetSceneEdit().m_scene = m_editor.GetEngineContents().core->GetScene();
+                m_editor.GetSceneEdit().m_entityPanel.RefreshEntityList();
             }
             if (ImGui::MenuItem("Load Scene", "Ctrl+O"))
             {

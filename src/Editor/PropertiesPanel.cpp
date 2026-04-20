@@ -257,7 +257,9 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             }
             
             std::string l_oldStr = l_value.as<std::string>();
-            if (ImGui::InputText(l_property.c_str(), &m_stringValueMap[l_key], ImGuiInputTextFlags_EnterReturnsTrue))
+            bool l_committed = ImGui::InputText(l_property.c_str(), &m_stringValueMap[l_key], ImGuiInputTextFlags_EnterReturnsTrue);
+            l_committed |= ImGui::IsItemDeactivatedAfterEdit();
+            if (l_committed)
             {
                 _attributes[l_property] = m_stringValueMap[l_key];
                 std::string l_newStr = m_stringValueMap[l_key];

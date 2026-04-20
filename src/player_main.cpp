@@ -27,10 +27,6 @@
 
 using json = nlohmann::json;
 
-// ---------------------------------------------------------------------------
-// Minimal scene serializer helpers (subset of SceneSerializer)
-// ---------------------------------------------------------------------------
-
 struct PlayerSceneSettings
 {
     float gravityX    =  0.0f;
@@ -116,10 +112,6 @@ static void RegisterPlayerHelpers(RE::EngineContents& _contents,
             return l_id;
         });
 }
-
-// ---------------------------------------------------------------------------
-// Built-in category sources (must match the editor's BuiltinCategories)
-// ---------------------------------------------------------------------------
 
 struct BuiltinEntry { std::string name; std::string source; };
 
@@ -221,10 +213,6 @@ static void LoadBuiltinCategories(RE::EngineContents& _contents)
     }
 }
 
-// ---------------------------------------------------------------------------
-// Built-in rules for the player (Rendering + PhysicsSync, no EditorRender)
-// ---------------------------------------------------------------------------
-
 static const std::string k_renderingSrc =
 R"lua(local Rendering = Rule {
     categories = { "Transform" },
@@ -280,13 +268,31 @@ R"lua(local UIRendering = Rule {
     fields = {}
 }
 
+-- Converts a world-space Vector2 to UI pixel coordinates (Y-down).
+local function WorldToUI(worldPos)
+    local screenW = UI.GetScreenWidth()
+    local screenH = UI.GetScreenHeight()
+    if screenW <= 0 or screenH <= 0 then return 0, 0 end
+    local camW    = Core.Camera:getCameraWidth()
+    local camH    = camW / (screenW / screenH)
+    local cam     = Core.Camera:getPosition()
+    local ndcX    = (worldPos.x - cam.x) / (camW * 0.5)
+    local ndcY    = (worldPos.y - cam.y) / (camH * 0.5)
+    local px      = (ndcX + 1.0) * 0.5 * screenW
+    local py      = (1.0 - ndcY) * 0.5 * screenH
+    return px, py
+end
+
 function UIRendering:Update(_entityData)
     local t = _entityData["Transform"]
 
+    -- Convert world position to UI screen-space (Y-down pixels).
+    local baseX, baseY = WorldToUI(t.Position)
+
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = t.Position.x + btn.anchorX * UI.GetScreenWidth()
-        local y = t.Position.y + btn.anchorY * UI.GetScreenHeight()
+        local x = baseX + btn.anchorX * UI.GetScreenWidth()
+        local y = baseY + btn.anchorY * UI.GetScreenHeight()
         btn.hovered = UI.IsHovered(x, y, btn.width, btn.height)
         btn.pressed = UI.IsClicked(x, y, btn.width, btn.height)
     end
@@ -295,18 +301,21 @@ end
 function UIRendering:Draw(_entityData)
     local t = _entityData["Transform"]
 
+    -- Convert world position to UI screen-space (Y-down pixels).
+    local baseX, baseY = WorldToUI(t.Position)
+
     local panel = _entityData["UIPanel"]
     if panel ~= nil and panel.visible then
-        local x = t.Position.x + panel.anchorX * UI.GetScreenWidth()
-        local y = t.Position.y + panel.anchorY * UI.GetScreenHeight()
+        local x = baseX + panel.anchorX * UI.GetScreenWidth()
+        local y = baseY + panel.anchorY * UI.GetScreenHeight()
         UI.DrawRect(x, y, panel.width, panel.height,
                     panel.colorR, panel.colorG, panel.colorB, panel.colorA)
     end
 
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = t.Position.x + btn.anchorX * UI.GetScreenWidth()
-        local y = t.Position.y + btn.anchorY * UI.GetScreenHeight()
+        local x = baseX + btn.anchorX * UI.GetScreenWidth()
+        local y = baseY + btn.anchorY * UI.GetScreenHeight()
         local r, g, b, a
         if btn.hovered then
             r, g, b, a = btn.hoverR, btn.hoverG, btn.hoverB, btn.hoverA
@@ -321,8 +330,8 @@ function UIRendering:Draw(_entityData)
 
     local img = _entityData["UIImage"]
     if img ~= nil and img.visible then
-        local x = t.Position.x + img.anchorX * UI.GetScreenWidth()
-        local y = t.Position.y + img.anchorY * UI.GetScreenHeight()
+        local x = baseX + img.anchorX * UI.GetScreenWidth()
+        local y = baseY + img.anchorY * UI.GetScreenHeight()
         if img.asset ~= nil then
             UI.DrawImage(img.asset:GetID(), x, y, img.width, img.height,
                          img.tintR, img.tintG, img.tintB, img.tintA)
@@ -331,8 +340,8 @@ function UIRendering:Draw(_entityData)
 
     local txt = _entityData["UIText"]
     if txt ~= nil and txt.visible then
-        local x = t.Position.x + txt.anchorX * UI.GetScreenWidth()
-        local y = t.Position.y + txt.anchorY * UI.GetScreenHeight()
+        local x = baseX + txt.anchorX * UI.GetScreenWidth()
+        local y = baseY + txt.anchorY * UI.GetScreenHeight()
         UI.DrawText(x, y,
                     txt.colorR, txt.colorG, txt.colorB, txt.colorA,
                     txt.text, txt.fontSize, false)
@@ -369,10 +378,6 @@ static void LoadPlayerRules(RE::EngineContents& _contents)
         l_scene->AddRule(l_rule);
     }
 }
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
 
 int main(int argc, char* argv[])
 {

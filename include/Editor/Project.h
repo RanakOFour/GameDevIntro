@@ -14,7 +14,7 @@
  */
 struct ProjectSettings
 {
-    // --- Camera (initial state; applied when a fresh scene is loaded) ---
+    // Camera (initial state; applied when a fresh scene is loaded)
     float cameraX     =  0.0f;  ///< Initial camera world X position.
     float cameraY     =  0.0f;  ///< Initial camera world Y position.
     float cameraZ     = 10.0f;  ///< Initial camera world Z position.

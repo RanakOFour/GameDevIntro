@@ -342,11 +342,10 @@ void SceneEditTab::Draw()
             Vector2 l_scale = l_reg.GetEntityAttributes(l_id)
                                   .traverse_raw_get<Vector2>("Transform", "Scale");
             Vector2 l_sp = m_camera->WorldToScreenPoint(l_pos);
-            Vector2 l_seX = m_camera->WorldToScreenPoint(l_pos + Vector2(l_scale.x, 0));
-            Vector2 l_seY = m_camera->WorldToScreenPoint(l_pos + Vector2(0, l_scale.y));
+            Vector2 l_se = m_camera->WorldToScreenPoint(l_pos + l_scale);
             float l_sh = m_window->GetScreenSize().y;
             ImVec2 l_center(l_sp.x, l_sh - l_sp.y);
-            ImVec2 l_half(std::abs(l_seX.x - l_sp.x), std::abs(l_seY.y - l_sp.y));
+            ImVec2 l_half(std::abs(l_se.x - l_sp.x), std::abs(l_se.y - l_sp.y));
             ImGui::GetForegroundDrawList()->AddRect(
                 ImVec2(l_center.x - l_half.x, l_center.y - l_half.y),
                 ImVec2(l_center.x + l_half.x, l_center.y + l_half.y),
@@ -359,12 +358,11 @@ void SceneEditTab::Draw()
         Vector2 l_entityScale = l_reg.GetEntityAttributes(m_selectedEntityId)
                                     .traverse_raw_get<Vector2>("Transform", "Scale");
         Vector2 l_screenPos = m_camera->WorldToScreenPoint(l_entityPos);
-        Vector2 l_screenEdgeX = m_camera->WorldToScreenPoint(l_entityPos + Vector2(l_entityScale.x, 0));
-        Vector2 l_screenEdgeY = m_camera->WorldToScreenPoint(l_entityPos + Vector2(0, l_entityScale.y));
+        Vector2 l_screenEdges = m_camera->WorldToScreenPoint(l_entityPos + l_entityScale);
         
         float l_screenH = m_window->GetScreenSize().y;
-        ImVec2 l_screenHE(std::abs(l_screenEdgeX.x - l_screenPos.x),
-                          std::abs(l_screenEdgeY.y - l_screenPos.y));
+        ImVec2 l_screenHE(std::abs(l_screenEdges.x - l_screenPos.x),
+                          std::abs(l_screenEdges.y - l_screenPos.y));
         
         Gizmo::Draw(m_sceneSettings.gizmoMode,
                      ImVec2(l_screenPos.x, l_screenH - l_screenPos.y),
