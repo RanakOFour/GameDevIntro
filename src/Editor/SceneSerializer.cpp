@@ -18,7 +18,7 @@
 #include <set>
 #include <iomanip>
 
-#if LINUX
+#if __unix
 #include <unistd.h>
 #else
 #include <Windows.h>

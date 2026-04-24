@@ -131,7 +131,7 @@ void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
         }
 #else
         const char* l_homeChar = std::getenv("HOME");
-        m_documentsPath = std::string(l_homeChar) + "\\Documents";;
+        m_documentsPath = std::string(l_homeChar) + "/Documents";;
 #endif
     }
 

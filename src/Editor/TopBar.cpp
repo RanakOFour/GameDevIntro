@@ -97,15 +97,15 @@ void TopBar::Draw()
                 m_showLoadDialog = false;
                 m_showSaveDialog = true;
             }
-            ImGui::Separator();
-            if (ImGui::MenuItem("Export Project...", nullptr, false,
-                                m_editor.GetProject().IsOpen() && !m_editor.GetCurrentScenePath().empty()))
-            {
-                IGFD::FileDialogConfig config;
-                config.path = m_editor.GetProject().GetRootPath();
-                ImGuiFileDialog::Instance()->OpenDialog("ExportDirDlgKey", "Choose Export Directory", nullptr, config);
-                m_showExportDialog = true;
-            }
+            // ImGui::Separator();
+            // if (ImGui::MenuItem("Export Project...", nullptr, false,
+            //                     m_editor.GetProject().IsOpen() && !m_editor.GetCurrentScenePath().empty()))
+            // {
+            //     IGFD::FileDialogConfig config;
+            //     config.path = m_editor.GetProject().GetRootPath();
+            //     ImGuiFileDialog::Instance()->OpenDialog("ExportDirDlgKey", "Choose Export Directory", nullptr, config);
+            //     m_showExportDialog = true;
+            // }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Ctrl+Q"))
             {

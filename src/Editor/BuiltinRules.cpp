@@ -11,10 +11,12 @@ static const std::string k_editorRenderSrc =
 R"lua(local EditorRender = Rule {
     categories = {"Transform"},
     fields = {
+        localPath = Editor.GetLocalPath(),
+        Log.Message("EditorRender: local path is " .. Editor.GetLocalPath()),
         templateDrawable = {
-            shader  = Asset.Shader("./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs"),
-            texture = Asset.Texture("./resources/Textures/EditorTexture.png"),
-            model   = Asset.Model("./resources/Models/FlatTexture.obj")
+            shader  = Asset.Shader(Editor.GetLocalPath() .. "Shaders/default/frag.fs;" .. Editor.GetLocalPath() .. "Shaders/default/vert.vs"),
+            texture = Asset.Texture(Editor.GetLocalPath() .. "Textures/EditorTexture.png"),
+            model   = Asset.Model(Editor.GetLocalPath() .. "Models/FlatTexture.obj")
         },
         drawOutline    = true,
         lastFrameInput = false,

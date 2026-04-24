@@ -33,6 +33,13 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 {
     RE::Log::Message("Engine already initialised; Editor taking ownership");
 
+    m_editorTable = m_engineContents.core->GetLuaContext()->GetState()->create_named_table("Editor");
+    m_editorTable["GetLocalPath"] = []() {
+                                            std::string l_path = BuiltinCategories::GetDataDir();
+                                            l_path = l_path.substr(0, l_path.size() - 10);
+                                            return l_path;
+                                         };
+
     // Load built-in (read-only) categories from the platform data directory.
     BuiltinCategories::Load(m_engineContents);
 

@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_STANDARD 20)
 
 project(GameDevIntro VERSION 0.5
                      LANGUAGES CXX)
+
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace=timetrace.json")
 
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
@@ -46,26 +51,4 @@ elseif(WIN32)
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/resources"
                        $<TARGET_FILE_DIR:GameDevIntro>/resources)
-endif()
-
-# ── Standalone player executable ──────────────────────────────────────────────
-# No ImGui — uses pure-GL UIRenderer for screen-space UI.
-
-add_executable(GamePlayer "src/player_main.cpp")
-
-target_include_directories(GamePlayer PUBLIC include extern)
-
-target_link_libraries(GamePlayer PUBLIC RanakEngine)
-
-if(UNIX)
-    target_link_directories(GamePlayer PUBLIC lib/unix)
-    target_link_libraries(GamePlayer PUBLIC GL GLEW SDL3 ${LUA_LIBRARIES})
-elseif(WIN32)
-    target_link_directories(GamePlayer PUBLIC lib/win/release)
-    target_link_libraries(GamePlayer PUBLIC opengl32 glew32 SDL3 lua)
-
-    add_custom_command(TARGET GamePlayer POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
-                       $<TARGET_FILE_DIR:GamePlayer>)
 endif()

@@ -52,6 +52,7 @@ private:
     ThemeSettingsPanel m_themeSettingsPanel; ///< Theme colour editing panel.
     ImFont* m_font;                            ///< Custom font loaded for the editor UI.
 
+    sol::table m_editorTable;
     RE::EngineContents m_engineContents; ///< Aggregated engine systems.
     Project            m_project;        ///< The currently open project (path + subdir helpers).
 
@@ -102,7 +103,7 @@ private:
      * @brief Factory method — thin wrapper returning a prvalue for guaranteed copy elision.
      * @param engineContents  Pre-initialised engine bundle (window, GL, etc.).
      * @param project         The project selected on the project-selection screen.
-     * @return The new Editor constructed directly in the caller's frame (C++17 RVO).
+     * @return The new Editor
      */
     static Editor Create(RE::EngineContents engineContents, Project project)
     {

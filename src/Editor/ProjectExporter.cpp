@@ -86,8 +86,8 @@ bool ProjectExporter::Export(Editor& _editor, const std::string& _outputDir)
     {
         json l_config;
         l_config["scene"]        = l_sceneFile.string();
-        l_config["windowWidth"]  = 1280;
-        l_config["windowHeight"] = 720;
+        l_config["windowWidth"]  = 1920;
+        l_config["windowHeight"] = 1080;
         l_config["title"]        = fs::path(_editor.GetProject().GetRootPath()).filename().string();
 
         std::ofstream l_f(l_outDir / "PlayerConfig.json");
