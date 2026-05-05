@@ -5,7 +5,7 @@ int main()
 {
     try
     {
-        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(1920 / 2, 1080 / 2));
+        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(960, 540));
 
         ProjectSelectionScreen::Result l_choice = ProjectSelectionScreen::Run(l_engineContents);
 

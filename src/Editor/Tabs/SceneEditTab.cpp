@@ -142,7 +142,6 @@ void SceneEditTab::DrawContextMenu()
 
             m_entityPanel.AddEntity();
 
-            // Awful fucking sentence
             sol::table l_entityTransform = l_scene->GetRegistry()
                                             .GetEntityAttributes(m_selectedEntityId)
                                             .raw_get<sol::table>("Transform");
@@ -164,7 +163,9 @@ void SceneEditTab::DrawContextMenu()
             if(ImGui::Button(l_deleteLabel.c_str(), l_buttonSize))
             {
                 for (int l_id : m_selectedEntities)
+                {    
                     l_scene->RemoveEntity(l_id);
+                }
                 ClearSelection();
             }
         }

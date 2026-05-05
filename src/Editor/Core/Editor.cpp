@@ -14,12 +14,12 @@
     
 #include "RanakEngine/RanakEngine.h"
 
-#include "imguiFileDialog/ImGuiFileDialog.h"
+#include "imgui/imgui_impl_sdl3.h"
+#include "imgui/imgui_impl_opengl3.h"
 
 #include "json/json.hpp"
 using json = nlohmann::json;
 
-#include "SDL3/SDL.h"
 #include <GL/gl.h>
 #include <fstream>
 #include <filesystem>

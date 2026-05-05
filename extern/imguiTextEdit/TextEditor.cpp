@@ -122,7 +122,7 @@ void TextEditor::render(const char* title, const ImVec2& size, bool border) {
 				break;
 
 			case Scroll::alignMiddle:
-				scrollY = std::max(0.0f, static_cast<float>(scrollToLineNumber - visibleLines / 2) * glyphSize.y);
+				scrollY = std::max(0.0f, static_cast<float>(scrollToLineNumber - visibleLines / 2.0f) * glyphSize.y);
 				break;
 
 			case Scroll::alignBottom:
@@ -4453,10 +4453,12 @@ bool TextEditor::Autocomplete::render(Document& document, Cursors& cursors, cons
 
 				// apply arrow keys to selected suggestion
 				if (ImGui::IsKeyPressed(ImGuiKey_UpArrow)) {
-					if (currentSelection == 0) {
+					if (currentSelection == 0)
+					{
 						currentSelection = items - 1;
-}
-					 else {
+					}
+					else
+					{
 						currentSelection--;
 					}
 

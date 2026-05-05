@@ -3,7 +3,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <cstdlib>
 #include <cstdio>
 
 const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
@@ -43,7 +42,7 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
         {
             "PhysicsBody",
             "return Category {\n"
-            "    bodyType    = \"dynamic\",\n"
+            "    bodyType    = Field(\"dynamic\", { isEnum = true, enumOptions = {\"dynamic\", \"static\", \"kinematic\"} }),\n"
             "    density     = 1.0,\n"
             "    friction    = 0.3,\n"
             "    restitution = 0.1,\n"
@@ -68,7 +67,7 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
             "    width     = 120.0,\n"
             "    height    = 40.0,\n"
             "    colour    = Field(Vector4(1.0), {isColour = true}),\n"
-            "    hover     = Vector4(0.3, 0.5, 0.8, 1.0),"
+            "    hover     = Field(Vector4(1.0), {isColour = true}),\n"
             "    anchor    = Vector2(0.0),"
             "    pressed   = Field(false, { hidden = true }),\n"
             "    hovered   = Field(false, { hidden = true }),\n"
@@ -123,14 +122,14 @@ void BuiltinCategories::Load(RE::EngineContents& _contents)
         std::filesystem::create_directories(l_dir);
     }
 
-    for (const auto& entry : GetEntries())
+    for (const auto& l_entry : GetEntries())
     {
-        std::filesystem::path l_path = l_dir / (entry.name + ".lua");
+        std::filesystem::path l_path = l_dir / (l_entry.name + ".lua");
 
         if(!std::filesystem::exists(l_path))
         {
             std::ofstream l_fileWriter(l_path);
-            l_fileWriter << entry.source;
+            l_fileWriter << l_entry.source;
             l_fileWriter.close();
             printf("BuiltinCategories: Created %s\n", l_path.string().c_str());
         }

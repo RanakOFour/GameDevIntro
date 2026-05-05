@@ -158,6 +158,11 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
 
     for (auto& l_property : l_properties)
     {
+        bool l_isField = false;
+        bool l_isColour = false;
+        bool l_isEnum = false;
+        std::vector<std::string> l_enumOptions;
+
         // Skip properties marked hidden via Field(default, { hidden = true }) in the category definition.
         if (l_baseFields.valid())
         {
@@ -165,15 +170,55 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             if (l_baseMeta.get_type() == sol::type::table)
             {
                 sol::table l_metaTable = l_baseMeta.as<sol::table>();
-                sol::optional<bool> l_isField = l_metaTable["__isField"];
-                if (l_isField.has_value() && *l_isField)
+                sol::optional<bool> l_isFieldOpt = l_metaTable["__isField"];
+                if (l_isFieldOpt.has_value() && *l_isFieldOpt)
                 {
+                    l_isField = true;
                     sol::optional<sol::table> l_opts = l_metaTable["opts"];
                     if (l_opts.has_value())
                     {
                         sol::optional<bool> l_hidden = (*l_opts)["hidden"];
                         if (l_hidden.has_value() && *l_hidden)
+                        {
                             continue;
+                        }
+
+                        sol::optional<bool> l_isEnumOpt = (*l_opts)["isEnum"];
+                        if (l_isEnumOpt.has_value() && *l_isEnumOpt)
+                        {
+                            l_isEnum = true;
+                            sol::optional<sol::table> l_enumTbl = (*l_opts)["enumOptions"];
+                            if (l_enumTbl.has_value())
+                            {
+                                for (auto& l_ep : l_enumTbl->as<sol::table>())
+                                {
+                                    l_enumOptions.push_back(l_ep.second.as<std::string>());
+                                }
+                            }
+
+                            std::string l_value = l_metaTable["default"].get<std::string>();
+
+                            if(ImGui::BeginCombo((l_property + "##combo").c_str(), l_value.c_str()))
+                            {
+                                for (const std::string& l_option : l_enumOptions)
+                                {
+                                    bool l_selected = (l_value == l_option);
+                                    if (ImGui::Selectable(l_option.c_str(), l_selected))
+                                    {
+                                        l_metaTable.raw_set("default", l_option);
+                                    }
+                                }
+                                ImGui::EndCombo();
+                            }
+
+                            continue;
+                        }
+
+                        sol::optional<bool> l_isColourOpt = (*l_opts)["isColour"];
+                        if(l_isColourOpt.has_value() && *l_isColourOpt)
+                        {
+                            l_isColour = true;
+                        }
                     }
                 }
             }
@@ -182,8 +227,18 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
         // Create a unique ID for this property
         ImGui::PushID((_categoryName + "::" + l_property).c_str());
 
+        sol::object l_value;
         // Determine the type and display accordingly
-        sol::object l_value = _attributes.raw_get<sol::object>(l_property.c_str());
+        if(l_isField)
+        {
+            sol::object l_baseMeta = l_baseFields.raw_get<sol::object>(l_property.c_str());
+            sol::table l_metaTable = l_baseMeta.as<sol::table>();
+            l_value = l_metaTable["default"];
+        }
+        else
+        {
+            l_value = _attributes.raw_get<sol::object>(l_property.c_str());
+        }
 
         switch (l_value.get_type())
         {
@@ -375,7 +430,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             {
                 Vector3 l_old = l_value.as<Vector3>();
                 Vector3 l_val = l_old;
-                if (ImGui::InputFloat3(l_property.c_str(), &l_val.x, "%.3f"))
+                if ((l_isColour && ImGui::ColorEdit3(l_property.c_str(), &l_val.x)) || ImGui::InputFloat3(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
                     Vector3 l_new = l_val;
@@ -401,7 +456,7 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             {
                 Vector4 l_old = l_value.as<Vector4>();
                 Vector4 l_val = l_old;
-                if (ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f"))
+                if ((l_isColour && ImGui::ColorEdit4(l_property.c_str(), &l_val.x)) || ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f"))
                 {
                     _attributes[l_property] = l_val;
                     Vector4 l_new = l_val;

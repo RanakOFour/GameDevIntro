@@ -134,8 +134,8 @@ function UIRendering:Update(_entityData)
     -- UIButton interaction
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = baseX + btn.anchorX * UI.GetScreenWidth()
-        local y = baseY + btn.anchorY * UI.GetScreenHeight()
+        local x = baseX + btn.anchor.x * UI.GetScreenWidth()
+        local y = baseY + btn.anchor.y * UI.GetScreenHeight()
         btn.hovered = UI.IsHovered(x, y, btn.width, btn.height)
         btn.pressed = UI.IsClicked(x, y, btn.width, btn.height)
     end
@@ -150,22 +150,22 @@ function UIRendering:Draw(_entityData)
     -- UIPanel: filled rectangle
     local panel = _entityData["UIPanel"]
     if panel ~= nil and panel.visible then
-        local x = baseX + panel.anchorX * UI.GetScreenWidth()
-        local y = baseY + panel.anchorY * UI.GetScreenHeight()
+        local x = baseX + panel.anchor.x * UI.GetScreenWidth()
+        local y = baseY + panel.anchor.y * UI.GetScreenHeight()
         UI.DrawRect(x, y, panel.width, panel.height,
-                    panel.colorR, panel.colorG, panel.colorB, panel.colorA)
+                    panel.colour.x, panel.colour.y, panel.colour.z, panel.colour.w)
     end
 
     -- UIButton: rect with hover highlight + centered label
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = baseX + btn.anchorX * UI.GetScreenWidth()
-        local y = baseY + btn.anchorY * UI.GetScreenHeight()
+        local x = baseX + btn.anchor.x * UI.GetScreenWidth()
+        local y = baseY + btn.anchor.y * UI.GetScreenHeight()
         local r, g, b, a
         if btn.hovered then
-            r, g, b, a = btn.hoverR, btn.hoverG, btn.hoverB, btn.hoverA
+            r, g, b, a = btn.hover.x, btn.hover.y, btn.hover.z, btn.hover.w
         else
-            r, g, b, a = btn.colorR, btn.colorG, btn.colorB, btn.colorA
+            r, g, b, a = btn.colour.x, btn.colour.y, btn.colour.z, btn.colour.w
         end
         UI.DrawRect(x, y, btn.width, btn.height, r, g, b, a)
         -- Label centered inside the button
@@ -177,21 +177,21 @@ function UIRendering:Draw(_entityData)
     -- UIImage: textured quad
     local img = _entityData["UIImage"]
     if img ~= nil and img.visible then
-        local x = baseX + img.anchorX * UI.GetScreenWidth()
-        local y = baseY + img.anchorY * UI.GetScreenHeight()
+        local x = baseX + img.anchor.x * UI.GetScreenWidth()
+        local y = baseY + img.anchor.y * UI.GetScreenHeight()
         if img.asset ~= nil then
             UI.DrawImage(img.asset:GetID(), x, y, img.width, img.height,
-                         img.tintR, img.tintG, img.tintB, img.tintA)
+                         img.tint.x, img.tint.y, img.tint.z, img.tint.w)
         end
     end
 
     -- UIText: text rendering
     local txt = _entityData["UIText"]
     if txt ~= nil and txt.visible then
-        local x = baseX + txt.anchorX * UI.GetScreenWidth()
-        local y = baseY + txt.anchorY * UI.GetScreenHeight()
+        local x = baseX + txt.anchor.x * UI.GetScreenWidth()
+        local y = baseY + txt.anchor.y * UI.GetScreenHeight()
         UI.DrawText(x, y,
-                    txt.colorR, txt.colorG, txt.colorB, txt.colorA,
+                    txt.colour.x, txt.colour.y, txt.colour.z, txt.colour.w,
                     txt.text, txt.fontSize, false)
     end
 end
