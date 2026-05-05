@@ -5,6 +5,7 @@ project(GameDevIntro VERSION 0.5
                      LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_GENERATOR Ninja)
 
 ProcessorCount(CoreNum)
 set(CMAKE_BUILD_PARALLEL_LEVEL ${CoreNum})

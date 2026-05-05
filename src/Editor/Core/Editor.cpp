@@ -41,10 +41,11 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
                                         };
 
     // Load default editor texture
-    std::filesystem::path l_editorTexPath = RE::Asset::GetTempDir() / "Textures" / "EditorTexture.png";
-
+    std::filesystem::path l_editorTexPath = RE::Asset::GetTempDir() / "Textures" / "REDefaultTexture.png";
+	printf("Editor: Checking for default texture at %s\n", l_editorTexPath.string().c_str());
     if(!std::filesystem::exists(l_editorTexPath))
     {
+		printf("Editor: Default texture not found, writing to %s\n", l_editorTexPath.string().c_str());
         std::filesystem::create_directories(l_editorTexPath.parent_path());
         std::ofstream l_file(l_editorTexPath, std::ios::binary);
         l_file.write((const char*)EditorAssets::DefaultEditorTexture, EditorAssets::DefaultEditorTextureSize);

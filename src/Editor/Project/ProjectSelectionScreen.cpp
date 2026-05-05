@@ -118,16 +118,14 @@ void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
     if (m_documentsPath == "")
     {
 #if _WIN32
-        m_documentsPath.resize(MAX_PATH);
-        PWSTR l_documents;
-        if (SHGetKnownFolderPath(FOLDERID_LocalDocuments, KF_FLAG_CREATE, NULL, &l_documents) == S_OK) {
-            char l_pathAsString[MAX_PATH];
-            wcstombs(m_documentsPath.data(), l_documents, MAX_PATH);
-            m_documentsPath += "\\Documents";
-            printf("Documents path: %s", m_documentsPath.c_str());
+        char* l_path = std::getenv("USER");
+        if (l_path)
+        {
+            m_documentsPath = std::string(l_path) + "/Documents";
         }
-        else {
-            fprintf(stderr, "Could not find appdata path!\n");
+        else
+        {
+            m_documentsPath = "C:/Users/Public/Documents";
         }
 #else
         const char* l_homeChar = std::getenv("HOME");
@@ -365,7 +363,13 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
         {
             try
             {
+#if _WIN32
+				std::string l_projectPath = _state.location;
+                std::filesystem::path l_fullPath(l_projectPath);
+				l_fullPath.append(_state.name.begin(), _state.name.end());
+#else
                 std::filesystem::path l_fullPath = std::filesystem::path(_state.location) / _state.name;
+#endif
                 Project l_project   = Project::Create(l_fullPath.string());
                 AddRecentProject(_state, l_fullPath.string());
                 _state.result  = { _state.tutorial ? Action::StartTutorial

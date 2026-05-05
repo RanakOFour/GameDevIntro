@@ -14,7 +14,8 @@ R"lua(local EditorRender = Rule {
         Log.Message("EditorRender: temp path is " .. Editor.GetTempPath()),
         templateDrawable = {
             shader  = Asset.Shader(Editor.GetTempPath() .. "/Shaders/REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "/Shaders/REDefaultVertShader.vs"),
-            texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/EditorTexture.png"),
+            Log.Message("EditorRender: Attempting to load texture from " .. Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
+            texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
             model   = Asset.Model(Editor.GetTempPath() .. "/Models/REDefaultModel.obj")
         },
         drawOutline    = true,
