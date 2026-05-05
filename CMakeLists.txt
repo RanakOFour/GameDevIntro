@@ -1,13 +1,14 @@
+include(ProcessorCount)
 cmake_minimum_required(VERSION 3.20)
 
 project(GameDevIntro VERSION 0.5
                      LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 17)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace=timetrace.json")
+ProcessorCount(CoreNum)
+set(CMAKE_BUILD_PARALLEL_LEVEL ${CoreNum})
+message("Detected core count: ${CoreNum}")
 
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
@@ -23,7 +24,7 @@ file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
 
 add_subdirectory(extern/RanakEngine2)
 
-add_executable(GameDevIntro "src/editor_main.cpp" ${IMGUI_SOURCES})
+add_executable(GameDevIntro src/Editor/Support/editor_main.cpp ${IMGUI_SOURCES})
 
 add_subdirectory(src)
 
