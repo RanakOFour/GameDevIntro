@@ -13,9 +13,9 @@ R"lua(local EditorRender = Rule {
     fields = {
         Log.Message("EditorRender: temp path is " .. Editor.GetTempPath()),
         templateDrawable = {
-            shader  = Asset.Shader(Editor.GetTempPath() .. "REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "REDefaultVertShader.vs"),
-            texture = Asset.Texture(Editor.GetTempPath() .. "Textures/EditorTexture.png"),
-            model   = Asset.Model(Editor.GetTempPath() .. "Models/FlatTexture.obj")
+            shader  = Asset.Shader(Editor.GetTempPath() .. "/Shaders/REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "/Shaders/REDefaultVertShader.vs"),
+            texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/EditorTexture.png"),
+            model   = Asset.Model(Editor.GetTempPath() .. "/Models/REDefaultModel.obj")
         },
         drawOutline    = true,
         lastFrameInput = false,
@@ -86,24 +86,19 @@ return PhysicsSync
 )lua";
 
 static const std::string k_renderingSrc =
-R"lua(local Rendering = Rule {
+R"lua(local DefaultRenderer = Rule {
     categories = { "Transform" },
-    fields = {
-        templateDrawable = {
-            shader  = Asset.Shader("./resources/Shaders/default/frag.fs;./resources/Shaders/default/vert.vs"),
-            model   = Asset.Model("./resources/Models/FlatTexture.obj")
-        },
-    }
+    fields = {}
 }
 
-function Rendering:Update(_entityData)
+function DefaultRenderer:Update(_entityData)
 end
 
-function Rendering:Draw(_entityData)
+function DefaultRenderer:Draw(_entityData)
     Core.Camera:Draw(_entityData)
 end
 
-return Rendering
+return DefaultRenderer
 )lua";
 
 static const std::string k_uiRenderingSrc =
@@ -207,10 +202,10 @@ return UIRendering
 const std::vector<BuiltinRules::Entry>& BuiltinRules::GetEntries()
 {
     static const std::vector<Entry> l_entries = {
-        { "EditorRender",  k_editorRenderSrc },
-        { "DefaultRender", k_renderingSrc    },
-        { "PhysicsSync",   k_physicsSyncSrc  },
-        { "UIRendering",   k_uiRenderingSrc  },
+        { "EditorRender",    k_editorRenderSrc },
+        { "DefaultRenderer", k_renderingSrc    },
+        { "PhysicsSync",     k_physicsSyncSrc  },
+        { "UIRendering",     k_uiRenderingSrc  },
     };
     return l_entries;
 }
@@ -234,6 +229,8 @@ void BuiltinRules::Load(RE::EngineContents& _contents)
         std::filesystem::create_directories(l_dir);
     }
 
+    auto l_scene = _contents.core->GetScene().lock();
+
     for (const auto& entry : GetEntries())
     {
         std::filesystem::path l_path = l_dir / (entry.name + ".lua");
@@ -248,6 +245,14 @@ void BuiltinRules::Load(RE::EngineContents& _contents)
 
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_path.string());
         RE::Core::Rule l_rule = _contents.core->GetLuaContext()->CreateRule(l_file);
-        _contents.core->GetScene().lock()->AddRule(l_rule);
+        l_scene->AddRule(l_rule);
+
+        if(entry.name == "DefaultRenderer")
+        {
+            // DefaultRenderer must be added to the scene before EditorRender so that it gets drawn first.
+            // This ensures EditorRender's outline is visible on top of the default rendering.
+            auto l_defRendererPtr = l_scene->GetRule("DefaultRenderer");
+            l_defRendererPtr->SetActive(false);
+        }
     }
 }

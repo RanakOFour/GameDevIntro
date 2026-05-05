@@ -9,6 +9,8 @@
 #include "Editor/Scene/BuiltIn/BuiltinRules.h"
 #include "Editor/Scene/Gizmo.h"
 #include "Editor/Scene/SceneSettings.h"
+
+#include "Editor/Scene/BuiltIn/EditorAssets.h"
     
 #include "RanakEngine/RanakEngine.h"
 
@@ -38,6 +40,17 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
                                             return RE::Asset::GetTempDir().string();
                                         };
 
+    // Load default editor texture
+    std::filesystem::path l_editorTexPath = RE::Asset::GetTempDir() / "Textures" / "EditorTexture.png";
+
+    if(!std::filesystem::exists(l_editorTexPath))
+    {
+        std::filesystem::create_directories(l_editorTexPath.parent_path());
+        std::ofstream l_file(l_editorTexPath, std::ios::binary);
+        l_file.write((const char*)EditorAssets::DefaultEditorTexture, EditorAssets::DefaultEditorTextureSize);
+        l_file.close();
+    }
+
     // Load built-in (read-only) categories from the platform data directory.
     BuiltinCategories::Load(m_engineContents);
 
@@ -45,8 +58,6 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
     InitImGui();
 
     m_font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)RE::UI::DefaultFontData(), RE::UI::DefaultFontDataSize(), 16.0f);
-
-    BuiltinRules::Load(m_engineContents);
 
     // Create tabs — pass *this (Editor fully owns both, both outlived by this).
     m_sceneEdit = std::make_shared<SceneEditTab>(*this);
@@ -648,7 +659,8 @@ void Editor::HandleInput()
 
                         Vector2 l_entityScreenPos = m_sceneEdit->m_camera->WorldToScreenPoint(l_entityWorldPos);
 
-                        m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_entityScreenPos.y - l_panelSize.y * 0.25f));
+                        float l_screenH = m_engineContents.io->GetWindow().lock()->GetScreenSize().y;
+                        m_sceneEdit->m_propertiesPanel.SetPosition(ImVec2(l_entityScreenPos.x + l_panelSize.x * 0.25f, l_screenH - l_entityScreenPos.y - l_panelSize.y * 0.25f));
                     }
 
                     // Start entity drag for all selected entities

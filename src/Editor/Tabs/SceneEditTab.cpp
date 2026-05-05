@@ -152,7 +152,8 @@ void SceneEditTab::DrawContextMenu()
             m_propertiesPanel.SetShown(true);
             ImVec2 l_panelSize = m_propertiesPanel.GetSize();
 
-            m_propertiesPanel.SetPosition(ImVec2(l_mousePos.x + l_panelSize.x * 0.25f, l_mousePos.y - l_panelSize.y * 0.25f));
+            float l_screenH = m_editor.GetEngineContents().io->GetWindow().lock()->GetScreenSize().y;
+            m_propertiesPanel.SetPosition(ImVec2(l_mousePos.x + l_panelSize.x * 0.25f, l_screenH - l_mousePos.y - l_panelSize.y * 0.25f));
         }
 
         if(!m_selectedEntities.empty())
