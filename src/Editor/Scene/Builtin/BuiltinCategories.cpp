@@ -126,13 +126,7 @@ void BuiltinCategories::Load(RE::EngineContents& _contents)
     {
         std::filesystem::path l_path = l_dir / (l_entry.name + ".lua");
 
-        if(!std::filesystem::exists(l_path))
-        {
-            std::ofstream l_fileWriter(l_path);
-            l_fileWriter << l_entry.source;
-            l_fileWriter.close();
-            printf("BuiltinCategories: Created %s\n", l_path.string().c_str());
-        }
+        RE::Asset::CreateIfNotExists(l_path.string(), l_entry.source.c_str());
 
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_path.string());
         _contents.core->GetLuaContext()->CreateCategory(l_file);

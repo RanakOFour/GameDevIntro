@@ -1,0 +1,324 @@
+@startuml program_flow
+!theme plain
+skinparam backgroundColor #1e1e2e
+skinparam defaultFontColor #cdd6f4
+skinparam ArrowColor #89b4fa
+skinparam ActivityBorderColor #585b70
+skinparam ActivityBackgroundColor #313244
+skinparam ActivityDiamondBackgroundColor #45475a
+skinparam ActivityDiamondBorderColor #89b4fa
+skinparam NoteBackgroundColor #1e1e2e
+skinparam NoteBorderColor #585b70
+skinparam NoteFontColor #a6e3a1
+
+title GameDevIntro — Program Flow\n(entry: src/Editor/Support/editor_main.cpp)
+
+|main()|
+start
+
+:RE::Initialise(debug=true, 960x540, "GameDevIntro")
+→ EngineContents { resources, core, io, physics };
+note right
+  Creates and wires all engine singletons:
+  AssetManager · CoreManager · IOManager
+  PhysicsManager · LuaContext
+end note
+
+:ProjectSelectionScreen::Run(engineContents);
+
+|ProjectSelectionScreen|
+
+repeat
+  :io->UpdateInputs() + ImGui frame;
+
+  if (page == Main?) then (yes)
+    :DrawMain()
+    [New Project / Open Project / Exit buttons]
+    [Recent projects list];
+  elseif (page == NewProject?) then (yes)
+    :DrawNewProject()
+    [name + directory input → Project::IsValid()];
+  else (LoadProject)
+    :DrawLoadProject()
+    [file picker → Project::IsValid()];
+  endif
+  :Render + Window::Swap();
+repeat while (decided == false)
+
+:return Result { action, project };
+
+|main()|
+
+if (action == Exit?) then (yes)
+  stop
+endif
+
+:Editor::Create(engineContents, project)
+[private constructor];
+
+|Editor ctor|
+
+:BuiltinCategories::Load(engineContents)
+→ LuaContext::CreateCategory() for each built-in;
+
+:InitImGui()
+  → ImGui_ImplSDL3_InitForOpenGL()
+  → ImGui_ImplOpenGL3_Init();
+
+:Load default font via ImGui::GetIO().Fonts;
+
+:new SceneEditTab(*this)
+  → get scene/camera/window refs from engine
+  → load/write grid shader from EditorAssets
+  → glGenVertexArrays (dummy grid VAO)
+  → StateRegistry: register game_running/stopped/paused conditions
+  → StateRegistry: register game_run/stop/pause/resume actions
+  → AssetBrowserPanel::SetRootPath();
+
+:new TextEditTab(*this)
+  → AutoCompleteTree::InitTree(LuaContext)
+  → TextEditor init;
+
+:StateRegistry: register scene_tab / text_tab conditions & actions;
+
+:LoadProjectInfo()
+  → parse ProjectInfo.json
+  → SceneSerializer::LoadFromFile() [scene]
+  → LuaContext::CreateCategory() [restore categories]
+  → LuaContext::CreateRule() + Scene::AddRule() [restore rules]
+  → SceneEditTab::SetEntityParent() [restore hierarchy];
+
+:LoadSavedLayouts() [restore dockspace layouts];
+
+:ThemeManager::LoadPresets() + ApplyPreset(savedIndex);
+
+|main()|
+
+if (action == StartTutorial?) then (yes)
+  :TutorialPanel::LoadTutorial("GettingStarted.lua");
+endif
+
+:editor.GetEngineContents().io->SetScreenSize(1920×1080);
+
+:Editor::Run();
+
+|Editor::Run() — main loop|
+
+while (io->GetQuitSignal() == false)
+
+  :HandleInput();
+
+  |Editor::HandleInput()|
+
+  :io->UpdateInputs() → SDL_Events;
+  :ImGui_ImplSDL3_ProcessEvent() for each event;
+
+  fork
+    :Middle-mouse pan
+    → camera->ScreenToWorldPoint()
+    → camera->SetPosition();
+  fork again
+    if (LMB pressed, no ImGui window hovered?) then (yes)
+
+      if (entity selected?) then (yes)
+        :Gizmo::HitTest(gizmoMode, screenPos, scale, mouse)
+        → m_isDraggingGizmo, m_activeGizmoAxis
+        → snapshot dragStartTransforms for all selected;
+      endif
+
+      if (gizmo not hit?) then (yes)
+        :Scene::Raycast(ray, hitInfo);
+        if (entity hit?) then (yes)
+          if (Shift held?) then (yes)
+            :SceneEditTab::ToggleEntitySelection(id);
+          else (no)
+            :SceneEditTab::SelectEntity(id)
+            → PropertiesPanel::SetPosition();
+          endif
+          :start entity drag — snapshot dragStartTransforms;
+        else (miss)
+          :SceneEditTab::ClearSelection()
+          → start drag-select rectangle;
+        endif
+      endif
+
+    endif
+  fork again
+    if (LMB held — drag entity?) then (yes)
+      if (isDraggingGizmo?) then (yes)
+        :Gizmo::ConstrainDelta(axis, delta)
+        → apply Translate / Rotate / Scale
+        to all selected entities via sol::table;
+      else (no)
+        :free drag — update Position
+        for all selected entities
+        [Gizmo::Snap if snap enabled];
+      endif
+    endif
+  fork again
+    if (LMB released — was dragging?) then (yes)
+      :build TransformPair map (old vs new);
+      :UndoManager::PushCommand(
+        LambdaCommand("Transform Entity",
+          execute: write newT to sol tables,
+          undo:    write oldT to sol tables));
+    endif
+  fork again
+    :keyboard shortcuts
+    Ctrl+Z → UndoManager::Undo()
+    Ctrl+Y → UndoManager::Redo()
+    Ctrl+C → Editor::CopySelectedEntities()
+    Ctrl+V → Editor::PasteEntities()
+    Ctrl+D → Editor::DuplicateEntities()
+    Ctrl+S → SceneSerializer::SaveToFile()
+    Delete → EntityPanel::RemoveEntity();
+  end fork
+
+  |Editor::Run() — main loop|
+
+  :Draw();
+
+  |Editor::Draw()|
+
+  :glClearColor(scene clearColor) + glClear();
+
+  :ImGui_ImplOpenGL3_NewFrame()
+  ImGui_ImplSDL3_NewFrame()
+  ImGui::NewFrame()
+  ImGui::PushFont();
+
+  :ImGui::DockSpaceOverViewport(PassthruCentralNode);
+  :TutorialPanel::ClearRegions();
+  :TopBar::Draw()
+  → file menu: load/save scene dialogs
+  → edit menu: undo/redo/copy/paste
+  → view menu: panel toggles / layouts
+  → run menu: StateRegistry::Apply("game_run/stop");
+
+  :DrawSettingsDialog() + DrawSettingsDialogContent()
+  → if confirmed: ApplyProjectSettings() + SaveProjectInfo();
+
+  :SceneEditTab::Draw();
+
+  |SceneEditTab::Draw()|
+
+  :Compute delta time (SDL_GetPerformanceCounter);
+
+  :Draw play toolbar (ImGui::Begin "##PlayToolbar")
+  [Play / Stop / Pause / Resume buttons];
+
+  if (Play pressed?) then (yes)
+    :Run()
+    → SceneSerializer::Serialize() [snapshot scene]
+    → Physics::SetGravity()
+    → Scene::Init()
+    → m_isGameRunning = true;
+  endif
+
+  if (Stop pressed?) then (yes)
+    :Stop()
+    → m_isGameRunning = false
+    → Physics::Reset()
+    → SceneSerializer::LoadFromString() [restore snapshot]
+    → BuiltinRules::Load()
+    → ReapplyRegistryToScene()
+    → EntityPanel::RefreshEntityList()
+    → PropertiesPanel::Reset();
+  endif
+
+  if (Pause/Resume pressed?) then (yes)
+    :Pause() / Resume()
+    → toggle m_isGamePaused;
+  endif
+
+  if (isGameRunning && !isPaused?) then (yes)
+    :io->UpdateInputs() [ensure fresh input for Lua rules];
+    :Physics::Step(deltaTime);
+    :Scene::Update(deltaTime) → Rule::Update() for each active rule;
+  endif
+
+  if (!isGameRunning && showGrid?) then (yes)
+    :render infinite grid
+    → gridShader->Use()
+    → SetUniform(projection/view/cameraPos/cameraSize)
+    → glDrawArraysInstancedBaseInstance;
+  endif
+
+  :Scene::Draw()
+  → Camera::Draw() for each entity with Transform
+  → UIRenderer::BeginFrame() + Flush() [Lua UI draw calls];
+
+  :DrawEditorUI()
+  → EntityPanel::DrawAsWindow()
+  → CategoryPanel::DrawAsWindow()
+  → RulesPanel::DrawAsWindow()
+  → PropertiesPanel::DrawAsWindow()
+  → CameraPanel::DrawAsWindow()
+  → SceneSettingsPanel::DrawAsWindow()
+  → ConsolePanel::DrawAsWindow()
+  → AssetBrowserPanel::DrawAsWindow()
+  → draw gizmo overlay via Gizmo::Draw()
+  → draw drag-select rectangle;
+
+  :DrawContextMenu() [right-click: add/delete/rename entity];
+
+  |Editor::Draw()|
+
+  if (state == TextEdit?) then (yes)
+    :TextEditTab::Draw()
+    → ImGui::Begin("Text Editor")
+    → CategoryPanel + RulesPanel sidebars
+    → TextEditor::Render() [syntax highlighted code]
+    → autocomplete via AutoCompleteTree::autocompleteCallback()
+    → save on Ctrl+S → LuaFile::Save() → LuaContext::ReloadCategory();
+  endif
+
+  :TutorialPanel::DrawAsWindow()
+  → render step title/body/image/checklist
+  → RegisterRegion() for highlighted UI areas
+  → BringWindowToDisplayFront();
+
+  :ThemeSettingsPanel::DrawAsWindow()
+  → list presets → ThemeManager::ApplyPreset();
+
+  :DrawStatusBar()
+  → show entity count, selected entity, FPS, undo description;
+
+  :ImGui::PopFont() → ImGui::Render()
+  → ImGui_ImplOpenGL3_RenderDrawData();
+
+  :UIRenderer::Flush() [deferred game-UI draw commands on top];
+
+  :Window::Swap() [SDL OpenGL buffer swap];
+
+  |Editor::Run() — main loop|
+
+  :frame-rate limiter (60 Hz target)
+  SDL_Delay + busy-wait spin;
+
+endwhile
+
+|Editor::~Editor()|
+
+:SaveProjectInfo()
+→ serialize entities/categories/rules/hierarchy to ProjectInfo.json;
+
+:m_sceneEdit.reset() → SceneEditTab::~SceneEditTab()
+→ glDeleteVertexArrays
+→ camera.reset() / gridShader.reset();
+
+:m_textEdit.reset();
+
+:CleanupImGui()
+→ ImGui_ImplOpenGL3_Shutdown()
+→ ImGui_ImplSDL3_Shutdown()
+→ ImGui::DestroyContext();
+
+:RE::Shutdown(engineContents)
+→ Physics::Stop() · IO::Stop()
+→ Core::Stop() · Asset::Stop() · Log::Stop();
+
+|main()|
+stop
+
+@enduml

@@ -7,13 +7,13 @@
 #include <cstdio>
 
 static const std::string k_editorRenderSrc =
-R"lua(local EditorRender = Rule {
+R"lua(local EditorRenderer = Rule {
     categories = {"Transform"},
     fields = {
-        Log.Message("EditorRender: temp path is " .. Editor.GetTempPath()),
+        Log.Message("EditorRenderer: temp path is " .. Editor.GetTempPath()),
         templateDrawable = {
             shader  = Asset.Shader(Editor.GetTempPath() .. "/Shaders/REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "/Shaders/REDefaultVertShader.vs"),
-            Log.Message("EditorRender: Attempting to load texture from " .. Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
+            Log.Message("EditorRenderer: Attempting to load texture from " .. Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
             texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
             model   = Asset.Model(Editor.GetTempPath() .. "/Models/REDefaultModel.obj")
         },
@@ -23,14 +23,14 @@ R"lua(local EditorRender = Rule {
     }
 }
 
-function EditorRender:Update(_entityData)
+function EditorRenderer:Update(_entityData)
     local currentFrameInput = IO.GetKeyDown('o')
     if currentFrameInput ~= nil then
         self.fields.currentInput = currentFrameInput
     end
 end
 
-function EditorRender:Draw(_entityData)
+function EditorRenderer:Draw(_entityData)
 
     if(_entityData.Texture ~= nil or _entityData.model ~= nil) then
         Core.Camera:Draw(_entityData)
@@ -52,7 +52,7 @@ function EditorRender:Draw(_entityData)
     end
 end
 
-return EditorRender
+return EditorRenderer
 )lua";
 
 static const std::string k_physicsSyncSrc =
@@ -202,11 +202,12 @@ return UIRendering
 const std::vector<BuiltinRules::Entry>& BuiltinRules::GetEntries()
 {
     static const std::vector<Entry> l_entries = {
-        { "EditorRender",    k_editorRenderSrc },
+        { "EditorRenderer",  k_editorRenderSrc },
         { "DefaultRenderer", k_renderingSrc    },
         { "PhysicsSync",     k_physicsSyncSrc  },
         { "UIRendering",     k_uiRenderingSrc  },
     };
+    
     return l_entries;
 }
 

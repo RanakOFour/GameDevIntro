@@ -33,8 +33,6 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 , m_topBar(*this)
 , m_themeSettingsPanel(*this, m_themeManager)
 {
-    RE::Log::Message("Engine already initialised; Editor taking ownership");
-
     m_editorTable = m_engineContents.core->GetLuaContext()->GetState()->create_named_table("Editor");
     m_editorTable["GetTempPath"] = []() {
                                             return RE::Asset::GetTempDir().string();
@@ -42,18 +40,15 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 
     // Load default editor texture
     std::filesystem::path l_editorTexPath = RE::Asset::GetTempDir() / "Textures" / "REDefaultTexture.png";
-	printf("Editor: Checking for default texture at %s\n", l_editorTexPath.string().c_str());
-    if(!std::filesystem::exists(l_editorTexPath))
-    {
-		printf("Editor: Default texture not found, writing to %s\n", l_editorTexPath.string().c_str());
-        std::filesystem::create_directories(l_editorTexPath.parent_path());
-        std::ofstream l_file(l_editorTexPath, std::ios::binary);
-        l_file.write((const char*)EditorAssets::DefaultEditorTexture, EditorAssets::DefaultEditorTextureSize);
-        l_file.close();
-    }
+	RE::Asset::CreateIfNotExists(
+                                 l_editorTexPath.string(), 
+                                 reinterpret_cast<const char*>(EditorAssets::DefaultEditorTexture),
+                                 EditorAssets::DefaultEditorTextureSize
+                                );
 
     // Load built-in (read-only) categories from the platform data directory.
     BuiltinCategories::Load(m_engineContents);
+    BuiltinRules::Load(m_engineContents);
 
     // Initialize ImGui with the window from IO Manager
     InitImGui();
@@ -363,7 +358,6 @@ void Editor::LoadProjectInfo()
                                           &m_sceneEdit->GetSceneSettings());
 
             // Re-add built-in rules after scene load (they are excluded from serialisation)
-            BuiltinRules::Load(m_engineContents);
             // Rebuild the editor rule registry to match the newly loaded scene.
             m_sceneEdit->RebuildRegistryFromScene();
             m_sceneEdit->m_scene = m_engineContents.core->GetScene();

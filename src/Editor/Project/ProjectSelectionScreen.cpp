@@ -537,7 +537,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
             ImGuiWindowFlags_NoTitleBar        |
             ImGuiWindowFlags_NoResize          |
             ImGuiWindowFlags_NoMove            |
-            ImGuiWindowFlags_NoScrollbar        |
+            ImGuiWindowFlags_NoScrollbar       |
             ImGuiWindowFlags_NoSavedSettings   |
             ImGuiWindowFlags_NoBringToFrontOnFocus;
 

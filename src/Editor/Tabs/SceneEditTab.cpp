@@ -36,19 +36,12 @@ SceneEditTab::SceneEditTab(Editor& _editor)
     std::filesystem::path l_gridFragPath = RE::Asset::GetTempDir() / "Shaders" / "grid_shader.fs";
     std::filesystem::path l_gridVertPath = RE::Asset::GetTempDir() / "Shaders" / "grid_shader.vs";
 
-    if(!std::filesystem::exists(l_gridFragPath) || !std::filesystem::exists(l_gridVertPath))
-    {
-        RE::Log::Message("Grid shader files not found at expected paths:\n" + l_gridFragPath.string() + "\n" + l_gridVertPath.string());
-        // Write default grid shader to temp directory so it can be loaded like a normal shader asset.
-        std::filesystem::create_directories(l_gridFragPath.parent_path());
-        std::ofstream l_fileWriter(l_gridFragPath);
-        l_fileWriter.write(EditorAssets::DefaultGridShaderFragment, EditorAssets::DefaultGridShaderFragmentSize);
-        l_fileWriter.close();
-
-        l_fileWriter.open(l_gridVertPath);
-        l_fileWriter.write(EditorAssets::DefaultGridShaderVertex, EditorAssets::DefaultGridShaderVertexSize);
-        l_fileWriter.close();
-    }
+    RE::Asset::CreateIfNotExists(l_gridFragPath.string(), 
+                                 EditorAssets::DefaultGridShaderFragment, 
+                                 EditorAssets::DefaultGridShaderFragmentSize);
+    RE::Asset::CreateIfNotExists(l_gridVertPath.string(), 
+                                 EditorAssets::DefaultGridShaderVertex, 
+                                 EditorAssets::DefaultGridShaderVertexSize);
 
 	m_gridShader = l_engineContents.resources->Load<RE::Asset::Shader>(l_gridFragPath.string() + ";" + l_gridVertPath.string()).lock();
     glGenVertexArrays(1, &m_dummyGridVAO);
