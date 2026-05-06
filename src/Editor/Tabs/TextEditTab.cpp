@@ -264,7 +264,7 @@ void TextEditTab::Draw()
                         std::string l_categoryName = l_category->GetName();
                         sol::table l_categoryData = l_category->GetBaseData();
 
-                        ImGui::Text(l_categoryName.c_str());
+                        ImGui::Text("%s",l_categoryName.c_str());
                         ImGui::Indent();
                         DrawCategoryAttributes(l_categoryName, l_categoryData);
                         ImGui::Unindent();

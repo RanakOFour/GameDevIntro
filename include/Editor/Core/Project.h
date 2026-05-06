@@ -27,8 +27,7 @@ struct ProjectSettings
  * @brief Represents an open project directory that contains the user's categories,
  *        rules, scenes, and assets.
  *
- * Engine assets (shaders, editor Lua, fonts, tutorials) remain under ./resources/
- * and are unaffected by the project path.
+ * Engine assets (shaders, editor Lua, fonts, tutorials) remain in temp resources
  */
 class Project
 {

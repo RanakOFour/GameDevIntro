@@ -4,7 +4,6 @@
 
 #include <filesystem>
 #include <fstream>
-#include <cstdlib>
 #include <cstdio>
 
 static const std::string k_editorRenderSrc =

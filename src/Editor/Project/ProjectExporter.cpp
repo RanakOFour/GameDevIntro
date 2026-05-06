@@ -95,9 +95,10 @@ bool ProjectExporter::Export(Editor& _editor, const std::string& _outputDir)
     }
 
     // Copy engine resources (shaders, models, fonts)
-    CopyDirIfExists("./resources/Shaders", l_outDir / "resources" / "Shaders");
-    CopyDirIfExists("./resources/Models",  l_outDir / "resources" / "Models");
-    CopyDirIfExists("./resources/Fonts",   l_outDir / "resources" / "Fonts");
+    std::filesystem::path l_tempDir = RE::Asset::GetTempDir();
+    CopyDirIfExists(l_tempDir / "Shaders", l_outDir / "resources" / "Shaders");
+    CopyDirIfExists(l_tempDir / "Models",  l_outDir / "resources" / "Models");
+    CopyDirIfExists(l_tempDir / "Fonts",   l_outDir / "resources" / "Fonts");
 
     // Copy project asset directories
     const Project& l_proj = _editor.GetProject();

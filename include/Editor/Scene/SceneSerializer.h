@@ -83,7 +83,7 @@ class SceneSerializer
      * LuaFile::GetCode()).  If no origin file is recorded the source is
      * reconstructed from the category's base-fields table.  Rules are embedded
      * using the source cached in the AssetManager under the conventional path
-     * `./resources/Rules/<name>.lua`; if that file cannot be found a warning
+     * `/tmp/GameDevIntro/Rules/<name>.lua`; if that file cannot be found a warning
      * comment is emitted instead.
      *
      * @param _scene    The scene to serialise.

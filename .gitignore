@@ -5,3 +5,4 @@ build/
 debug/
 resources/SavedScenes/
 output.txt
+docs/doxygen/

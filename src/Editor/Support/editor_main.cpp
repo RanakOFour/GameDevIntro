@@ -5,7 +5,7 @@ int main()
 {
     try
     {
-        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(960, 540));
+        RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(960, 540), "GameDevIntro");
 
         ProjectSelectionScreen::Result l_choice = ProjectSelectionScreen::Run(l_engineContents);
 

@@ -1,4 +1,5 @@
 #include "Editor/Tabs/SceneEditTab.h"
+#include "Editor/Scene/BuiltIn/EditorAssets.h"
 #include "Editor/Scene/SceneSerializer.h"
 #include "Editor/Core/StateRegistry.h"
 #include "Editor/Panels/Scene/SceneSettingsPanel.h"
@@ -7,9 +8,9 @@
 
 #include <filesystem>
 
+#include "RanakEngine/Assets.h"
 #include "RanakEngine/Physics/PhysicsManager.h"
 
-#include "SDL3/SDL.h"
 
 SceneEditTab::SceneEditTab(Editor& _editor)
 : m_editor(_editor)
@@ -32,7 +33,24 @@ SceneEditTab::SceneEditTab(Editor& _editor)
 	m_camera = l_engineContents.core->GetCamera().lock();
 	m_window = l_engineContents.io->GetWindow().lock();
 
-	m_gridShader = l_engineContents.resources->Load<RE::Asset::Shader>("./resources/Shaders/infinite_grid/frag.fs;./resources/Shaders/infinite_grid/vert.vs").lock();
+    std::filesystem::path l_gridFragPath = RE::Asset::GetTempDir() / "Shaders" / "grid_shader.fs";
+    std::filesystem::path l_gridVertPath = RE::Asset::GetTempDir() / "Shaders" / "grid_shader.vs";
+
+    if(!std::filesystem::exists(l_gridFragPath) || !std::filesystem::exists(l_gridVertPath))
+    {
+        RE::Log::Message("Grid shader files not found at expected paths:\n" + l_gridFragPath.string() + "\n" + l_gridVertPath.string());
+        // Write default grid shader to temp directory so it can be loaded like a normal shader asset.
+        std::filesystem::create_directories(l_gridFragPath.parent_path());
+        std::ofstream l_fileWriter(l_gridFragPath);
+        l_fileWriter.write(EditorAssets::DefaultGridShaderFragment, EditorAssets::DefaultGridShaderFragmentSize);
+        l_fileWriter.close();
+
+        l_fileWriter.open(l_gridVertPath);
+        l_fileWriter.write(EditorAssets::DefaultGridShaderVertex, EditorAssets::DefaultGridShaderVertexSize);
+        l_fileWriter.close();
+    }
+
+	m_gridShader = l_engineContents.resources->Load<RE::Asset::Shader>(l_gridFragPath.string() + ";" + l_gridVertPath.string()).lock();
     glGenVertexArrays(1, &m_dummyGridVAO);
 
     // Register SceneEditTab conditions and actions in the shared StateRegistry.
@@ -50,8 +68,8 @@ SceneEditTab::SceneEditTab(Editor& _editor)
     m_assetBrowserPanel.SetRootPath(_editor.GetProject().GetRootPath());
 
     // Load editor icons for asset browser (user provides these textures)
-    std::string l_folderIcon = "./resources/Textures/folder_icon.png";
-    std::string l_fileIcon   = "./resources/Textures/file_icon.png";
+    std::string l_folderIcon = RE::Asset::GetTempDir() / "Textures" / "folder_icon.png";
+    std::string l_fileIcon   = RE::Asset::GetTempDir() / "Textures" / "file_icon.png";
     if (std::filesystem::exists(l_folderIcon) && std::filesystem::exists(l_fileIcon))
     {
         m_assetBrowserPanel.LoadIcons(l_folderIcon, l_fileIcon);
@@ -270,6 +288,7 @@ void SceneEditTab::Draw()
     // Update scene rules if simulation is running and not paused
     if (m_isGameRunning && !m_isGamePaused)
     {
+        m_editor.GetEngineContents().io->UpdateInputs(); // Ensure we have the latest input state for this frame before updating the scene.
         auto l_physics = RE::Physics::Manager::Get().lock();
         l_physics->Step(l_dt);
 

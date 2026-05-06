@@ -1,11 +1,9 @@
 #include "Editor/Project/ProjectSelectionScreen.h"
+#include "RanakEngine/UI.h"
+#include "imgui.h"
 
-#include "RanakEngine/IO.h"
-
-#include "SDL3/SDL.h"
 #include <GL/gl.h>
 #include <cstdlib>
-#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
@@ -507,7 +505,9 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
     ImGui_ImplSDL3_InitForOpenGL(l_window->GetSDLWindow(), l_window->GetGLContext());
     ImGui_ImplOpenGL3_Init("#version 430");
 
-    ImFont* l_font = io.Fonts->AddFontFromFileTTF("./resources/Fonts/MapleMono.ttf");
+    ImFontConfig l_fontConfig;
+    l_fontConfig.FontDataOwnedByAtlas = false;
+    ImFont* l_font = io.Fonts->AddFontFromMemoryTTF((void*)RE::UI::DefaultFontData(), RE::UI::DefaultFontDataSize(), 16.0f, &l_fontConfig);
 
     State l_state;
     LoadRecentProjects(l_state);

@@ -128,8 +128,9 @@ void PropertiesPanel::DrawEntityProperties(int _id)
                                 }
                             }
                         }
-                    })
-                );
+                    }
+                )
+            );
         }
     }
 }
@@ -227,17 +228,17 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
         // Create a unique ID for this property
         ImGui::PushID((_categoryName + "::" + l_property).c_str());
 
-        sol::object l_value;
-        // Determine the type and display accordingly
-        if(l_isField)
+        sol::object l_value = _attributes.raw_get<sol::object>(l_property.c_str());
+
+        // Check for Field wrapper and unwrap to the default value for display.
+        if(l_value.is<sol::table>())
         {
-            sol::object l_baseMeta = l_baseFields.raw_get<sol::object>(l_property.c_str());
-            sol::table l_metaTable = l_baseMeta.as<sol::table>();
-            l_value = l_metaTable["default"];
-        }
-        else
-        {
-            l_value = _attributes.raw_get<sol::object>(l_property.c_str());
+            sol::table l_tbl = l_value.as<sol::table>();
+            sol::optional<bool> l_fieldFlag = l_tbl.raw_get<sol::optional<bool>>("__isField");
+            if (l_fieldFlag.has_value() && *l_fieldFlag)
+            {
+                l_value = l_tbl.raw_get<sol::object>("default");
+            }
         }
 
         switch (l_value.get_type())
@@ -456,9 +457,11 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
             {
                 Vector4 l_old = l_value.as<Vector4>();
                 Vector4 l_val = l_old;
-                if ((l_isColour && ImGui::ColorEdit4(l_property.c_str(), &l_val.x)) || ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f"))
+                if ((l_isColour && ImGui::ColorEdit4(l_property.c_str(), &l_val.x)) ||
+                    (!l_isColour && ImGui::InputFloat4(l_property.c_str(), &l_val.x, "%.3f")))
                 {
                     _attributes[l_property] = l_val;
+
                     Vector4 l_new = l_val;
                     sol::table l_tbl = _attributes;
                     std::string l_prop = l_property;
@@ -476,6 +479,26 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
                                     const_cast<std::remove_const<sol::table>::type&>(l_tbl);
                                 l_tblNonConst[l_prop] = l_old;
                             }));
+                }
+            }
+            break;
+        case sol::type::table:
+            if (l_isColour)
+            {
+                // Colour stored as a plain {x,y,z,w} Lua table (e.g. from deserialization)
+                sol::table l_tbl = l_value.as<sol::table>();
+                Vector4 l_val(
+                    l_tbl.get_or("x", 1.0f),
+                    l_tbl.get_or("y", 1.0f),
+                    l_tbl.get_or("z", 1.0f),
+                    l_tbl.get_or("w", 1.0f)
+                );
+                if (ImGui::ColorEdit4(l_property.c_str(), &l_val.x))
+                {
+                    l_tbl.raw_set("x", l_val.x);
+                    l_tbl.raw_set("y", l_val.y);
+                    l_tbl.raw_set("z", l_val.z);
+                    l_tbl.raw_set("w", l_val.w);
                 }
             }
             break;

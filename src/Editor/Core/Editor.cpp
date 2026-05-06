@@ -58,7 +58,9 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
     // Initialize ImGui with the window from IO Manager
     InitImGui();
 
-    m_font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)RE::UI::DefaultFontData(), RE::UI::DefaultFontDataSize(), 16.0f);
+    ImFontConfig l_fontConfig;
+    l_fontConfig.FontDataOwnedByAtlas = false;
+    m_font = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)RE::UI::DefaultFontData(), RE::UI::DefaultFontDataSize(), 16.0f, &l_fontConfig);
 
     // Create tabs — pass *this (Editor fully owns both, both outlived by this).
     m_sceneEdit = std::make_shared<SceneEditTab>(*this);

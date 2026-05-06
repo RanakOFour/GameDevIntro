@@ -1,15 +1,24 @@
 include(ProcessorCount)
 cmake_minimum_required(VERSION 3.20)
 
-project(GameDevIntro VERSION 0.5
-                     LANGUAGES CXX)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_GENERATOR Ninja)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CMAKE_C_COMPILER "/usr/bin/clang")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+
+message("CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
+message("CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
+message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+
+project(GameDevIntro VERSION 0.5
+                     LANGUAGES C CXX)
 
 ProcessorCount(CoreNum)
 set(CMAKE_BUILD_PARALLEL_LEVEL ${CoreNum})
-message("Detected core count: ${CoreNum}")
+message("[${CMAKE_PROJECT_NAME}] Detected core count: ${CoreNum}")
 
 # Collect ImGui source files
 file(GLOB IMGUI_SOURCES "extern/imgui/imgui.cpp"
