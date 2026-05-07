@@ -1,6 +1,7 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
+#include "Editor/Core/TutorialRegistry.h"
 #include "RanakEngine/RanakEngine.h"
 
 #include "Editor/Core/Project.h"
@@ -60,6 +61,7 @@ private:
 
     std::string m_currentScenePath; ///< Absolute path to the currently loaded scene file, or empty.
 
+    TutorialRegistry m_tutorialRegistry; ///< Registry of available tutorials, loaded from BuiltinTutorials and project files.
     TutorialPanel m_tutorialPanel; ///< In-editor guided tutorial overlay (universal across tabs).
     UndoManager m_undoManager;      ///< Undo/redo command stack.
 
@@ -163,6 +165,8 @@ private:
     void SaveLayout(int _slot);
     /** @brief Loads an ImGui docking layout from the given slot (0-2). */
     void LoadLayout(int _slot);
+
+    TutorialRegistry& GetTutorialRegistry() { return m_tutorialRegistry; }
 };
 
 #endif

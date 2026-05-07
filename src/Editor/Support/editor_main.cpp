@@ -17,7 +17,8 @@ int main()
 
             if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
             {
-                l_editor.GetTutorialPanel().LoadTutorial("./resources/Tutorials/GettingStarted.lua");
+                TutorialRegistry& l_registry = l_editor.GetTutorialRegistry();
+                l_editor.GetTutorialPanel().LoadTutorial("GettingStarted", l_registry.GetTutorialSource("GettingStarted"));
             }
 
             l_editor.Run();

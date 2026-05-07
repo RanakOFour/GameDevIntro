@@ -2,15 +2,17 @@
 
 #include "Editor/Tabs/SceneEditTab.h"
 #include "Editor/Tabs/TextEditTab.h"
+
 #include "Editor/Support/AutoCompleteTree.h"
 
 #include "Editor/Scene/SceneSerializer.h"
 #include "Editor/Scene/BuiltIn/BuiltinCategories.h"
 #include "Editor/Scene/BuiltIn/BuiltinRules.h"
+#include "Editor/Scene/BuiltIn/BuiltInTutorials.h"
+#include "Editor/Scene/BuiltIn/EditorAssets.h"
+
 #include "Editor/Scene/Gizmo.h"
 #include "Editor/Scene/SceneSettings.h"
-
-#include "Editor/Scene/BuiltIn/EditorAssets.h"
     
 #include "RanakEngine/RanakEngine.h"
 
@@ -77,6 +79,8 @@ Editor::Editor(RE::EngineContents engineContents, Project project)
 
     // Apply saved theme (or default) after ImGui context is ready.
     m_themeManager.ApplyPreset(m_themeManager.GetActiveIndex());
+
+    BuiltinTutorials::Load(m_tutorialRegistry);
 }
 
 Editor::~Editor()

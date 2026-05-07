@@ -5,13 +5,6 @@
 #include "RanakEngine/RanakEngine.h"
 
 #include "imgui/imgui.h"
-#include "imgui/imgui_impl_sdl3.h"
-#include "imgui/imgui_impl_opengl3.h"
-
-#include "imgui/misc/cpp/imgui_stdlib.h"
-
-#define USE_STD_FILESYSTEM 1
-#include "imguiFileDialog/ImGuiFileDialog.h"
 
 #include <string>
 #include <vector>
@@ -43,7 +36,11 @@ class ProjectSelectionScreen
     };
 
     private:
-
+    inline constexpr static char g_newProjectDialogName[] = "PSS_NewProjectDir";
+    inline constexpr static char g_loadProjectDialogName[] = "PSS_LoadProjectDir";
+    static constexpr int k_maxRecentProjects = 10;
+    
+    inline static bool s_isFileDialogOpen = false;
     inline static std::string m_documentsPath = "";
 
     enum class Page { Main, NewProject, LoadProject };
@@ -52,7 +49,6 @@ class ProjectSelectionScreen
     {
         Page page            = Page::Main;
         
-        std::string location = "";   ///< Parent directory chosen by Browse
         std::string name     = "";   ///< Project name (NewProject only)
         std::string loadDir  = "";   ///< Full project directory (LoadProject)
         std::string errorMsg;

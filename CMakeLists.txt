@@ -5,16 +5,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_GENERATOR Ninja)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_C_COMPILER "/usr/bin/clang")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
-
 message("CMAKE_C_COMPILER: ${CMAKE_C_COMPILER}")
 message("CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message("CMAKE_C_FLAGS: ${CMAKE_C_FLAGS}")
 message("CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-project(GameDevIntro VERSION 0.5
-                     LANGUAGES C CXX)
+project(GameDevIntro VERSION 0.5 LANGUAGES CXX)
 
 ProcessorCount(CoreNum)
 set(CMAKE_BUILD_PARALLEL_LEVEL ${CoreNum})
@@ -57,9 +53,4 @@ elseif(WIN32)
                        COMMAND ${CMAKE_COMMAND} -E copy_directory
                        "${CMAKE_CURRENT_SOURCE_DIR}/lib/win/bin"
                        $<TARGET_FILE_DIR:GameDevIntro>)
-
-    add_custom_command(TARGET GameDevIntro POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       "${CMAKE_CURRENT_SOURCE_DIR}/resources"
-                       $<TARGET_FILE_DIR:GameDevIntro>/resources)
 endif()

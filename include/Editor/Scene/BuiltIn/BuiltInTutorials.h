@@ -1,11 +1,10 @@
 #ifndef BUILTINTUTORIALS_H
 #define BUILTINTUTORIALS_H
 
-#include "RanakEngine/RanakEngine.h"
-
 #include <string>
 #include <vector>
 
+class TutorialRegistry;
 class BuiltinTutorials
 {
     private:
@@ -15,7 +14,7 @@ class BuiltinTutorials
         const std::string source; ///< Lua source for the tutorial scene file.
     };
 
-    std::vector<Entry> GetEntries() const;
+    static std::vector<Entry> GetEntries();
 
     public:
     BuiltinTutorials() = delete;
@@ -33,9 +32,9 @@ class BuiltinTutorials
      * Call this after the engine has been fully initialised (LuaContext must be
      * ready) and before any project is opened.
      *
-     * @param _contents Fully initialised engine bundle.
+     * @param _registry Tutorial registry to load the built-in tutorials into.
      */
-    static void Load(RE::EngineContents& _contents);
+    static void Load(TutorialRegistry& _registry);
 };
 
 #endif

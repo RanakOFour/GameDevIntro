@@ -3,14 +3,11 @@
 
 #include "../../UI/Panel.h"
 #include "RanakEngine/RanakEngine.h"
-
-#include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
 #include <vector>
 #include <string>
 #include <map>
-#include <memory>
 
 namespace RanakEngine::Asset { class Texture; }
 
@@ -118,15 +115,11 @@ class TutorialPanel : public Panel
     ~TutorialPanel() = default;
 
     /**
-     * @brief Loads and starts a tutorial from a Lua data file.
+     * @brief Loads and starts a tutorial from the registry
      *
-     * The file must return a table with an optional "title" string and a
-     * "steps" array of step tables.  All step images are loaded into
-     * m_imageCache.
-     *
-     * @param _path Asset path to the .lua tutorial file.
+     * @param _steps Lua table containing the tutorial steps.
      */
-    void LoadTutorial(const std::string& _path);
+    void LoadTutorial(const std::string _title, const std::string& _steps);
 
     /**
      * @brief Registers a widget rect for highlighting by key.

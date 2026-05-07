@@ -41,10 +41,6 @@ void RulesPanel::RefreshRuleList()
     auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
     sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
 
-    // Built-in names
-    for (const auto& entry : BuiltinRules::GetEntries())
-        m_loadedRules.push_back(entry.name);
-
     // User rules from the persistent registry
     for (const auto& record : m_editor.GetSceneEdit().GetRuleRegistry())
         m_loadedRules.push_back(record.name);
@@ -111,10 +107,11 @@ void RulesPanel::Draw()
                     continue;
             }
 
-            ImGui::PushID(l_ruleName.c_str());
+            sol::optional<std::shared_ptr<RE::Core::Rule>> l_rulePtrOpt = l_sceneTable.traverse_raw_get<sol::optional<std::shared_ptr<RE::Core::Rule>>>("Rules", l_ruleName);
+            if (!l_rulePtrOpt.has_value()) continue;
+            std::shared_ptr<RE::Core::Rule> l_rulePtr = *l_rulePtrOpt;
 
-            std::shared_ptr<RE::Core::Rule> l_rulePtr =
-                l_sceneTable.traverse_raw_get<std::shared_ptr<RE::Core::Rule>>("Rules", l_ruleName);
+            ImGui::PushID(l_ruleName.c_str());
 
             bool l_active = l_rulePtr->GetActive();
 

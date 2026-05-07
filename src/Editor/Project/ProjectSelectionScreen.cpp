@@ -2,11 +2,20 @@
 #include "RanakEngine/UI.h"
 #include "imgui.h"
 
+#include "imgui/imgui_impl_sdl3.h"
+#include "imgui/imgui_impl_opengl3.h"
+
+#include "imgui/misc/cpp/imgui_stdlib.h"
+
+#define USE_STD_FILESYSTEM 1
+#include "imguiFileDialog/ImGuiFileDialog.h"
+
 #include <GL/gl.h>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <algorithm>
+#include <vector>
 
 #if _WIN32
 #include <stdlib.h>
@@ -14,10 +23,6 @@
 #include <shlobj_core.h>
 #include <direct.h>
 #endif
-
-static std::string g_newProjectDialogName("PSS_NewProjectDir");
-static std::string g_loadProjectDialogName("PSS_LoadProjectDir");
-static constexpr int k_maxRecentProjects = 10;
 
 std::string ProjectSelectionScreen::GetDataDir()
 {
@@ -113,24 +118,6 @@ bool ProjectSelectionScreen::DrawCentredButton(const std::string& _label, ImVec2
 
 void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
 {
-    if (m_documentsPath == "")
-    {
-#if _WIN32
-        char* l_path = std::getenv("USER");
-        if (l_path)
-        {
-            m_documentsPath = std::string(l_path) + "/Documents";
-        }
-        else
-        {
-            m_documentsPath = "C:/Users/Public/Documents";
-        }
-#else
-        const char* l_homeChar = std::getenv("HOME");
-        m_documentsPath = std::string(l_homeChar) + "/Documents";;
-#endif
-    }
-
     const float k_leftW  = 300.0f;
     const float k_rightW = _displaySize.x - k_leftW;
     const float k_height = _displaySize.y;
@@ -292,8 +279,6 @@ void ProjectSelectionScreen::DrawMain(State& _state, ImVec2 _displaySize)
 
 void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
 {
-    _state.location = m_documentsPath;
-
     ImGui::SetCursorPosY(_displaySize.y * 0.28f);
 
     DrawCentredTitle("Start New Project", _displaySize);
@@ -308,12 +293,12 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     ImGui::Text("Location:");
     ImGui::SameLine();
     ImGui::SetNextItemWidth(l_inputW);
-    ImGui::InputText("##NewProjLocation", &_state.location);
+    ImGui::InputText("##NewProjLocation", &_state.loadDir);
     ImGui::SameLine(0.0f, 8.0f);
     if (ImGui::Button("Browse...##newloc", ImVec2(l_browseW, 0)))
     {
         IGFD::FileDialogConfig cfg;
-        cfg.path = _state.location.empty() ? m_documentsPath : _state.location;
+        cfg.path = _state.loadDir.empty() ? m_documentsPath : _state.loadDir;
         ImGuiFileDialog::Instance()->OpenDialog(g_newProjectDialogName, "Choose Location", nullptr, cfg);
     }
 
@@ -330,7 +315,28 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     ImGui::SetCursorPosX(l_rowX);
     ImGui::Text("Mode:");
     ImGui::SameLine();
-    ImGui::Checkbox("Tutorial", &_state.tutorial);
+    
+    //TODO: eventually replace with class members visual selection (cards with descriptions), but this will do for now.
+    static std::vector<std::string> l_modes = { "Sandbox", "Tutorial" };
+    static int l_currentMode = 0;
+
+    if(ImGui::BeginCombo("##combo", l_modes[l_currentMode].c_str()))
+    {
+        for (int i = 0; i < l_modes.size(); i++)
+        {
+            bool isSelected = (l_currentMode == i);
+            if (ImGui::Selectable(l_modes[i].c_str(), isSelected))
+            {
+                l_currentMode = i;
+                _state.tutorial = (i == 1);
+            }
+            if (isSelected)
+            {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
 
     ImGui::Spacing();
 
@@ -353,7 +359,7 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
     if (ImGui::Button("Create Project", ImVec2(240.0f, 50.0f)))
     {
         _state.errorMsg.clear();
-        if (_state.location.empty())
+        if (_state.loadDir.empty())
             _state.errorMsg = "Please choose a location.";
         else if (_state.name.empty())
             _state.errorMsg = "Please enter a project name.";
@@ -362,11 +368,11 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
             try
             {
 #if _WIN32
-				std::string l_projectPath = _state.location;
+				std::string l_projectPath = _state.loadDir;
                 std::filesystem::path l_fullPath(l_projectPath);
 				l_fullPath.append(_state.name.begin(), _state.name.end());
 #else
-                std::filesystem::path l_fullPath = std::filesystem::path(_state.location) / _state.name;
+                std::filesystem::path l_fullPath = std::filesystem::path(_state.loadDir) / _state.name;
 #endif
                 Project l_project   = Project::Create(l_fullPath.string());
                 AddRecentProject(_state, l_fullPath.string());
@@ -394,7 +400,6 @@ void ProjectSelectionScreen::DrawNewProject(State& _state, ImVec2 _displaySize)
 
 void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
 {
-    _state.loadDir = m_documentsPath;
     ImGui::SetCursorPosY(_displaySize.y * 0.32f);
 
     DrawCentredTitle("Load Project", _displaySize);
@@ -465,31 +470,18 @@ void ProjectSelectionScreen::DrawLoadProject(State& _state, ImVec2 _displaySize)
 
 void ProjectSelectionScreen::DrawDirDialogs(State& _state)
 {
-    if (ImGuiFileDialog::Instance()->Display(
-            g_newProjectDialogName,
-            ImGuiWindowFlags_NoCollapse,
-            ImVec2(700, 450)))
+    std::string l_dialogToCheck = (_state.page == Page::NewProject) ? g_newProjectDialogName : g_loadProjectDialogName;
+    if (ImGuiFileDialog::Instance()->IsOpened(l_dialogToCheck))
     {
-        if (ImGuiFileDialog::Instance()->IsOk())
-        {
-            std::string l_picked = ImGuiFileDialog::Instance()->GetCurrentPath();
-            _state.location = l_picked;
-        }
-        ImGuiFileDialog::Instance()->Close();
-    }
-
-    if (ImGuiFileDialog::Instance()->Display(
-            g_loadProjectDialogName,
-            ImGuiWindowFlags_NoCollapse,
-            ImVec2(700, 450)))
-    {
-        if (ImGuiFileDialog::Instance()->IsOk())
+        if(ImGuiFileDialog::Instance()->Display(l_dialogToCheck, ImGuiWindowFlags_NoCollapse, ImVec2(700, 400)))
         {
             std::string l_picked = ImGuiFileDialog::Instance()->GetCurrentPath();
             _state.loadDir = l_picked;
+            ImGuiFileDialog::Instance()->Close();
         }
-        ImGuiFileDialog::Instance()->Close();
     }
+
+    
 }
 
 ProjectSelectionScreen::Result
@@ -511,6 +503,23 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
 
     State l_state;
     LoadRecentProjects(l_state);
+
+#if _WIN32
+        char* l_path = std::getenv("USER");
+        if (l_path)
+        {
+            m_documentsPath = std::string(l_path) + "/Documents";
+        }
+        else
+        {
+            m_documentsPath = "C:/Users/Public/Documents";
+        }
+#else
+        const char* l_homeChar = std::getenv("HOME");
+        m_documentsPath = std::string(l_homeChar) + "/Documents";;
+#endif
+
+    l_state.loadDir = m_documentsPath;
 
     while (!l_state.decided && !_engineContents.io->GetQuitSignal())
     {

@@ -5,13 +5,16 @@
 #include "RanakEngine/Assets.h"
 #include "RanakEngine/Core.h"
 #include "RanakEngine/Asset/Texture.h"
-#include "RanakEngine/Asset/LuaFile.h"
 
+#include "RanakEngine/Log.h"
 #include "imgui/imgui.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
+#include "sol/sol.hpp"
 
 #include <algorithm>
 #include <sstream>
+#include <string>
+#include <vector>
 
 TutorialPanel::TutorialPanel(Editor& _editor)
 : Panel("Tutorial", _editor)
@@ -19,34 +22,48 @@ TutorialPanel::TutorialPanel(Editor& _editor)
     m_showPanel = false;
 }
 
-void TutorialPanel::LoadTutorial(const std::string& _path)
+void TutorialPanel::LoadTutorial(const std::string _title, const std::string& _steps)
 {
     m_steps.clear();
     m_imageCache.clear();
     m_currentStep = 0;
-    m_tutorialTitle = "";
+    m_tutorialTitle = _title;
 
-    auto l_file = RE::Asset::Load<RE::Asset::LuaFile>(_path);
-    if (l_file.expired())
+    auto l_luaContext = m_editor.GetEngineContents().core->GetLuaContext();
+
+    auto l_result = l_luaContext->GetState()->safe_script(_steps);
+    if (!l_result.valid())
     {
-        RE::Log::Error("TutorialPanel: could not load tutorial file: " + _path);
+        sol::error err = l_result;
+        RE::Log::Warning("Failed to load tutorial: " + std::string(err.what()));
         return;
     }
 
-    sol::table l_table = RE::Core::LuaContext::Instance().lock()->RunScript<sol::table>(l_file);
-    if (!l_table.valid())
+    sol::optional<sol::table> l_rootOpt = l_result.get<sol::optional<sol::table>>();
+    if (!l_rootOpt.has_value())
     {
-        RE::Log::Error("TutorialPanel: tutorial script did not return a table: " + _path);
+        RE::Log::Warning("Tutorial script did not return a table: " + _title);
         return;
     }
 
-    // Optional title for the whole tutorial
-    sol::optional<std::string> l_tutTitle = l_table.get<sol::optional<std::string>>("title");
-    if (l_tutTitle.has_value())
-        m_tutorialTitle = *l_tutTitle;
+    sol::table l_root = *l_rootOpt;
 
-    sol::optional<sol::table> l_stepsTable = l_table.get<sol::optional<sol::table>>("steps");
-    sol::table l_source = l_stepsTable.has_value() ? *l_stepsTable : l_table;
+    // Tutorials return { title = "...", steps = { ... } }
+    // Use the Lua-supplied title if present, otherwise keep the name passed in.
+    std::string l_luaTitle = l_root.get_or("title", std::string{});
+    if (!l_luaTitle.empty())
+    {
+        m_tutorialTitle = l_luaTitle;
+    }
+
+    sol::optional<sol::table> l_stepsOpt = l_root.get<sol::optional<sol::table>>("steps");
+    if (!l_stepsOpt.has_value())
+    {
+        RE::Log::Warning("TutorialPanel: no 'steps' table found in tutorial '" + _title + "'");
+        return;
+    }
+
+    const sol::table& l_source = *l_stepsOpt;
 
     for (auto& l_pair : l_source)
     {
@@ -95,7 +112,7 @@ void TutorialPanel::LoadTutorial(const std::string& _path)
         m_waitSatisfiedAtEntry = false;
     }
 
-    RE::Log::Message("TutorialPanel: loaded " + std::to_string(m_steps.size()) + " steps from " + _path);
+    RE::Log::Message("TutorialPanel: loaded " + std::to_string(m_steps.size()) + " steps from " + _title);
 }
 
 void TutorialPanel::RegisterRegion(const std::string& _key, ImRect _rect)

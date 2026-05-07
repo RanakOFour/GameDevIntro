@@ -1,11 +1,10 @@
 #include "Editor/Panels/UI/TopBar.h"
 
 #include "Editor/Core/Editor.h"
+#include "Editor/Core/TutorialRegistry.h"
 #include "Editor/Tabs/SceneEditTab.h"
-#include "Editor/Tabs/TextEditTab.h"
 #include "Editor/Scene/SceneSerializer.h"
 #include "Editor/Scene/BuiltIn/BuiltinRules.h"
-#include "Editor/UI/ThemeManager.h"
 #include "Editor/Project/ProjectExporter.h"
 
 #include "imguiFileDialog/ImGuiFileDialog.h"
@@ -13,7 +12,6 @@
 #include "RanakEngine/RanakEngine.h"
 #include "RanakEngine/Log.h"
 
-#include "SDL3/SDL.h"
 
 TopBar::TopBar(Editor& _editor)
     : m_editor(_editor)
@@ -191,15 +189,15 @@ void TopBar::Draw()
 
         if (ImGui::BeginMenu("Tutorials"))
         {
+            TutorialRegistry& l_registry = m_editor.GetTutorialRegistry();
             TutorialPanel& l_tut = m_editor.GetTutorialPanel();
-            if (ImGui::MenuItem("Getting Started"))
-                l_tut.LoadTutorial("./resources/Tutorials/GettingStarted.lua");
-            if (ImGui::MenuItem("Creating Categories"))
-                l_tut.LoadTutorial("./resources/Tutorials/Categories.lua");
-            if (ImGui::MenuItem("Writing Rules"))
-                l_tut.LoadTutorial("./resources/Tutorials/Rules.lua");
-            if (ImGui::MenuItem("Build Asteroids"))
-                l_tut.LoadTutorial("./resources/Tutorials/Asteroids.lua");
+            for(const auto& _entry : l_registry.GetTutorialNames())
+            {
+                if (ImGui::MenuItem(_entry.c_str()))
+                {
+                    l_tut.LoadTutorial(_entry, l_registry.GetTutorialSource(_entry));
+                }
+            }
             ImGui::EndMenu();
         }
 
