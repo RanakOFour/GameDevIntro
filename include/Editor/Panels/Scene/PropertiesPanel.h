@@ -31,6 +31,7 @@ class PropertiesPanel : public Panel
 	std::string m_pendingPathKey;      ///< Key into m_stringValueMap for the field awaiting a path.
 	std::string m_pendingPathProperty; ///< Attribute name to write the chosen path back into.
 	sol::table  m_pendingPathTable;    ///< The entity's category attribute table to update on confirm.
+	sol::table  m_removedPropsBackup;   ///< Backup of removed properties for undo purposes (indexed by category name and entity ID).
 
 	bool   m_setPosition; ///< True when SetPosition() has been called and not yet consumed.
 	ImVec2 m_position;    ///< Requested next-frame window position.

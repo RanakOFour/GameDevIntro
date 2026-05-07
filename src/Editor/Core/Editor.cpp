@@ -16,6 +16,7 @@
     
 #include "RanakEngine/RanakEngine.h"
 
+#include "imgui.h"
 #include "imgui/imgui_impl_sdl3.h"
 #include "imgui/imgui_impl_opengl3.h"
 
@@ -27,10 +28,10 @@ using json = nlohmann::json;
 #include <filesystem>
 #include <sstream>
 
-Editor::Editor(RE::EngineContents engineContents, Project project)
+Editor::Editor(RE::EngineContents& engineContents, Project& project)
 : m_state(State::SceneEdit)
-, m_engineContents(std::move(engineContents))
-, m_project(std::move(project))
+, m_engineContents(engineContents)
+, m_project(project)
 , m_tutorialPanel(*this)
 , m_topBar(*this)
 , m_themeSettingsPanel(*this, m_themeManager)
@@ -362,6 +363,8 @@ void Editor::LoadProjectInfo()
                                           &m_sceneEdit->GetSceneSettings());
 
             // Re-add built-in rules after scene load (they are excluded from serialisation)
+            BuiltinRules::Load(m_engineContents);
+
             // Rebuild the editor rule registry to match the newly loaded scene.
             m_sceneEdit->RebuildRegistryFromScene();
             m_sceneEdit->m_scene = m_engineContents.core->GetScene();
@@ -701,7 +704,7 @@ void Editor::HandleInput()
                     m_sceneEdit->m_dragRectEnd = m_sceneEdit->m_dragRectStart;
                 }
 
-                RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
+                //RE::Log::Message("Clicked entity: " + std::to_string(l_hitEntity));
             }
         }
 
@@ -938,22 +941,30 @@ void Editor::HandleInput()
 
     if (!ImGui::GetIO().WantTextInput)
     {
-        // Gizmo mode shortcuts (W/E/R — Unity convention)
+        // Gizmo mode shortcuts (T/R/S — mnemonic)
         SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();
-        if (m_engineContents.io->GetKeyDownThisFrame('w'))
+        if (m_engineContents.io->GetKeyDownThisFrame('t'))
             l_ss.gizmoMode = GizmoMode::Translate;
-        if (m_engineContents.io->GetKeyDownThisFrame('e'))
-            l_ss.gizmoMode = GizmoMode::Rotate;
         if (m_engineContents.io->GetKeyDownThisFrame('r'))
+            l_ss.gizmoMode = GizmoMode::Rotate;
+
+
+        if (!ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('s'))
             l_ss.gizmoMode = GizmoMode::Scale;
 
-        // Snap toggle (Ctrl+G)
-        if (ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('g'))
-            l_ss.snapEnabled = !l_ss.snapEnabled;
+        if (!ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('e'))
+        {
+            m_sceneEdit->m_entityPanel.SetShown(!m_sceneEdit->m_entityPanel.IsShown());
+        }
 
         if (!ImGui::GetIO().KeyCtrl && m_engineContents.io->GetKeyDownThisFrame('c'))
         {
             m_sceneEdit->m_categoryPanel.SetShown(!m_sceneEdit->m_categoryPanel.IsShown());
+        }
+
+        if (m_engineContents.io->GetKeyDownThisFrame(' '))
+        {
+            m_sceneEdit->m_assetBrowserPanel.SetShown(!m_sceneEdit->m_assetBrowserPanel.IsShown());
         }
 
         if (m_engineContents.io->GetKeyDownThisFrame('`'))

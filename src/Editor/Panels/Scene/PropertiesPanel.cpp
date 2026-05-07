@@ -32,7 +32,7 @@ PropertiesPanel::PropertiesPanel(Editor& _editor)
 , m_size(400.0f, 500.0f)
 , m_registry(_editor.GetEngineContents().core->GetScene().lock()->GetRegistry())
 {
-
+    m_removedPropsBackup = _editor.GetEngineContents().core->GetLuaContext()->CreateTable();
 }
 
 PropertiesPanel::~PropertiesPanel()
@@ -90,41 +90,49 @@ void PropertiesPanel::DrawEntityProperties(int _id)
         {
             // Snapshot field values for undo
             sol::table l_catData = l_entityData.raw_get<sol::table>(l_categoryToRemove);
-            auto l_catDataCopy = std::make_shared<std::vector<std::pair<std::string, sol::object>>>();
-            for (auto& l_fp : l_catData)
+            if (!m_removedPropsBackup.raw_get<sol::object>(_id).valid())
             {
-                l_catDataCopy->emplace_back(l_fp.first.as<std::string>(), l_fp.second);
+                m_removedPropsBackup.create_named(_id);
             }
+            
+            m_removedPropsBackup[_id][l_categoryToRemove] = l_catData;
 
             l_scene->RemoveFromCategory(_id, l_categoryToRemove);
 
             int l_entityId = _id;
             std::string l_catName = l_categoryToRemove;
-            Editor* l_edRaw = &m_editor;
+            Editor* l_editorRawPtr = &m_editor;
             m_editor.GetUndoManager().PushCommand(
                 std::make_unique<LambdaCommand>("Remove " + l_catName,
-                    [l_edRaw, l_entityId, l_catName]()
+                    [this, l_editorRawPtr, l_entityId, l_catName]()
                     {
-                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
-                        if (l_sc)
+                        auto l_scene = l_editorRawPtr->GetEngineContents().core->GetScene().lock();
+                        if (l_scene)
                         { 
-                            l_sc->RemoveFromCategory(l_entityId, l_catName);
+                            sol::table l_categoryData = l_scene->GetRegistry().GetEntityAttributes(l_entityId)[l_catName];
+                            if (!m_removedPropsBackup.raw_get<sol::object>(l_entityId).valid())
+                            {
+                                m_removedPropsBackup.create_named(l_entityId);
+                            }
+                            m_removedPropsBackup[l_entityId][l_catName] = l_categoryData;
+                            l_scene->RemoveFromCategory(l_entityId, l_catName);
                         }
                     },
-                    [l_edRaw, l_entityId, l_catName, l_catDataCopy]()
+                    [this, l_editorRawPtr, l_entityId, l_catName]()
                     {
-                        auto l_sc = l_edRaw->GetEngineContents().core->GetScene().lock();
-                        if (l_sc)
+                        auto l_scene = l_editorRawPtr->GetEngineContents().core->GetScene().lock();
+                        if (l_scene)
                         {
-                            l_sc->AddToCategory(l_entityId, l_catName);
-                            sol::table l_attrs = l_sc->GetRegistry().GetEntityAttributes(l_entityId);
+                            l_scene->AddToCategory(l_entityId, l_catName);
+                            sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_entityId);
                             sol::object l_catObj = l_attrs.raw_get<sol::object>(l_catName);
                             if (l_catObj.valid() && l_catObj.get_type() == sol::type::table)
                             {
-                                sol::table l_cat = l_catObj.as<sol::table>();
-                                for (auto& [l_fn, l_fv] : *l_catDataCopy)
+                                sol::table l_dataCopy = m_removedPropsBackup[l_entityId][l_catName].get<sol::table>();
+                                sol::table l_categoryData = l_catObj.as<sol::table>();
+                                for (auto& [l_fn, l_fv] : l_dataCopy)
                                 {
-                                    l_cat[l_fn] = l_fv;
+                                    l_categoryData[l_fn] = l_fv;
                                 }
                             }
                         }
@@ -132,6 +140,8 @@ void PropertiesPanel::DrawEntityProperties(int _id)
                 )
             );
         }
+
+        l_categoryToRemove.clear();
     }
 }
 
@@ -670,8 +680,15 @@ void PropertiesPanel::DrawPathDialog()
     else if (l_prop.find("texture") != std::string::npos) l_filter = ".png,.jpg,.jpeg,.bmp,.tga";
     else if (l_prop.find("shader")  != std::string::npos) l_filter = ".vs,.fs,.vert,.frag";
 
+    // Pick the most relevant project subdirectory as the starting path.
+    const Project& l_project = m_editor.GetProject();
+    std::string l_startPath = l_project.GetRootPath();
+    if      (l_prop.find("model")   != std::string::npos) l_startPath = l_project.GetModelsDir();
+    else if (l_prop.find("texture") != std::string::npos) l_startPath = l_project.GetTexturesDir();
+    else if (l_prop.find("audio")   != std::string::npos) l_startPath = l_project.GetAudioDir();
+
     IGFD::FileDialogConfig config;
-    config.path = ".";
+    config.path = l_startPath;
     ImGuiFileDialog::Instance()->OpenDialog("PropPathFileDlg", "Choose File", l_filter, config);
 
     if (ImGuiFileDialog::Instance()->Display("PropPathFileDlg"))

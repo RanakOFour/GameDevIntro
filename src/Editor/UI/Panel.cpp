@@ -32,6 +32,14 @@ void Panel::DrawAsWindow(ImGuiWindowFlags _flags)
 {
     if (!m_showPanel) return;
 
+    // Prevent other windows from docking into this panel. This lets panels
+    // dock into the main SceneEditTab dockspace while blocking panel-to-panel
+    // docking. NoDockingSplit is propagated to the dock node that hosts this
+    // window, so the node rejects incoming dock requests from all other windows.
+    ImGuiWindowClass l_windowClass;
+    l_windowClass.DockNodeFlagsOverrideSet = ImGuiDockNodeFlags_NoDockingSplit;
+    ImGui::SetNextWindowClass(&l_windowClass);
+
     ImGui::SetNextWindowSize(ImVec2(300, 400), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(m_panelTitle.c_str(), &m_showPanel, _flags))
     {

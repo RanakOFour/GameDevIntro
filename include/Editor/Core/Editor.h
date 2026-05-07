@@ -91,24 +91,13 @@ private:
     void LoadProjectInfo();
     /** @brief Loads saved layout .ini files from the project directory. */
     void LoadSavedLayouts();
-
-    Editor(RE::EngineContents engineContents, Project project);
     public:
     /** @brief Writes ProjectInfo.json at the project root with the current editor state. */
     void SaveProjectInfo();
 
-    ~Editor();
+    Editor(RE::EngineContents& engineContents, Project& project);
 
-    /**
-     * @brief Factory method — thin wrapper returning a prvalue for guaranteed copy elision.
-     * @param engineContents  Pre-initialised engine bundle (window, GL, etc.).
-     * @param project         The project selected on the project-selection screen.
-     * @return The new Editor
-     */
-    static Editor Create(RE::EngineContents engineContents, Project project)
-    {
-        return Editor(std::move(engineContents), std::move(project));
-    }
+    ~Editor();
 
     /** @brief Enters the main loop; returns when the user closes the editor. */
     void Run();

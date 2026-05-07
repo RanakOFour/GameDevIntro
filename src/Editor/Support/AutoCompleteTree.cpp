@@ -75,14 +75,14 @@ void AutoCompleteTree::transactionCallback(std::vector<TextEditor::Change>& _cha
         }
 
 
-        RE::Log::Message("Change callback text: " + l_isInsert + " " + l_lastChange.text + "\n     Current Word: " + m_lastCompleteWord);
+        //RE::Log::Message("Change callback text: " + l_isInsert + " " + l_lastChange.text + "\n     Current Word: " + m_lastCompleteWord);
     }
 
 };
 
 void AutoCompleteTree::autocompleteCallback(TextEditor::AutoCompleteState& _state)
 {
-    RE::Log::Message("Current search term: " + _state.searchTerm + " | Last word: " + m_lastCompleteWord);
+    //RE::Log::Message("Current search term: " + _state.searchTerm + " | Last word: " + m_lastCompleteWord);
 
     _state.suggestions.clear();
 

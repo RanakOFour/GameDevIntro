@@ -65,7 +65,7 @@ class AutoCompleteTree
         for(auto& l_globalPair : l_globalPairs)
         {
             std::string l_globalName = l_globalPair.first.as<std::string>();
-            RE::Log::Message("Creating completion tree for global: " + l_globalName);
+            //RE::Log::Message("Creating completion tree for global: " + l_globalName);
 
             if(l_globalName.substr(0, 3) == "sol")
                 continue;
@@ -85,7 +85,7 @@ class AutoCompleteTree
             for(auto& l_valuePair : l_valueTable)
             {
                 std::string l_valueName = l_valuePair.first.as<std::string>();
-                RE::Log::Message(l_globalName + ": " + l_valueName);
+                //RE::Log::Message(l_globalName + ": " + l_valueName);
 
                 if(l_valueName[0] != '_')
                 {

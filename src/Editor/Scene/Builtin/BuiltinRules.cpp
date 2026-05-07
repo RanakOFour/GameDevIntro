@@ -10,10 +10,8 @@ static const std::string k_editorRenderSrc =
 R"lua(local EditorRenderer = Rule {
     categories = {"Transform"},
     fields = {
-        Log.Message("EditorRenderer: temp path is " .. Editor.GetTempPath()),
         templateDrawable = {
             shader  = Asset.Shader(Editor.GetTempPath() .. "/Shaders/REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "/Shaders/REDefaultVertShader.vs"),
-            Log.Message("EditorRenderer: Attempting to load texture from " .. Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
             texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
             model   = Asset.Model(Editor.GetTempPath() .. "/Models/REDefaultModel.obj")
         },

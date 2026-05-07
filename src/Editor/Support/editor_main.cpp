@@ -1,5 +1,7 @@
 #include "Editor/Core/Editor.h"
 #include "Editor/Project/ProjectSelectionScreen.h"
+#include "RanakEngine/Math/Vector2.h"
+#include <cstdio>
 
 int main()
 {
@@ -7,13 +9,25 @@ int main()
     {
         RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(960, 540), "GameDevIntro");
 
+        // The user can Load an existing project, create a new one, or exit the editor.
         ProjectSelectionScreen::Result l_choice = ProjectSelectionScreen::Run(l_engineContents);
 
         if (l_choice.action != ProjectSelectionScreen::Action::Exit)
         {
-            Editor l_editor = Editor::Create(l_engineContents, l_choice.project);
+            // Transfer ownership of the Engine to the Editor, which will manage its lifetime from here on.
+            Editor l_editor(l_engineContents, l_choice.project);
 
-            l_engineContents.io->SetScreenSize(Vector2(1920, 1080));
+            Vector2 l_idealScreenSize(1920, 1080);
+            Vector2 l_windowPos = l_engineContents.io->GetScreenPosition();
+
+            printf("Window position: (%.0f, %.0f)\n", l_windowPos.x, l_windowPos.y);
+
+            // Try to account for taskbar (Does NOT work on my DE, but should work on Windows)
+            l_idealScreenSize.y = l_idealScreenSize.y - l_windowPos.y;
+
+            printf("Ideal screen size: (%.0f, %.0f)\n", l_idealScreenSize.x, l_idealScreenSize.y);
+            
+            l_engineContents.io->SetScreenSize(l_idealScreenSize);
 
             if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
             {
