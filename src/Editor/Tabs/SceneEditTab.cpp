@@ -61,8 +61,8 @@ SceneEditTab::SceneEditTab(Editor& _editor)
     m_assetBrowserPanel.SetRootPath(_editor.GetProject().GetRootPath());
 
     // Load editor icons for asset browser (user provides these textures)
-    std::string l_folderIcon = RE::Asset::GetTempDir() / "Textures" / "folder_icon.png";
-    std::string l_fileIcon   = RE::Asset::GetTempDir() / "Textures" / "file_icon.png";
+    std::string l_folderIcon = (RE::Asset::GetTempDir() / "Textures" / "folder_icon.png").string();
+    std::string l_fileIcon   = (RE::Asset::GetTempDir() / "Textures" / "file_icon.png").string();
     if (std::filesystem::exists(l_folderIcon) && std::filesystem::exists(l_fileIcon))
     {
         m_assetBrowserPanel.LoadIcons(l_folderIcon, l_fileIcon);

@@ -18,16 +18,8 @@ int main()
             Editor l_editor(l_engineContents, l_choice.project);
 
             Vector2 l_idealScreenSize(1920, 1080);
-            Vector2 l_windowPos = l_engineContents.io->GetScreenPosition();
-
-            printf("Window position: (%.0f, %.0f)\n", l_windowPos.x, l_windowPos.y);
-
-            // Try to account for taskbar (Does NOT work on my DE, but should work on Windows)
-            l_idealScreenSize.y = l_idealScreenSize.y - l_windowPos.y;
-
-            printf("Ideal screen size: (%.0f, %.0f)\n", l_idealScreenSize.x, l_idealScreenSize.y);
             
-            l_engineContents.io->SetScreenSize(l_idealScreenSize);
+			
 
             if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
             {
