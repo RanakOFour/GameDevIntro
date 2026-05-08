@@ -14,12 +14,18 @@ int main()
 
         if (l_choice.action != ProjectSelectionScreen::Action::Exit)
         {
+            Vector2 l_idealScreenSize{1920, 1080};
+
+            #if _WIN32
+                // Account for title bar height
+                l_idealScreenSize.y -= 32;
+            #else
+            #endif
+
+            l_engineContents.io->MaximiseCurrentWindow();
+
             // Transfer ownership of the Engine to the Editor, which will manage its lifetime from here on.
             Editor l_editor(l_engineContents, l_choice.project);
-
-            Vector2 l_idealScreenSize(1920, 1080);
-            
-			
 
             if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
             {
