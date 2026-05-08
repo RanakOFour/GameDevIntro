@@ -3,3 +3,7 @@ List of directories with markable content:
 /src
 /extern/RanakEngine2/include
 /extern/RanakEngine2/src
+
+
+The program was build with Clang, on Windows it should be build with Clang-cl-msvc of some kind, though I have not attempted it.
+The main reason for this is the BuiltInTutorials, which contain long hard-coded strings regular MSVC cannot handle because it is stupid
