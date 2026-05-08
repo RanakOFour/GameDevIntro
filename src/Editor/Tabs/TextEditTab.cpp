@@ -316,7 +316,13 @@ void TextEditTab::SaveCurrentFile()
 
         if (!l_existingRule)
         {
-            RE::Log::Warning("SaveCurrentFile: no rule named '" + l_ruleName + "' found in scene.");
+            // New rule not yet in the scene — create and add it.
+            RE::Core::Rule l_newRule = l_luaCtx->CreateRule(m_fileToEdit);
+            l_scene->AddRule(l_newRule);
+
+            m_fileToEdit->Reload();
+            RE::Log::Message("Rule created and added to scene: " + m_fileToEdit->GetPath());
+            m_editor.SaveProjectInfo();
             return;
         }
 
