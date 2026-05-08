@@ -1,0 +1,5 @@
+List of directories with markable content:
+/include
+/src
+/extern/RanakEngine2/include
+/extern/RanakEngine2/src

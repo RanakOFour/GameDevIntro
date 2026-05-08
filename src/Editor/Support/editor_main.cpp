@@ -9,7 +9,7 @@ int main()
     {
         RE::EngineContents l_engineContents = RE::Initialise(true, Vector2(960, 540), "GameDevIntro");
 
-        // The user can Load an existing project, create a new one, or exit the editor.
+        // The user can load an existing project, create a new one, or exit the editor.
         ProjectSelectionScreen::Result l_choice = ProjectSelectionScreen::Run(l_engineContents);
 
         if (l_choice.action != ProjectSelectionScreen::Action::Exit)
@@ -29,8 +29,7 @@ int main()
 
             if (l_choice.action == ProjectSelectionScreen::Action::StartTutorial)
             {
-                TutorialRegistry& l_registry = l_editor.GetTutorialRegistry();
-                l_editor.GetTutorialPanel().LoadTutorial("GettingStarted", l_registry.GetTutorialSource("GettingStarted"));
+                l_editor.LoadTutorial("Getting Started");
             }
 
             l_editor.Run();

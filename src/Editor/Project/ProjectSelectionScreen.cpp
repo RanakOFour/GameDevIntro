@@ -487,6 +487,8 @@ void ProjectSelectionScreen::DrawDirDialogs(State& _state)
 ProjectSelectionScreen::Result
 ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
 {
+    // Create temp imgui context for this screen.
+    // The editor will create its own context when it starts
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
@@ -504,6 +506,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
     State l_state;
     LoadRecentProjects(l_state);
 
+    // Find documents path.
 #if _WIN32
         char* l_path = std::getenv("USER");
         if (l_path)
@@ -512,6 +515,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
         }
         else
         {
+            // For some reason, the program cannot find USER/Documents on uni pc, though that's probably a network issue
             m_documentsPath = "C:/Users/Public/Documents";
         }
 #else
@@ -519,6 +523,7 @@ ProjectSelectionScreen::Run(RE::EngineContents& _engineContents)
         m_documentsPath = std::string(l_homeChar) + "/Documents";;
 #endif
 
+    //Default load dir to documents, since that's sensible 
     l_state.loadDir = m_documentsPath;
 
     while (!l_state.decided && !_engineContents.io->GetQuitSignal())

@@ -1,5 +1,4 @@
 @startuml program_flow
-!theme plain
 skinparam backgroundColor #1e1e2e
 skinparam defaultFontColor #cdd6f4
 skinparam ArrowColor #89b4fa
@@ -165,13 +164,23 @@ while (io->GetQuitSignal() == false)
     endif
   fork again
     :keyboard shortcuts
-    Ctrl+Z → UndoManager::Undo()
-    Ctrl+Y → UndoManager::Redo()
-    Ctrl+C → Editor::CopySelectedEntities()
-    Ctrl+V → Editor::PasteEntities()
-    Ctrl+D → Editor::DuplicateEntities()
-    Ctrl+S → SceneSerializer::SaveToFile()
-    Delete → EntityPanel::RemoveEntity();
+    Ctrl+Z       → UndoManager::Undo()
+    Ctrl+Shift+Z → UndoManager::Redo()
+    Ctrl+C       → Editor::CopySelectedEntities()
+    Ctrl+V       → Editor::PasteEntities()
+    Ctrl+D       → Editor::DuplicateEntities()
+    Ctrl+S       → SceneSerializer::SaveToFile()
+    Delete       → EntityPanel::RemoveEntity()
+    T            → gizmo Translate
+    R            → gizmo Rotate
+    S            → gizmo Scale
+    E            → toggle Entity List
+    C            → toggle Categories panel
+    Space        → toggle Asset Browser
+    \`           → toggle Console
+    Ctrl+G       → toggle snap
+    Tab          → toggle scene/text editor
+    ESC          → close all panels;
   end fork
 
   |Editor::Run() — main loop|
@@ -297,6 +306,7 @@ while (io->GetQuitSignal() == false)
   SDL_Delay + busy-wait spin;
 
 endwhile
+
 
 |Editor::~Editor()|
 

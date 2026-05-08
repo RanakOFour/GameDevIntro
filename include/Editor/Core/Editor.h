@@ -104,6 +104,8 @@ private:
     /** @brief Renders one complete frame (clear, ImGui, swap). */
     void Draw();
 
+    void LoadTutorial(const std::string& _title);
+
     /** @brief Returns a reference to the engine sub-system bundle. */
     RE::EngineContents& GetEngineContents() { return m_engineContents; }
     /** @brief Returns a reference to the current project. */
@@ -137,12 +139,6 @@ private:
     /** @brief Returns true if the given layout slot has saved data. */
     bool HasLayout(int _slot) const { return !m_savedLayouts[_slot].empty(); }
 
-    /** @brief Returns a reference to the ThemeManager. */
-    ThemeManager& GetThemeManager() { return m_themeManager; }
-
-    /** @brief Returns a reference to the engine-owned UI renderer. */
-    RE::UI::UIRenderer& GetUIRenderer() { return *RE::UI::GetRenderer().lock(); }
-
     /** @brief Copies the currently selected entities to the clipboard. */
     void CopySelectedEntities();
     /** @brief Pastes entities from the clipboard with an offset. */
@@ -155,7 +151,14 @@ private:
     /** @brief Loads an ImGui docking layout from the given slot (0-2). */
     void LoadLayout(int _slot);
 
+    /** @brief Returns a reference to the tutorial registry. */
     TutorialRegistry& GetTutorialRegistry() { return m_tutorialRegistry; }
+
+    /** @brief Returns a reference to the ThemeManager. */
+    ThemeManager& GetThemeManager() { return m_themeManager; }
+
+    /** @brief Returns a reference to the engine-owned UI renderer. */
+    RE::UI::UIRenderer& GetUIRenderer() { return *RE::UI::GetRenderer().lock(); }
 };
 
 #endif

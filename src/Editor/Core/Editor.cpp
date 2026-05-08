@@ -133,6 +133,8 @@ void Editor::CleanupImGui()
 
 void Editor::Run()
 {
+    // Calculate delta time to cap frame rate at 60 FPS.
+    // TODO: Implement ability to set max frame rate
     const float l_targetFrameTime = 1.0f / 60.0f;
     const Uint64 l_perfFreq = SDL_GetPerformanceFrequency();
     Uint64 l_frameStart = SDL_GetPerformanceCounter();
@@ -140,21 +142,14 @@ void Editor::Run()
     while (!m_engineContents.io->GetQuitSignal())
     {
         HandleInput();
-        //Update(l_targetFrameTime);
         Draw();
 
-        // Measure how long this iteration took and sleep for the remainder of
-        // the 60 Hz budget. SDL_Delay granularity is ~1 ms so we keep spinning
-        // for the last millisecond to hit the target precisely.
+        // Measure how long this iteration took and sleep if there is time left.
         float l_elapsed = (SDL_GetPerformanceCounter() - l_frameStart) / static_cast<float>(l_perfFreq);
         float l_remaining = l_targetFrameTime - l_elapsed;
         if (l_remaining > 0.001f)
         {
             SDL_Delay((Uint32)((l_remaining - 0.001f) * 1000.0f));
-        }
-        while ((SDL_GetPerformanceCounter() - l_frameStart) / static_cast<float>(l_perfFreq) < l_targetFrameTime)
-        {
-            // Silly wait for sub-millisecond accuracy
         }
 
         l_frameStart = SDL_GetPerformanceCounter();
@@ -165,15 +160,21 @@ void Editor::Run()
 
 void Editor::ApplyProjectSettings()
 {
-    const ProjectSettings& s = m_project.GetSettings();
+    const ProjectSettings& l_projSettings = m_project.GetSettings();
 
     // Camera: restore initial state.
     if (auto l_camera = m_engineContents.core->GetCamera().lock())
     {
-        l_camera->SetPosition(Vector3(s.cameraX, s.cameraY, s.cameraZ));
-        l_camera->SetCameraWidth(s.cameraWidth);
-        if (s.cameraPerspective) l_camera->SetPerspective();
-        else                     l_camera->SetOrthographic();
+        l_camera->SetPosition(Vector3(l_projSettings.cameraX, l_projSettings.cameraY, l_projSettings.cameraZ));
+        l_camera->SetCameraWidth(l_projSettings.cameraWidth);
+        if (l_projSettings.cameraPerspective)
+        {
+            l_camera->SetPerspective();
+        }
+        else
+        {
+            l_camera->SetOrthographic();
+        }
     }
 }
 
@@ -464,12 +465,21 @@ void Editor::Draw()
     ImGui::NewFrame();
     ImGui::PushFont(m_font, 17.5f);
 
-    // Full-viewport dockspace (passthrough so scene renders behind)
+    // Full-viewport dockspace for main menu and dockable panels.
     ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(),
                                  ImGuiDockNodeFlags_PassthruCentralNode);
 
-    // Clear tutorial highlight regions registered last frame
-    m_tutorialPanel.ClearRegions();
+    /*
+    TODO: Upon reflection, it would appear to have been a smart move to fill
+          the Editor table with ImGui function pointers and actions,
+          so that Panels and windows could be writen and edited in as Lua scripts, allowing for
+          better seperatuon of concerns and more flexible UI development.
+          
+          Having everything in C++ is a pain.
+
+          This is genuine spaghetti at it's worst.
+          Peak 'It works and I don't want to touch it'.
+    */
 
     // Menu bar and tutorial panel are universal across all tabs
     m_topBar.Draw();
@@ -506,7 +516,9 @@ void Editor::Draw()
     {
         ImGuiWindow* l_tutWin = ImGui::FindWindowByName(m_tutorialPanel.GetTitle().c_str());
         if (l_tutWin)
+        {
             ImGui::BringWindowToDisplayFront(l_tutWin);
+        }
     }
 
     // Theme settings panel (dockable window).
@@ -526,8 +538,21 @@ void Editor::Draw()
     m_engineContents.io->GetWindow().lock()->Swap();
 }
 
+void Editor::LoadTutorial(const std::string& _title)
+{
+    for(auto& l_tutName : m_tutorialRegistry.GetTutorialNames())
+    {
+        if(l_tutName == _title)
+        {
+            auto l_steps = m_tutorialRegistry.GetTutorialSource(_title);
+            m_tutorialPanel.LoadTutorial(_title, l_steps);
+        }
+    }
+}
+
 void Editor::HandleInput()
 {
+    // Get triggered SDL events
     std::vector<SDL_Event> l_polledEvents = m_engineContents.io->UpdateInputs();
 
     // Handle SDL_Events for imgui
@@ -538,9 +563,9 @@ void Editor::HandleInput()
     }
 
     RE::IO::MouseInfo l_mouseInfo = m_engineContents.io->GetMouseInfo();
-
-    // Middle mouse button pan — anchor world point under cursor
     RE::IO::MouseInfo l_lastMouseInfo = m_engineContents.io->GetLastFrameMouseInfo();
+    
+    // Pan screen with MMB down
     if (l_mouseInfo.MMBDown && !l_lastMouseInfo.MMBDown)
     {
         // MMB just pressed: record world point under mouse
@@ -562,6 +587,7 @@ void Editor::HandleInput()
         m_sceneEdit->m_isPanningCamera = false;
     }
 
+    // Process gizmo clicks when not over a UI window.
     if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
     {
         // First-frame LMB press - check for entity selection or gizmo interaction
@@ -1070,7 +1096,7 @@ void Editor::CopySelectedEntities()
         EntitySnapshot l_snap;
         l_snap.name = l_scene->GetRegistry().GetEntityName(l_id);
         sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_id);
-        sol::state_view l_lua(l_attrs.lua_state());
+        sol::state_view l_luaView(l_attrs.lua_state());
         for (auto& l_catPair : l_attrs)
         {
             std::string l_catName = l_catPair.first.as<std::string>();
@@ -1082,19 +1108,19 @@ void Editor::CopySelectedEntities()
                 // Deep-copy primitive and Vector types so the clipboard
                 // is independent of the source entity's Lua table.
                 if (l_val.is<int>())
-                    l_val = sol::make_object(l_lua, l_val.as<int>());
+                    l_val = sol::make_object(l_luaView, l_val.as<int>());
                 else if (l_val.is<float>())
-                    l_val = sol::make_object(l_lua, l_val.as<float>());
+                    l_val = sol::make_object(l_luaView, l_val.as<float>());
                 else if (l_val.is<bool>())
-                    l_val = sol::make_object(l_lua, l_val.as<bool>());
+                    l_val = sol::make_object(l_luaView, l_val.as<bool>());
                 else if (l_val.is<std::string>())
-                    l_val = sol::make_object(l_lua, l_val.as<std::string>());
+                    l_val = sol::make_object(l_luaView, l_val.as<std::string>());
                 else if (l_val.is<Vector2>())
-                    l_val = sol::make_object(l_lua, l_val.as<Vector2>());
+                    l_val = sol::make_object(l_luaView, l_val.as<Vector2>());
                 else if (l_val.is<Vector3>())
-                    l_val = sol::make_object(l_lua, l_val.as<Vector3>());
+                    l_val = sol::make_object(l_luaView, l_val.as<Vector3>());
                 else if (l_val.is<Vector4>())
-                    l_val = sol::make_object(l_lua, l_val.as<Vector4>());
+                    l_val = sol::make_object(l_luaView, l_val.as<Vector4>());
                 l_fieldSnap.emplace_back(l_fp.first.as<std::string>(), l_val);
             }
             l_snap.categories.emplace_back(l_catName, std::move(l_fieldSnap));
@@ -1109,9 +1135,10 @@ void Editor::PasteEntities()
 {
     if (m_clipboard.empty()) return;
 
+    // There is no situation where the scene would be null
     auto l_scene = m_engineContents.core->GetScene().lock();
-    if (!l_scene) return;
 
+    // Pasted entities are selected
     m_sceneEdit->ClearSelection();
     std::vector<int> l_newIds;
 
@@ -1122,7 +1149,9 @@ void Editor::PasteEntities()
         for (auto& [l_catName, l_fields] : l_snap.categories)
         {
             if (l_catName != "Transform")
+            {
                 l_scene->AddToCategory(l_newId, l_catName);
+            }
         }
 
         sol::table l_attrs = l_scene->GetRegistry().GetEntityAttributes(l_newId);
@@ -1149,7 +1178,10 @@ void Editor::PasteEntities()
 
     m_sceneEdit->GetEntityPanel().RefreshEntityList();
     for (int l_id : l_newIds)
+    {
         m_sceneEdit->m_selectedEntities.push_back(l_id);
+    }
+
     if (!l_newIds.empty())
     {
         m_sceneEdit->m_selectedEntityId = l_newIds.front();

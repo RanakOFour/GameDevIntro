@@ -1,0 +1,267 @@
+@startuml header_dependencies
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 60
+skinparam ArrowColor #888888
+skinparam packageStyle rectangle
+
+hide empty members
+
+package "RanakEngine" <<Rectangle>> {
+
+    package "Math" <<Rectangle>> {
+        class "Math.h"              as RE_Math
+        class "Vector2.h"           as RE_Vec2
+        class "Vector3.h"           as RE_Vec3
+        class "Vector4.h"           as RE_Vec4
+        class "Quaternion.h"        as RE_Quat
+    }
+
+    package "Log" <<Rectangle>> {
+        class "Log.h"               as RE_Log
+        class "LogManager.h"        as RE_LogMgr
+    }
+
+    package "Asset" <<Rectangle>> {
+        class "AssetFile.h"         as RE_AssetFile
+        class "AssetManager.h"      as RE_AssetMgr
+        class "LuaFile.h"           as RE_LuaFile
+        class "Shader.h"            as RE_Shader
+        class "Texture.h"           as RE_Texture
+        class "Model.h"             as RE_Model
+        class "Audio (Asset).h"     as RE_AssetAudio
+        class "Assets.h"            as RE_Assets
+    }
+
+    package "Core" <<Rectangle>> {
+        class "EntityRegistry.h"    as RE_EntReg
+        class "Category.h"          as RE_Category
+        class "CategoryFactory.h"   as RE_CatFactory
+        class "Rule.h"              as RE_Rule
+        class "Scene.h"             as RE_Scene
+        class "LuaContext.h"        as RE_LuaCtx
+        class "Camera.h"            as RE_Camera
+        class "CoreManager.h"       as RE_CoreMgr
+        class "Raycast.h"           as RE_Raycast
+        class "Core.h"              as RE_Core
+    }
+
+    package "IO" <<Rectangle>> {
+        class "KBInfo.h"            as RE_KBInfo
+        class "MouseInfo.h"         as RE_MouseInfo
+        class "Window.h"            as RE_Window
+        class "Audio (IO).h"        as RE_IOAudio
+        class "IOManager.h"         as RE_IOMgr
+        class "IO.h"                as RE_IO
+    }
+
+    package "Physics" <<Rectangle>> {
+        class "PhysicsBody.h"       as RE_PhysBody
+        class "PhysicsManager.h"    as RE_PhysMgr
+        class "Physics.h"           as RE_Physics
+    }
+
+    package "UI" <<Rectangle>> {
+        class "DefaultFont.h"       as RE_Font
+        class "UIRenderer.h"        as RE_UIRenderer
+        class "UI.h"                as RE_UI
+    }
+
+    class "RanakEngine.h"           as RE_Root
+}
+
+' ─────────────────────────────────────────────
+' EDITOR
+' ─────────────────────────────────────────────
+package "Editor" <<Rectangle>> {
+
+    package "Core" <<Rectangle>> {
+        class "Project.h"           as ED_Project
+        class "StateRegistry.h"     as ED_StateReg
+        class "UndoManager.h"       as ED_Undo
+        class "TutorialRegistry.h"  as ED_TutReg
+        class "Editor.h"            as ED_Editor
+    }
+
+    package "UI" <<Rectangle>> {
+        class "Panel.h"             as ED_Panel
+        class "ThemeManager.h"      as ED_ThemeMgr
+    }
+
+    package "Scene" <<Rectangle>> {
+        class "SceneSettings.h"     as ED_SceneSettings
+        class "Gizmo.h"             as ED_Gizmo
+        class "SceneSerializer.h"   as ED_Serializer
+
+        package "BuiltIn" <<Rectangle>> {
+            class "BuiltinCategories.h" as ED_BuiltinCat
+            class "BuiltinRules.h"      as ED_BuiltinRules
+            class "BuiltInTutorials.h"  as ED_BuiltinTut
+            class "EditorAssets.h"      as ED_EditorAssets
+        }
+    }
+
+    package "Support" <<Rectangle>> {
+        class "AutoCompleteTree.h"  as ED_ACTree
+    }
+
+    package "Panels" <<Rectangle>> {
+
+        package "Panels/Scene" <<Rectangle>> {
+            class "EntityPanel.h"       as ED_EntityPanel
+            class "CameraPanel.h"       as ED_CamPanel
+            class "CategoryPanel.h"     as ED_CatPanel
+            class "RulesPanel.h"        as ED_RulesPanel
+            class "PropertiesPanel.h"   as ED_PropPanel
+            class "ConsolePanel.h"      as ED_ConsPanel
+            class "AssetBrowserPanel.h" as ED_AssetPanel
+            class "SceneSettingsPanel.h" as ED_SceneSettPanel
+        }
+
+        package "Panels/UI" <<Rectangle>> {
+            class "TopBar.h"            as ED_TopBar
+            class "TutorialPanel.h"     as ED_TutPanel
+            class "ThemeSettingsPanel.h" as ED_ThemePanel
+        }
+    }
+
+    package "Tabs" <<Rectangle>> {
+        class "SceneEditTab.h"      as ED_SceneTab
+        class "TextEditTab.h"       as ED_TextTab
+    }
+
+    package "Project" <<Rectangle>> {
+        class "ProjectSelectionScreen.h" as ED_ProjScreen
+        class "ProjectExporter.h"        as ED_Exporter
+    }
+}
+
+' ═══════════════════════════════════════════
+' RanakEngine internal edges
+' ═══════════════════════════════════════════
+RE_Math       --> RE_Quat
+RE_Math       --> RE_Vec2
+RE_Math       --> RE_Vec3
+RE_Math       --> RE_Vec4
+RE_Quat       --> RE_Vec3
+
+RE_Log        --> RE_LogMgr
+
+RE_AssetMgr   --> RE_Log
+RE_AssetMgr   --> RE_AssetFile
+RE_LuaFile    --> RE_AssetFile
+RE_Shader     --> RE_AssetFile
+RE_Shader     --> RE_Vec2
+RE_Shader     --> RE_Vec3
+RE_Shader     --> RE_Vec4
+RE_Texture    --> RE_AssetFile
+RE_Model      --> RE_AssetFile
+RE_AssetAudio --> RE_AssetFile
+RE_Assets     --> RE_LuaFile
+RE_Assets     --> RE_AssetAudio
+RE_Assets     --> RE_Model
+RE_Assets     --> RE_Shader
+RE_Assets     --> RE_Texture
+RE_Assets     --> RE_AssetMgr
+
+RE_Rule       --> RE_EntReg
+RE_Scene      --> RE_EntReg
+RE_Scene      --> RE_CatFactory
+RE_Scene      --> RE_Rule
+RE_Scene      --> RE_LuaFile
+RE_Scene      --> RE_LuaCtx
+RE_LuaCtx     --> RE_LuaFile
+RE_LuaCtx     --> RE_CatFactory
+RE_LuaCtx     --> RE_Rule
+RE_LuaCtx     --> RE_Log
+RE_Camera     --> RE_Math
+RE_Camera     --> RE_LuaCtx
+RE_CoreMgr    --> RE_Vec3
+RE_Raycast    --> RE_Math
+RE_Core       --> RE_Raycast
+RE_Core       --> RE_Camera
+RE_Core       --> RE_LuaCtx
+RE_Core       --> RE_CoreMgr
+RE_Core       --> RE_CatFactory
+RE_Core       --> RE_Category
+RE_Core       --> RE_Scene
+RE_Core       --> RE_Rule
+
+RE_MouseInfo  --> RE_Math
+RE_Window     --> RE_Math
+RE_IOMgr      --> RE_Vec2
+RE_IOMgr      --> RE_KBInfo
+RE_IOMgr      --> RE_MouseInfo
+RE_IO         --> RE_MouseInfo
+RE_IO         --> RE_KBInfo
+RE_IO         --> RE_IOAudio
+RE_IO         --> RE_Window
+RE_IO         --> RE_IOMgr
+
+RE_PhysBody   --> RE_Math
+RE_PhysMgr    --> RE_Math
+RE_Physics    --> RE_PhysMgr
+RE_Physics    --> RE_PhysBody
+
+RE_UIRenderer --> RE_IO
+RE_UIRenderer --> RE_Math
+RE_UI         --> RE_UIRenderer
+
+RE_Root       --> RE_Math
+RE_Root       --> RE_Log
+RE_Root       --> RE_Assets
+RE_Root       --> RE_Core
+RE_Root       --> RE_IO
+RE_Root       --> RE_Physics
+RE_Root       --> RE_UI
+
+' ═══════════════════════════════════════════
+' Editor internal edges
+' ═══════════════════════════════════════════
+ED_Gizmo          --> RE_Math
+ED_Serializer --> RE_Root
+ED_BuiltinCat     --> RE_Root
+ED_BuiltinRules   --> RE_Root
+
+ED_ACTree         --> RE_Root
+ED_ConsPanel      --> RE_LogMgr
+
+ED_EntityPanel    --> RE_Root
+ED_CamPanel       --> RE_Root
+ED_CatPanel       --> RE_Root
+ED_RulesPanel     --> RE_Root
+ED_PropPanel      --> RE_Root
+ED_TutPanel       --> RE_Root
+
+ED_ProjScreen     --> RE_Root
+
+ED_Editor         --> RE_Root
+ED_Editor         --> ED_Project
+ED_Editor         --> ED_StateReg
+ED_Editor         --> ED_Undo
+ED_Editor         --> ED_TutReg
+ED_Editor         --> ED_TutPanel
+ED_Editor         --> ED_TopBar
+ED_Editor         --> ED_ThemeMgr
+ED_Editor         --> ED_ThemePanel
+
+ED_SceneTab       --> RE_Root
+ED_SceneTab       --> ED_Editor
+ED_SceneTab       --> ED_EntityPanel
+ED_SceneTab       --> ED_CatPanel
+ED_SceneTab       --> ED_RulesPanel
+ED_SceneTab       --> ED_PropPanel
+ED_SceneTab       --> ED_CamPanel
+ED_SceneTab       --> ED_SceneSettings
+ED_SceneTab       --> ED_SceneSettPanel
+ED_SceneTab       --> ED_ConsPanel
+ED_SceneTab       --> ED_AssetPanel
+ED_SceneTab       --> ED_Gizmo
+
+ED_TextTab        --> RE_Root
+ED_TextTab        --> ED_Editor
+ED_TextTab        --> ED_ACTree
+ED_TextTab        --> ED_RulesPanel
+ED_TextTab        --> ED_CatPanel
+
+@enduml
