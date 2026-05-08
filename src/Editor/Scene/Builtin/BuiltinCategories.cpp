@@ -42,17 +42,25 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
         {
             "PhysicsBody",
             "return Category {\n"
-            "    bodyType    = Field(\"dynamic\", { isEnum = true, enumOptions = {\"dynamic\", \"static\", \"kinematic\"} }),\n"
-            "    density     = 1.0,\n"
-            "    friction    = 0.3,\n"
-            "    restitution = 0.1,\n"
-            "    _body       = Field(nil, { hidden = true })\n"
+            "    bodyType        = Field(\"dynamic\", { isEnum = true, enumOptions = {\"dynamic\", \"static\", \"kinematic\"} }),\n"
+            "    shape           = Field(\"square\",  { isEnum = true, enumOptions = {\"square\", \"circle\", \"capsule\"} }),\n"
+            "    density         = 1.0,\n"
+            "    friction        = 0.3,\n"
+            "    restitution     = 0.1,\n"
+            "    gravityScale    = 1.0,\n"
+            "    linearDamping   = 0.0,\n"
+            "    angularDamping  = 0.0,\n"
+            "    fixedRotation   = false,\n"
+            "    linearVelocity  = Vector2(0.0),\n"
+            "    angularVelocity = 0.0,\n"
+            "    _body           = Field(nil, { hidden = true })\n"
             "}\n"
         },
         // UI categories
         {
             "UIText",
             "return Category {\n"
+            "    position  = Vector2(0.0),\n"
             "    text      = \"\",\n"
             "    fontSize  = 16.0,\n"
             "    colour    = Field(Vector4(1.0), {isColour = true}),\n"
@@ -63,12 +71,13 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
         {
             "UIButton",
             "return Category {\n"
+            "    position  = Vector2(0.0),\n"
             "    label     = \"Button\",\n"
             "    width     = 120.0,\n"
             "    height    = 40.0,\n"
             "    colour    = Field(Vector4(1.0), {isColour = true}),\n"
             "    hover     = Field(Vector4(1.0), {isColour = true}),\n"
-            "    anchor    = Vector2(0.0),"
+            "    anchor    = Vector2(0.0),\n"
             "    pressed   = Field(false, { hidden = true }),\n"
             "    hovered   = Field(false, { hidden = true }),\n"
             "    visible   = true\n"
@@ -77,25 +86,14 @@ const std::vector<BuiltinCategories::Entry>& BuiltinCategories::GetEntries()
         {
             "UIPanel",
             "return Category {\n"
+            "    position  = Vector2(0.0),\n"
             "    width     = 200.0,\n"
             "    height    = 150.0,\n"
-            "    colour    = Field(Vector4(0.12, 0.12, 0.16, 0.9), {isColour = true}),"
-            "    anchor    = Vector2(0.0),"
+            "    colour    = Field(Vector4(0.12, 0.12, 0.16, 0.9), {isColour = true}),\n"
+            "    anchor    = Vector2(0.0),\n"
             "    visible   = true\n"
             "}\n"
-        },
-        {
-            "UIImage",
-            "return Category {\n"
-            "    texturePath = \"\",\n"
-            "    width       = 64.0,\n"
-            "    height      = 64.0,\n"
-            "    tint        = Field(Vector4(1.0), {isColour = true}),"
-            "    anchor      = Vector2(0.0),"
-            "    visible     = true,\n"
-            "    asset       = Field(nil, { hidden = true })\n"
-            "}\n"
-        },
+        }
     };
     return l_entries;
 }

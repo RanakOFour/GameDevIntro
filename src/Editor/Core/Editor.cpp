@@ -529,11 +529,13 @@ void Editor::Draw()
 
     // Rendering
     ImGui::PopFont();
+
+    // Flush deferred game-UI draw commands BEFORE ImGui render so
+    // editor panels appear on top of game-UI shapes.
+    GetUIRenderer().Flush();
+
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    // Flush deferred game-UI draw commands on top of all editor panels.
-    GetUIRenderer().Flush();
 
     m_engineContents.io->GetWindow().lock()->Swap();
 }

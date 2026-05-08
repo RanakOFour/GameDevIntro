@@ -29,13 +29,12 @@ std::string ProjectSelectionScreen::GetDataDir()
     std::filesystem::path l_base;
 #if _WIN32
     PWSTR l_appdata;
-    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &l_appdata) == S_OK) {
-        char l_pathAsString[MAX_PATH];
-        wcstombs(l_pathAsString, l_appdata, MAX_PATH);
-        printf("Appdata path: %s", l_pathAsString);
-        l_base = std::filesystem::path(l_pathAsString);
+    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, KF_FLAG_CREATE, NULL, &l_appdata) == S_OK)
+    {
+        l_base = std::filesystem::path(l_appdata);
     }
-    else {
+    else
+    {
         fprintf(stderr, "Could not find appdata path!\n");
     }
 #else

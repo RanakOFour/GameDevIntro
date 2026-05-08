@@ -452,6 +452,13 @@ void SceneEditTab::Run()
     }
     
     auto l_scene = m_scene.lock();
+
+    // Swap renderers: disable editor outline, enable default (no-outline) renderer.
+    if (auto l_editorRenderer = l_scene->GetRule("EditorRenderer"))
+        l_editorRenderer->SetActive(false);
+    if (auto l_defaultRenderer = l_scene->GetRule("DefaultRenderer"))
+        l_defaultRenderer->SetActive(true);
+
     l_scene->Init();
 
     m_lastFrameTime = SDL_GetPerformanceCounter();

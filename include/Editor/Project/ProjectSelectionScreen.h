@@ -53,7 +53,7 @@ class ProjectSelectionScreen
         std::string loadDir  = "";   ///< Full project directory (LoadProject)
         std::string errorMsg;
 
-        bool tutorial        = true;
+        bool tutorial        = false;
         bool decided         = false;
         
         Result result        { Action::Exit, Project{} };

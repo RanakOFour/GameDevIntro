@@ -10,11 +10,6 @@ static const std::string k_editorRenderSrc =
 R"lua(local EditorRenderer = Rule {
     categories = {"Transform"},
     fields = {
-        templateDrawable = {
-            shader  = Asset.Shader(Editor.GetTempPath() .. "/Shaders/REDefaultFragShader.fs;" .. Editor.GetTempPath() .. "/Shaders/REDefaultVertShader.vs"),
-            texture = Asset.Texture(Editor.GetTempPath() .. "/Textures/REDefaultTexture.png"),
-            model   = Asset.Model(Editor.GetTempPath() .. "/Models/REDefaultModel.obj")
-        },
         drawOutline    = true,
         lastFrameInput = false,
         currentInput   = false
@@ -34,19 +29,48 @@ function EditorRenderer:Draw(_entityData)
         Core.Camera:Draw(_entityData)
     end
 
+    -- Toggle outline with 'o' key
     if self.fields.currentInput and not self.fields.lastFrameInput then
         self.fields.drawOutline = not self.fields.drawOutline
     end
     self.fields.lastFrameInput = self.fields.currentInput
 
     if self.fields.drawOutline then
-        local _entityLayer = _entityData["Transform"].Layer
-        _entityData["Transform"].Layer = Core.Camera:getPosition().z - 0.5
-        Core.Camera:Draw(_entityData["Transform"],
-                         self.fields.templateDrawable.model,
-                         self.fields.templateDrawable.texture,
-                         self.fields.templateDrawable.shader)
-        _entityData.Transform.Layer = _entityLayer
+        local tf = _entityData["Transform"]
+        if tf ~= nil then
+            local worldPos = tf.Position
+            local scale    = tf.Scale
+
+            local topLeft  = Core.Camera:WorldToScreenPoint(worldPos - scale)
+            local botRight = Core.Camera:WorldToScreenPoint(worldPos + scale)
+
+            -- Camera returns Y-up (0 = bottom, screenH = top).
+            -- UI functions expect Y-down (0 = top, screenH = bottom).
+            -- Compute AABB in Y-down: top edge = screenH - max(y1,y2), left = min(x1,x2).
+            local screenH = UI.GetScreenHeight()
+            local x = Math.Min(topLeft.x, botRight.x)
+            local y = screenH - Math.Max(topLeft.y, botRight.y)
+            local w = Math.Abs(botRight.x - topLeft.x)
+            local h = Math.Abs(botRight.y - topLeft.y)
+
+            local phys = _entityData["PhysicsBody"]
+            local drawn = false
+            if phys ~= nil then
+                if phys.shape == "circle" then
+                    local cx = x + w * 0.5
+                    local cy = y + h * 0.5
+                    local r  = Math.Max(w, h) * 0.5
+                    UI.DrawCircleOutline(cx, cy, r, 1.0, 0.2, 0.2, 1.0, 0.5)
+                    drawn = true
+                elseif phys.shape == "capsule" then
+                    UI.DrawCapsuleOutline(x, y, w, h, 1.0, 0.2, 0.2, 1.0, 0.5)
+                    drawn = true
+                end
+            end
+            if not drawn then
+                UI.DrawRectOutline(x, y, w, h, 1.0, 0.2, 0.2, 1.0, 0.5)
+            end
+        end
     end
 end
 
@@ -62,7 +86,37 @@ R"lua(local PhysicsSync = Rule {
 function PhysicsSync:Init(_entityData)
     local transform = _entityData["Transform"]
     local phys      = _entityData["PhysicsBody"]
-    local body = Physics.CreateBody(transform.Position, transform.Rotation, phys.bodyType)
+
+    local extras = {
+        gravityScale    = phys.gravityScale,
+        linearDamping   = phys.linearDamping,
+        angularDamping  = phys.angularDamping,
+        fixedRotation   = phys.fixedRotation,
+        linearVelocity  = phys.linearVelocity,
+        angularVelocity = phys.angularVelocity,
+    }
+
+    local body = Physics.CreateBody(transform.Position, transform.Rotation, phys.bodyType, extras)
+
+    if phys.shape == "circle" then
+        local radius = Math.Max(transform.Scale.x, transform.Scale.y)
+        Physics.AddCircleShape(body, radius, phys.density, phys.friction, phys.restitution)
+        phys._body = body
+        Log.Message("PhysicsSync: created circle body at " .. transform.Position:ToString()
+                    .. " radius " .. tostring(radius))
+        return
+    elseif phys.shape == "capsule" then
+        local halfW = transform.Scale.x
+        local halfH = transform.Scale.y
+        -- Capsule: box body (main segment) + two circle end-caps
+        local axisLen = halfH - halfW
+        if axisLen < 0 then axisLen = 0 end
+        Physics.AddBoxShape(body, halfW, axisLen, phys.density, phys.friction, phys.restitution)
+        -- Note: proper capsule needs shape offsets; this is a simplified approximation.
+        -- Box2D 3.0 doesn't have native capsule, so compose from box + circles.
+    end
+
+    -- square (default, also falls through from capsule)
     local halfW = transform.Scale.x
     local halfH = transform.Scale.y
     Physics.AddBoxShape(body, halfW, halfH, phys.density, phys.friction, phys.restitution)
@@ -105,50 +159,24 @@ R"lua(local UIRendering = Rule {
     fields = {}
 }
 
--- Converts a world-space Vector2 to UI pixel coordinates (Y-down).
--- Uses orthographic camera parameters directly so the result is always correct
--- regardless of the internal camera projection matrix state.
-local function WorldToUI(worldPos)
-    local screenW = UI.GetScreenWidth()
-    local screenH = UI.GetScreenHeight()
-    if screenW <= 0 or screenH <= 0 then return 0, 0 end
-    local camW    = Core.Camera:getCameraWidth()
-    local camH    = camW / (screenW / screenH)
-    local cam     = Core.Camera:getPosition()
-    local ndcX    = (worldPos.x - cam.x) / (camW * 0.5)
-    local ndcY    = (worldPos.y - cam.y) / (camH * 0.5)
-    local px      = (ndcX + 1.0) * 0.5 * screenW
-    local py      = (1.0 - ndcY) * 0.5 * screenH   -- Y-down: 0=top, screenH=bottom
-    return px, py
-end
-
 function UIRendering:Update(_entityData)
-    local t = _entityData["Transform"]
-
-    -- Convert world position to UI screen-space (Y-down pixels).
-    local baseX, baseY = WorldToUI(t.Position)
-
-    -- UIButton interaction
+    -- UIButton interaction: position comes from the UIButton category
+    -- directly as a screen-space coordinate (pixels, Y-down).
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = baseX + btn.anchor.x * UI.GetScreenWidth()
-        local y = baseY + btn.anchor.y * UI.GetScreenHeight()
+        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
+        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
         btn.hovered = UI.IsHovered(x, y, btn.width, btn.height)
         btn.pressed = UI.IsClicked(x, y, btn.width, btn.height)
     end
 end
 
 function UIRendering:Draw(_entityData)
-    local t = _entityData["Transform"]
-
-    -- Convert world position to UI screen-space (Y-down pixels).
-    local baseX, baseY = WorldToUI(t.Position)
-
-    -- UIPanel: filled rectangle
+    -- UIPanel: filled rectangle in screen-space
     local panel = _entityData["UIPanel"]
     if panel ~= nil and panel.visible then
-        local x = baseX + panel.anchor.x * UI.GetScreenWidth()
-        local y = baseY + panel.anchor.y * UI.GetScreenHeight()
+        local x = panel.position.x + panel.anchor.x * UI.GetScreenWidth()
+        local y = panel.position.y + panel.anchor.y * UI.GetScreenHeight()
         UI.DrawRect(x, y, panel.width, panel.height,
                     panel.colour.x, panel.colour.y, panel.colour.z, panel.colour.w)
     end
@@ -156,8 +184,8 @@ function UIRendering:Draw(_entityData)
     -- UIButton: rect with hover highlight + centered label
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = baseX + btn.anchor.x * UI.GetScreenWidth()
-        local y = baseY + btn.anchor.y * UI.GetScreenHeight()
+        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
+        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
         local r, g, b, a
         if btn.hovered then
             r, g, b, a = btn.hover.x, btn.hover.y, btn.hover.z, btn.hover.w
@@ -171,22 +199,11 @@ function UIRendering:Draw(_entityData)
                     btn.label, 16.0, true)
     end
 
-    -- UIImage: textured quad
-    local img = _entityData["UIImage"]
-    if img ~= nil and img.visible then
-        local x = baseX + img.anchor.x * UI.GetScreenWidth()
-        local y = baseY + img.anchor.y * UI.GetScreenHeight()
-        if img.asset ~= nil then
-            UI.DrawImage(img.asset:GetID(), x, y, img.width, img.height,
-                         img.tint.x, img.tint.y, img.tint.z, img.tint.w)
-        end
-    end
-
-    -- UIText: text rendering
+    -- UIText: text rendering in screen-space
     local txt = _entityData["UIText"]
     if txt ~= nil and txt.visible then
-        local x = baseX + txt.anchor.x * UI.GetScreenWidth()
-        local y = baseY + txt.anchor.y * UI.GetScreenHeight()
+        local x = txt.position.x + txt.anchor.x * UI.GetScreenWidth()
+        local y = txt.position.y + txt.anchor.y * UI.GetScreenHeight()
         UI.DrawText(x, y,
                     txt.colour.x, txt.colour.y, txt.colour.z, txt.colour.w,
                     txt.text, txt.fontSize, false)
@@ -234,13 +251,12 @@ void BuiltinRules::Load(RE::EngineContents& _contents)
     {
         std::filesystem::path l_path = l_dir / (entry.name + ".lua");
 
-        if (!std::filesystem::exists(l_path))
-        {
-            std::ofstream l_fileWriter(l_path);
-            l_fileWriter << entry.source;
-            l_fileWriter.close();
-            printf("BuiltinRules: Created %s\n", l_path.string().c_str());
-        }
+        // Always overwrite the cached file so edits to the built-in source
+        // strings in this .cpp take effect immediately on the next run.
+        std::ofstream l_fileWriter(l_path, std::ios::trunc);
+        l_fileWriter << entry.source;
+        l_fileWriter.close();
+        printf("BuiltinRules: Updated %s\n", l_path.string().c_str());
 
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_path.string());
         RE::Core::Rule l_rule = _contents.core->GetLuaContext()->CreateRule(l_file);

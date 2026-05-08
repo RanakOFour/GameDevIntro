@@ -163,10 +163,6 @@ Have fun building your game!]],
                 return {
     title = "Build Asteroids – An Introduction to Programming & Game Making",
     steps = {
-
-        ----------------------------------------------------------------------
-        -- 1. Welcome
-        ----------------------------------------------------------------------
         {
             title       = "Welcome!",
             force_state = "scene_tab",
@@ -190,10 +186,6 @@ make sense, re-read it – it will click.
 
 Press **Next >** when you are ready to begin.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 2. What is programming?
-        ----------------------------------------------------------------------
         {
             title       = "What is Programming?",
             force_state = "scene_tab",
@@ -220,10 +212,6 @@ each idea one piece at a time as we need it.
 
 Press **Next >** to continue.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 3. Variables
-        ----------------------------------------------------------------------
         {
             title       = "Variables – Storing Information",
             force_state = "scene_tab",
@@ -253,10 +241,6 @@ it is just a labelled box holding a value that you can change later.
 
 Press **Next >** to continue.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 4. Functions
-        ----------------------------------------------------------------------
         {
             title       = "Functions – Reusable Instructions",
             force_state = "scene_tab",
@@ -288,10 +272,6 @@ happen inside it.
 
 Press **Next >** to continue.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 5. Conditions
-        ----------------------------------------------------------------------
         {
             title       = "Conditions – Making Decisions",
             force_state = "scene_tab",
@@ -328,10 +308,6 @@ Everything else in this tutorial builds on these three ideas.
 
 Press **Next >** to learn how games use them.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 6. The game loop and delta time
-        ----------------------------------------------------------------------
         {
             title       = "The Game Loop",
             force_state = "scene_tab",
@@ -364,10 +340,6 @@ that is 300 units per second on a 60 fps machine!
 
 Press **Next >** to meet the editor.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 7. Editor tour – layout overview
-        ----------------------------------------------------------------------
         {
             title       = "Meet the Editor",
             force_state = "scene_tab",
@@ -397,10 +369,6 @@ Take a moment to look at each of these areas.
 
 Press **Next >** to look at each area in more detail.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 8. Editor tour – Entity List
-        ----------------------------------------------------------------------
         {
             title       = "The Entity List",
             force_state = "scene_tab",
@@ -428,10 +396,6 @@ You can:
 
 Press **Next >** to look at Entity Properties.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 9. Editor tour – Entity Properties
-        ----------------------------------------------------------------------
         {
             title       = "Entity Properties",
             force_state = "scene_tab",
@@ -453,10 +417,6 @@ Think of this panel as the "property sheet" for the selected object.
 
 Press **Next >** to look at the viewport.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 10. Editor tour – Viewport
-        ----------------------------------------------------------------------
         {
             title       = "The Viewport",
             force_state = "scene_tab",
@@ -481,10 +441,6 @@ about X and Y.
 
 Press **Next >** to start building the game!]],
         },
-
-        ----------------------------------------------------------------------
-        -- 11. Create the ship entity
-        ----------------------------------------------------------------------
         {
             title       = "Create the Ship Entity",
             force_state = "scene_tab",
@@ -505,10 +461,6 @@ to "Ship" – this keeps things organised but is optional.
 
 The tutorial advances automatically once an entity is selected.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 12. Set the ship's transform
-        ----------------------------------------------------------------------
         {
             title       = "Setting the Ship's Transform",
             force_state = "scene_tab",
@@ -531,10 +483,6 @@ Click into each field in Entity Properties and type the new values.
 
 Press **Next >** once you have set them.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 13. What are Categories?
-        ----------------------------------------------------------------------
         {
             title       = "What are Categories?",
             force_state = "scene_tab",
@@ -568,10 +516,6 @@ We will write four categories for the game:
 
 Press **Next >** to switch to the Text Editor.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 14. Open the Text Editor
-        ----------------------------------------------------------------------
         {
             title       = "Opening the Text Editor",
             force_state = "text_tab",
@@ -593,10 +537,6 @@ your time – there is no hurry.
 
 Press **Next >** when you are ready to write your first file.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 15. A note about Lua file syntax
-        ----------------------------------------------------------------------
         {
             title       = "A Note About Lua Category Files",
             force_state = "text_tab",
@@ -624,10 +564,6 @@ Comments are notes for the humans reading the code:
 
 Press **Next >** to write the first category file.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 16. Ship.lua
-        ----------------------------------------------------------------------
         {
             title       = "Creating Ship.lua",
             force_state = "text_tab",
@@ -652,10 +588,6 @@ project's **Categories/** folder as **Ship.lua**:
 
 Save the file, then press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 17. Bullet.lua
-        ----------------------------------------------------------------------
         {
             title       = "Creating Bullet.lua",
             force_state = "text_tab",
@@ -681,10 +613,6 @@ the rules manage it automatically.
 
 Save the file and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 18. Asteroid.lua
-        ----------------------------------------------------------------------
         {
             title       = "Creating Asteroid.lua",
             force_state = "text_tab",
@@ -706,10 +634,6 @@ easier to hit.
 
 Save the file and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 19. Spawner.lua
-        ----------------------------------------------------------------------
         {
             title       = "Creating Spawner.lua",
             force_state = "text_tab",
@@ -732,9 +656,6 @@ grinding to a halt.
 
 Save the file and press **Next >**.]],
         },
-        ----------------------------------------------------------------------
-        -- 20. What are Rules?
-        ----------------------------------------------------------------------
         {
             title       = "What are Rules?",
             force_state = "text_tab",
@@ -767,10 +688,6 @@ Key points:
 
 We will write four rules.  Press **Next >** to start the first one.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 21. Trigonometry primer
-        ----------------------------------------------------------------------
         {
             title       = "A Little Maths: Working Out Directions",
             force_state = "text_tab",
@@ -803,10 +720,6 @@ The engine provides `Math.DegToRad()` to handle this.
 
 Press **Next >** to write ShipControl.lua.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 22. ShipControl.lua
-        ----------------------------------------------------------------------
         {
             title       = "Writing ShipControl.lua",
             force_state = "text_tab",
@@ -901,10 +814,6 @@ return ShipControl
 
 Save the file and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 23. ShipControl breakdown
-        ----------------------------------------------------------------------
         {
             title       = "Understanding ShipControl",
             force_state = "text_tab",
@@ -941,10 +850,6 @@ the firing cooldown.
 
 Press **Next >** to write BulletLogic.lua.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 24. BulletLogic.lua
-        ----------------------------------------------------------------------
         {
             title       = "Writing BulletLogic.lua",
             force_state = "text_tab",
@@ -1004,10 +909,6 @@ computing a square root.  This gives the same result but is faster.
 
 Save the file and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 25. AsteroidLogic.lua
-        ----------------------------------------------------------------------
         {
             title       = "Writing AsteroidLogic.lua",
             force_state = "text_tab",
@@ -1068,10 +969,6 @@ the asteroid is destroyed.  Simple, but it works!
 
 Save the file and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 26. AsteroidSpawner.lua
-        ----------------------------------------------------------------------
         {
             title       = "Writing AsteroidSpawner.lua",
             force_state = "text_tab",
@@ -1165,10 +1062,6 @@ gives a completely different sequence of asteroids.
 
 All the code is written!  Save and press **Next >**.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 27. Open the Categories panel
-        ----------------------------------------------------------------------
         {
             title       = "Opening the Categories Panel",
             force_state = "scene_tab",
@@ -1182,10 +1075,6 @@ do so.
 (If you are not sure where it is, look at the bottom and sides of
 the window.  Panel positions can be rearranged.)]],
         },
-
-        ----------------------------------------------------------------------
-        -- 28. Load the four categories
-        ----------------------------------------------------------------------
         {
             title       = "Loading Your Categories",
             force_state = "scene_tab",
@@ -1206,10 +1095,6 @@ file, the engine does not know it exists.
 
 Press **Next >** when all four are loaded.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 29. Assign Ship category to the ship entity
-        ----------------------------------------------------------------------
         {
             title       = "Attach the Ship Category",
             force_state = "scene_tab",
@@ -1227,10 +1112,6 @@ play later.  Change it back to 5.0 afterwards if you prefer.
 
 Press **Next >** after the assignment.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 30. Create the Spawner entity
-        ----------------------------------------------------------------------
         {
             title       = "Create the Spawner Entity",
             force_state = "scene_tab",
@@ -1253,10 +1134,6 @@ spawner data.
 
 Press **Next >** when done.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 31. Open the Rules panel
-        ----------------------------------------------------------------------
         {
             title       = "Opening the Rules Panel",
             force_state = "scene_tab",
@@ -1270,10 +1147,6 @@ Rules is where you load all the behaviour scripts you wrote.
 Once loaded, the engine automatically applies each rule to every
 entity that has the matching categories.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 32. Load the four rules
-        ----------------------------------------------------------------------
         {
             title       = "Loading Your Rules",
             force_state = "scene_tab",
@@ -1297,10 +1170,6 @@ every frame.
 
 Press **Next >** when all four are loaded.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 33. Play!
-        ----------------------------------------------------------------------
         {
             title       = "Play Your Game!",
             force_state = "scene_tab",
@@ -1330,10 +1199,6 @@ Every developer does it.
 
 Press **Next >** when you are done playing.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 34. Experiment
-        ----------------------------------------------------------------------
         {
             title       = "Experiment: Tweak the Values",
             force_state = "scene_tab",
@@ -1367,10 +1232,6 @@ stop the game, and press Play again.
 
 Press **Next >** when you are done experimenting.]],
         },
-
-        ----------------------------------------------------------------------
-        -- 35. Congratulations
-        ----------------------------------------------------------------------
         {
             title       = "Congratulations!",
             force_state = "scene_tab",

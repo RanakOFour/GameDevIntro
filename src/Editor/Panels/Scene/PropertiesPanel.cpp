@@ -207,7 +207,22 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
                                 }
                             }
 
+                            // Read current value from this entity's attributes (unwrap Field)
+                            sol::object l_attrVal = _attributes.raw_get<sol::object>(l_property.c_str());
                             std::string l_value = l_metaTable["default"].get<std::string>();
+                            if (l_attrVal.valid() && l_attrVal.get_type() == sol::type::table)
+                            {
+                                sol::table l_attrTbl = l_attrVal.as<sol::table>();
+                                sol::optional<bool> l_isField = l_attrTbl.raw_get<sol::optional<bool>>("__isField");
+                                if (l_isField.has_value() && *l_isField)
+                                {
+                                    l_value = l_attrTbl.raw_get_or("default", l_value);
+                                }
+                            }
+                            else if (l_attrVal.valid() && l_attrVal.get_type() == sol::type::string)
+                            {
+                                l_value = l_attrVal.as<std::string>();
+                            }
 
                             if(ImGui::BeginCombo((l_property + "##combo").c_str(), l_value.c_str()))
                             {
@@ -216,7 +231,12 @@ void PropertiesPanel::DrawCategoryAttributes(int _entityId, std::string _categor
                                     bool l_selected = (l_value == l_option);
                                     if (ImGui::Selectable(l_option.c_str(), l_selected))
                                     {
-                                        l_metaTable.raw_set("default", l_option);
+                                        // Store the plain string value in this entity's attributes.
+                                        // The enum metadata lives permanently in the shared base
+                                        // category (l_baseFields), so we don't need to replicate
+                                        // the Field wrapper here — the read path already handles
+                                        // both Field tables and plain strings.
+                                        _attributes[l_property] = l_option;
                                     }
                                 }
                                 ImGui::EndCombo();
