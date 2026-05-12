@@ -37,20 +37,21 @@ void RulesPanel::RefreshRuleList()
     m_activeRules.clear();
     m_loadedRules.clear();
 
-    // Collect built-in rule names from the scene (always present).
     auto l_scene = m_editor.GetEngineContents().core->GetScene().lock();
+    if (!l_scene) return;
     sol::table l_rulesTable = l_scene->GetSceneTable().raw_get<sol::table>("Rules");
 
-    // User rules from the persistent registry
-    for (const auto& record : m_editor.GetSceneEdit().GetRuleRegistry())
-        m_loadedRules.push_back(record.name);
+    // Pull every rule currently in the scene (user + built-in). The Draw loop
+    // filters built-ins via m_showBuiltins; the registry only tracks user rules
+    // so it can't drive this list on its own.
+    for (auto& l_pair : l_rulesTable.pairs())
+    {
+        if (l_pair.first.get_type() != sol::type::string) continue;
+        m_loadedRules.push_back(l_pair.first.as<std::string>());
+    }
 
-    // Determine active status from the scene table
     for (const auto& name : m_loadedRules)
     {
-        auto l_obj = l_rulesTable.raw_get<sol::object>(name);
-        if (!l_obj.valid() || l_obj.get_type() == sol::type::nil) continue;
-
         auto l_rulePtr = l_rulesTable.raw_get<std::shared_ptr<RE::Core::Rule>>(name);
         if (l_rulePtr && l_rulePtr->GetActive())
             m_activeRules.push_back(name);

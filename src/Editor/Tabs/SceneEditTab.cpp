@@ -325,7 +325,7 @@ void SceneEditTab::Draw()
     {
         // Begin screen-space UI rendering (sets ortho projection, reads mouse).
         Vector2 l_screenSize = m_window->GetScreenSize();
-        m_editor.GetUIRenderer().BeginFrame(l_screenSize.x, l_screenSize.y);
+        m_editor.GetUIRenderer().BeginFrame(l_screenSize);
 
         l_scene->Draw();
     }
@@ -495,8 +495,7 @@ void SceneEditTab::Stop()
     SceneSerializer::LoadFromString(m_savedSceneState, l_engineContents, &m_sceneSettings);
     m_savedSceneState.clear();
 
-    // Re-add built-in rules (they are excluded from serialisation).
-    BuiltinRules::Load(l_engineContents);
+    // Built-in rules are re-attached inside LoadFromString.
 
     // Re-add any registry rules that the snapshot may not have included.
     ReapplyRegistryToScene();

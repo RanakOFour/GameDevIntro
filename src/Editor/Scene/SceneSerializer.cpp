@@ -577,5 +577,29 @@ void SceneSerializer::LoadFromString(const std::string& _script,
                          + l_err.what());
     }
 
+    // Built-in rules are excluded from serialisation, so every scene-load path
+    // re-attaches them here. Centralised so individual callers can't forget.
+    auto countSceneRules = [](RE::EngineContents& _ec) -> size_t {
+        auto l_s = _ec.core->GetScene().lock();
+        if (!l_s) return 0;
+        sol::table l_tbl = l_s->GetSceneTable().raw_get<sol::table>("Rules");
+        size_t n = 0;
+        for (auto& kv : l_tbl.pairs()) { (void)kv; ++n; }
+        return n;
+    };
+    {
+        auto l_pre = _contents.core->GetScene().lock();
+        printf("LoadFromString: pre-builtin scene=%p rules=%zu\n",
+               (void*)(l_pre ? l_pre.get() : nullptr),
+               countSceneRules(_contents));
+    }
+    BuiltinRules::Load(_contents);
+    {
+        auto l_post = _contents.core->GetScene().lock();
+        printf("LoadFromString: post-builtin scene=%p rules=%zu\n",
+               (void*)(l_post ? l_post.get() : nullptr),
+               countSceneRules(_contents));
+    }
+
     l_state->set("Scene", sol::nil);
 }

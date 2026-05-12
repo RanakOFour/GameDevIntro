@@ -6,7 +6,7 @@
 #include <fstream>
 #include <cstdio>
 
-static const std::string k_editorRenderSrc =
+const std::string k_editorRenderSrc =
 R"lua(local EditorRenderer = Rule {
     categories = {"Transform"},
     fields = {
@@ -60,15 +60,15 @@ function EditorRenderer:Draw(_entityData)
                     local cx = x + w * 0.5
                     local cy = y + h * 0.5
                     local r  = Math.Max(w, h) * 0.5
-                    UI.DrawCircleOutline(cx, cy, r, 1.0, 0.2, 0.2, 1.0, 0.5)
+                    UI.DrawCircleOutline(Vector2(cx, cy), r, Vector4(1.0, 0.2, 0.2, 1.0), 0.5)
                     drawn = true
                 elseif phys.shape == "capsule" then
-                    UI.DrawCapsuleOutline(x, y, w, h, 1.0, 0.2, 0.2, 1.0, 0.5)
+                    UI.DrawCapsuleOutline(Vector2(x, y), Vector2(w, h), Vector4(1.0, 0.2, 0.2, 1.0), 0.5)
                     drawn = true
                 end
             end
             if not drawn then
-                UI.DrawRectOutline(x, y, w, h, 1.0, 0.2, 0.2, 1.0, 0.5)
+                UI.DrawRectOutline(Vector2(x, y), Vector2(w, h), Vector4(1.0, 0.2, 0.2, 1.0), 0.5)
             end
         end
     end
@@ -77,7 +77,7 @@ end
 return EditorRenderer
 )lua";
 
-static const std::string k_physicsSyncSrc =
+const std::string k_physicsSyncSrc =
 R"lua(local PhysicsSync = Rule {
     categories = { "Transform", "PhysicsBody" },
     fields = {}
@@ -153,74 +153,97 @@ end
 return DefaultRenderer
 )lua";
 
-static const std::string k_uiRenderingSrc =
-R"lua(local UIRendering = Rule {
-    categories = { "Transform" },
+const std::string k_uiPanelRenderingSrc =
+R"lua(local UIPanelRendering = Rule {
+    categories = { "UIPanel" },
     fields = {}
 }
 
-function UIRendering:Update(_entityData)
-    -- UIButton interaction: position comes from the UIButton category
-    -- directly as a screen-space coordinate (pixels, Y-down).
-    local btn = _entityData["UIButton"]
-    if btn ~= nil and btn.visible then
-        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
-        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
-        btn.hovered = UI.IsHovered(x, y, btn.width, btn.height)
-        btn.pressed = UI.IsClicked(x, y, btn.width, btn.height)
-    end
-end
-
-function UIRendering:Draw(_entityData)
-    -- UIPanel: filled rectangle in screen-space
+function UIPanelRendering:Draw(_entityData)
     local panel = _entityData["UIPanel"]
     if panel ~= nil and panel.visible then
         local x = panel.position.x + panel.anchor.x * UI.GetScreenWidth()
         local y = panel.position.y + panel.anchor.y * UI.GetScreenHeight()
-        UI.DrawRect(x, y, panel.width, panel.height,
-                    panel.colour.x, panel.colour.y, panel.colour.z, panel.colour.w)
+        UI.DrawRect(Vector2(x, y), Vector2(panel.width, panel.height), panel.colour)
     end
+end
 
-    -- UIButton: rect with hover highlight + centered label
+return UIPanelRendering
+)lua";
+
+const std::string k_uiButtonRenderingSrc =
+R"lua(local UIButtonRendering = Rule {
+    categories = { "UIButton" },
+    fields = {}
+}
+
+function UIButtonRendering:Update(_entityData)
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
         local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
         local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
-        local r, g, b, a
-        if btn.hovered then
-            r, g, b, a = btn.hover.x, btn.hover.y, btn.hover.z, btn.hover.w
-        else
-            r, g, b, a = btn.colour.x, btn.colour.y, btn.colour.z, btn.colour.w
-        end
-        UI.DrawRect(x, y, btn.width, btn.height, r, g, b, a)
-        -- Label centered inside the button
-        UI.DrawText(x + btn.width * 0.5, y + btn.height * 0.5,
-                    1.0, 1.0, 1.0, 1.0,
-                    btn.label, 16.0, true)
-    end
-
-    -- UIText: text rendering in screen-space
-    local txt = _entityData["UIText"]
-    if txt ~= nil and txt.visible then
-        local x = txt.position.x + txt.anchor.x * UI.GetScreenWidth()
-        local y = txt.position.y + txt.anchor.y * UI.GetScreenHeight()
-        UI.DrawText(x, y,
-                    txt.colour.x, txt.colour.y, txt.colour.z, txt.colour.w,
-                    txt.text, txt.fontSize, false)
+        btn.hovered = UI.IsHovered(Vector2(x, y), Vector2(btn.width, btn.height))
+        btn.pressed = UI.IsClicked(Vector2(x, y), Vector2(btn.width, btn.height))
     end
 end
 
-return UIRendering
+function UIButtonRendering:Draw(_entityData)
+    local btn = _entityData["UIButton"]
+    if btn ~= nil and btn.visible then
+        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
+        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
+        local fill
+        if btn.hovered then
+            fill = btn.hover
+        else
+            fill = btn.colour
+        end
+        UI.DrawRect(Vector2(x, y), Vector2(btn.width, btn.height), fill)
+        -- Convert button-centre pixel coords (Y-down) to NDC for DrawText.
+        local sw = UI.GetScreenWidth()
+        local sh = UI.GetScreenHeight()
+        local cx = x + btn.width  * 0.5
+        local cy = y + btn.height * 0.5
+        local ndcX = (cx / sw) * 2.0 - 1.0
+        local ndcY = 1.0 - (cy / sh) * 2.0
+        UI.DrawText(Vector2(ndcX, ndcY),
+                    Vector4(1.0, 1.0, 1.0, 1.0),
+                    btn.label, 16.0, true)
+    end
+end
+
+return UIButtonRendering
+)lua";
+
+const std::string k_uiTextRenderingSrc =
+R"lua(local UITextRendering = Rule {
+    categories = { "UIText" },
+    fields = {}
+}
+
+function UITextRendering:Draw(_entityData)
+    local txt = _entityData["UIText"]
+    if txt ~= nil and txt.visible then
+        -- txt.position is NDC: (-1,-1) bottom-left, (1,1) top-right.
+        -- DrawText accepts NDC directly; do not centre — position IS the anchor.
+        UI.DrawText(Vector2(txt.position.x, txt.position.y),
+                    txt.colour, txt.text, txt.fontSize, true)
+    end
+end
+
+return UITextRendering
 )lua";
 
 
 const std::vector<BuiltinRules::Entry>& BuiltinRules::GetEntries()
 {
     static const std::vector<Entry> l_entries = {
-        { "EditorRenderer",  k_editorRenderSrc },
-        { "DefaultRenderer", k_renderingSrc    },
-        { "PhysicsSync",     k_physicsSyncSrc  },
-        { "UIRendering",     k_uiRenderingSrc  },
+        { "EditorRenderer",     k_editorRenderSrc       },
+        { "DefaultRenderer",    k_renderingSrc          },
+        { "PhysicsSync",        k_physicsSyncSrc        },
+        { "UIPanelRendering",   k_uiPanelRenderingSrc   },
+        { "UIButtonRendering",  k_uiButtonRenderingSrc  },
+        { "UITextRendering",    k_uiTextRenderingSrc    },
     };
     
     return l_entries;
@@ -246,6 +269,12 @@ void BuiltinRules::Load(RE::EngineContents& _contents)
     }
 
     auto l_scene = _contents.core->GetScene().lock();
+    if (!l_scene)
+    {
+        printf("BuiltinRules::Load: ABORT — no active scene to add rules to.\n");
+        return;
+    }
+    printf("BuiltinRules::Load: target scene=%p\n", (void*)l_scene.get());
 
     for (const auto& entry : GetEntries())
     {
@@ -256,18 +285,22 @@ void BuiltinRules::Load(RE::EngineContents& _contents)
         std::ofstream l_fileWriter(l_path, std::ios::trunc);
         l_fileWriter << entry.source;
         l_fileWriter.close();
-        printf("BuiltinRules: Updated %s\n", l_path.string().c_str());
 
         auto l_file = _contents.resources->Load<RE::Asset::LuaFile>(l_path.string());
         RE::Core::Rule l_rule = _contents.core->GetLuaContext()->CreateRule(l_file);
         l_scene->AddRule(l_rule);
+
+        auto l_added = l_scene->GetRule(entry.name);
+        unsigned long l_catBits = l_added ? l_added->GetCategories().count() : 0ul;
+        printf("BuiltinRules::Load: added rule '%s' catBits=%lu (file %s)\n",
+               entry.name.c_str(), l_catBits, l_path.string().c_str());
 
         if(entry.name == "DefaultRenderer")
         {
             // DefaultRenderer must be added to the scene before EditorRender so that it gets drawn first.
             // This ensures EditorRender's outline is visible on top of the default rendering.
             auto l_defRendererPtr = l_scene->GetRule("DefaultRenderer");
-            l_defRendererPtr->SetActive(false);
+            if (l_defRendererPtr) l_defRendererPtr->SetActive(false);
         }
     }
 }

@@ -363,8 +363,7 @@ void Editor::LoadProjectInfo()
             SceneSerializer::LoadFromFile(l_scenePath, m_engineContents,
                                           &m_sceneEdit->GetSceneSettings());
 
-            // Re-add built-in rules after scene load (they are excluded from serialisation)
-            BuiltinRules::Load(m_engineContents);
+            // Built-in rules are re-attached inside LoadFromString.
 
             // Rebuild the editor rule registry to match the newly loaded scene.
             m_sceneEdit->RebuildRegistryFromScene();
@@ -449,6 +448,28 @@ void Editor::LoadProjectInfo()
                 m_sceneEdit->SetEntityParent(l_child, l_parent);
             }
         }
+    }
+
+    // Re-attach built-in rules LAST, after every restoration step that could
+    // have replaced or rewritten the scene's rule list. Belt-and-suspenders
+    // with the call inside SceneSerializer::LoadFromString — kept here to
+    // guarantee builtins are present regardless of restoration ordering.
+    BuiltinRules::Load(m_engineContents);
+
+    if (auto l_s = m_engineContents.core->GetScene().lock())
+    {
+        sol::table l_tbl = l_s->GetSceneTable().raw_get<sol::table>("Rules");
+        size_t n = 0;
+        for (auto& kv : l_tbl.pairs()) { (void)kv; ++n; }
+        printf("LoadProjectInfo: end scene=%p rules-table=%zu\n",
+               (void*)l_s.get(), n);
+        printf("LoadProjectInfo: rule names: ");
+        for (auto& kv : l_tbl.pairs())
+        {
+            if (kv.first.get_type() == sol::type::string)
+                printf("%s ", kv.first.as<std::string>().c_str());
+        }
+        printf("\n");
     }
 }
 

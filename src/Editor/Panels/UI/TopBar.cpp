@@ -215,7 +215,7 @@ void TopBar::Draw()
                 SceneSerializer::LoadFromFile(l_filePathName, m_editor.GetEngineContents(),
                                               &m_editor.GetSceneEdit().GetSceneSettings());
 
-                BuiltinRules::Load(m_editor.GetEngineContents());
+                // Built-in rules are re-attached inside LoadFromString.
                 m_editor.GetSceneEdit().RebuildRegistryFromScene();
                 m_editor.GetSceneEdit().m_scene = m_editor.GetEngineContents().core->GetScene();
                 m_editor.GetSceneEdit().m_entityPanel.RefreshEntityList();
