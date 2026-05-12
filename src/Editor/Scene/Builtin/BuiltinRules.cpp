@@ -180,8 +180,8 @@ R"lua(local UIButtonRendering = Rule {
 function UIButtonRendering:Update(_entityData)
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
-        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
+        local x = (((btn.position.x + btn.anchor.x) * 0.5) + 1) * UI.GetScreenWidth()
+        local y = (((btn.position.y + btn.anchor.y) * 0.5) + 1) * UI.GetScreenHeight()
         btn.hovered = UI.IsHovered(Vector2(x, y), Vector2(btn.width, btn.height))
         btn.pressed = UI.IsClicked(Vector2(x, y), Vector2(btn.width, btn.height))
     end
@@ -190,25 +190,21 @@ end
 function UIButtonRendering:Draw(_entityData)
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = btn.position.x + btn.anchor.x * UI.GetScreenWidth()
-        local y = btn.position.y + btn.anchor.y * UI.GetScreenHeight()
+        local btnPosition = btn.position + btn.anchor
+        local btnSize = Vector2(btn.width, btn.height)
+
         local fill
         if btn.hovered then
             fill = btn.hover
         else
             fill = btn.colour
         end
-        UI.DrawRect(Vector2(x, y), Vector2(btn.width, btn.height), fill)
+
+        Log.Message("Drawing rect at " .. btnPosition:ToString() .. " with size " .. btnSize:ToString())
+        UI.DrawRect(btnPosition, btnSize, fill)
+
         -- Convert button-centre pixel coords (Y-down) to NDC for DrawText.
-        local sw = UI.GetScreenWidth()
-        local sh = UI.GetScreenHeight()
-        local cx = x + btn.width  * 0.5
-        local cy = y + btn.height * 0.5
-        local ndcX = (cx / sw) * 2.0 - 1.0
-        local ndcY = 1.0 - (cy / sh) * 2.0
-        UI.DrawText(Vector2(ndcX, ndcY),
-                    Vector4(1.0, 1.0, 1.0, 1.0),
-                    btn.label, 16.0, true)
+        UI.DrawText(btnPosition, Vector4(1.0, 1.0, 1.0, 1.0), btn.label, 16.0, true)
     end
 end
 
