@@ -24,11 +24,6 @@ function EditorRenderer:Update(_entityData)
 end
 
 function EditorRenderer:Draw(_entityData)
-
-    if(_entityData.Texture ~= nil or _entityData.model ~= nil) then
-        Core.Camera:Draw(_entityData)
-    end
-
     -- Toggle outline with 'o' key
     if self.fields.currentInput and not self.fields.lastFrameInput then
         self.fields.drawOutline = not self.fields.drawOutline
@@ -147,7 +142,9 @@ function DefaultRenderer:Update(_entityData)
 end
 
 function DefaultRenderer:Draw(_entityData)
-    Core.Camera:Draw(_entityData)
+    if(_entityData["Texture"] ~= nil or _entityData["Model"] ~= nil) then
+        Core.Camera:Draw(_entityData)
+    end
 end
 
 return DefaultRenderer
@@ -162,9 +159,8 @@ R"lua(local UIPanelRendering = Rule {
 function UIPanelRendering:Draw(_entityData)
     local panel = _entityData["UIPanel"]
     if panel ~= nil and panel.visible then
-        local x = panel.position.x + panel.anchor.x * UI.GetScreenWidth()
-        local y = panel.position.y + panel.anchor.y * UI.GetScreenHeight()
-        UI.DrawRect(Vector2(x, y), Vector2(panel.width, panel.height), panel.colour)
+        local panelPosition = panel.position + panel.anchor
+        UI.DrawRect(panelPosition, Vector2(panel.width, panel.height), panel.colour)
     end
 end
 
@@ -180,10 +176,10 @@ R"lua(local UIButtonRendering = Rule {
 function UIButtonRendering:Update(_entityData)
     local btn = _entityData["UIButton"]
     if btn ~= nil and btn.visible then
-        local x = (((btn.position.x + btn.anchor.x) * 0.5) + 1) * UI.GetScreenWidth()
-        local y = (((btn.position.y + btn.anchor.y) * 0.5) + 1) * UI.GetScreenHeight()
-        btn.hovered = UI.IsHovered(Vector2(x, y), Vector2(btn.width, btn.height))
-        btn.pressed = UI.IsClicked(Vector2(x, y), Vector2(btn.width, btn.height))
+        local btnPosition = btn.position + btn.anchor
+        local btnSize = Vector2(btn.width, btn.height)
+        btn.hovered = UI.IsHovered(btnPosition, btnSize)
+        btn.pressed = UI.IsClicked(btnPosition, btnSize)
     end
 end
 
@@ -193,17 +189,15 @@ function UIButtonRendering:Draw(_entityData)
         local btnPosition = btn.position + btn.anchor
         local btnSize = Vector2(btn.width, btn.height)
 
-        local fill
+        local fillColour
         if btn.hovered then
-            fill = btn.hover
+            fillColour = btn.hover
         else
-            fill = btn.colour
+            fillColour = btn.colour
         end
 
         Log.Message("Drawing rect at " .. btnPosition:ToString() .. " with size " .. btnSize:ToString())
-        UI.DrawRect(btnPosition, btnSize, fill)
-
-        -- Convert button-centre pixel coords (Y-down) to NDC for DrawText.
+        UI.DrawRect(btnPosition, btnSize, fillColour)
         UI.DrawText(btnPosition, Vector4(1.0, 1.0, 1.0, 1.0), btn.label, 16.0, true)
     end
 end
