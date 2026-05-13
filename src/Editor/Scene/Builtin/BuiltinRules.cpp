@@ -97,8 +97,6 @@ function PhysicsSync:Init(_entityData)
         local radius = Math.Max(transform.Scale.x, transform.Scale.y)
         Physics.AddCircleShape(body, radius, phys.density, phys.friction, phys.restitution)
         phys._body = body
-        Log.Message("PhysicsSync: created circle body at " .. transform.Position:ToString()
-                    .. " radius " .. tostring(radius))
         return
     elseif phys.shape == "capsule" then
         local halfW = transform.Scale.x
@@ -116,8 +114,6 @@ function PhysicsSync:Init(_entityData)
     local halfH = transform.Scale.y
     Physics.AddBoxShape(body, halfW, halfH, phys.density, phys.friction, phys.restitution)
     phys._body = body
-    Log.Message("PhysicsSync: created body at " .. transform.Position:ToString()
-                .. " half-extents (" .. tostring(halfW) .. ", " .. tostring(halfH) .. ")")
 end
 
 function PhysicsSync:Update(_entityData)
@@ -188,6 +184,8 @@ function UIButtonRendering:Draw(_entityData)
     if btn ~= nil and btn.visible then
         local btnPosition = btn.position + btn.anchor
         local btnSize = Vector2(btn.width, btn.height)
+        btn.hovered = UI.IsHovered(btnPosition, btnSize)
+        btn.pressed = UI.IsClicked(btnPosition, btnSize)
 
         local fillColour
         if btn.hovered then
@@ -196,7 +194,6 @@ function UIButtonRendering:Draw(_entityData)
             fillColour = btn.colour
         end
 
-        Log.Message("Drawing rect at " .. btnPosition:ToString() .. " with size " .. btnSize:ToString())
         UI.DrawRect(btnPosition, btnSize, fillColour)
         UI.DrawText(btnPosition, Vector4(1.0, 1.0, 1.0, 1.0), btn.label, 16.0, true)
     end
