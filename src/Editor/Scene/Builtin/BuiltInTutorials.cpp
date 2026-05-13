@@ -104,8 +104,8 @@ or Vector4.
 
 The editor has switched to the Text Editor tab so you can open or create a
 category file.  Press "Next >" when you're ready to continue.]],
-                },
-                {
+                },)"
+                R"({
                     title       = "Writing Your First Rule",
                     force_state = "text_tab",
                     body        = [[Rules contain your game's logic.  Open the Rules panel and load a .lua file,
@@ -649,9 +649,9 @@ Save the file and press **Next >**.]],
 
 We will attach this category to a special invisible entity.
 Every frame, `spawnTimer` counts down.  When it reaches zero, a new
-asteroid is created and the timer resets to `spawnInterval`.
+asteroid is created and the timer resets to `spawnInterval`.)"
 
-`maxAsteroids` stops the game from creating too many asteroids and
+R"(`maxAsteroids` stops the game from creating too many asteroids and
 grinding to a halt.
 
 Save the file and press **Next >**.]],
@@ -1130,9 +1130,9 @@ an invisible one.
 The AsteroidSpawner rule only runs on entities that have the Spawner
 category.  By making its Scale (0, 0) it takes up no visible space
 and cannot be collided with – it is just a container for the
-spawner data.
+spawner data.)"
 
-Press **Next >** when done.]],
+R"(Press * *Next >**when done.]],
         },
         {
             title       = "Opening the Rules Panel",
