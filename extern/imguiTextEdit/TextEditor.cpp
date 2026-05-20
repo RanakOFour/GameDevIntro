@@ -2506,7 +2506,9 @@ void TextEditor::Document::deleteText(Coordinate start, Coordinate end) {
 	}
 
 	// update maximum column counts
-	updateMaximumColumn(start.line, end.line);
+	// After a multi-line delete, lines [start.line+1 .. end.line] no longer exist,
+	// so clamp the upper bound to avoid iterating past the end of the document.
+	updateMaximumColumn(start.line, std::min(end.line, lineCount() - 1));
 	updated = true;
 }
 

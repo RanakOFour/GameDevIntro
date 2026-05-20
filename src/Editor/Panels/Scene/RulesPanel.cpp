@@ -270,7 +270,6 @@ void RulesPanel::CreateNewRule(const std::string _name)
 
     RE::Log::Message("Rule created: " + l_path.string());
 
-    m_editor.SaveProjectInfo();
     LoadRuleFromFile(l_path.string());
 }
 
@@ -288,9 +287,15 @@ void RulesPanel::LoadRuleFromFile(const std::string _path)
     // Register in the editor-level registry so the rule survives scene changes.
     m_editor.GetSceneEdit().RegisterRule(l_newRule.GetName(), _path);
 
-    m_loadedRules.push_back(l_newRule.GetName());
+    std::string l_newName = l_newRule.GetName();
+    m_loadedRules.push_back(l_newName);
 
-    m_needsRefresh = true;
+    RefreshRuleList();
+
+    auto it = std::find(m_loadedRules.begin(), m_loadedRules.end(), l_newName);
+    if (it != m_loadedRules.end())
+        SelectRule(static_cast<int>(std::distance(m_loadedRules.begin(), it)));
+
     m_editor.SaveProjectInfo();
     RE::Log::Message("Rule loaded from: " + _path);
 }

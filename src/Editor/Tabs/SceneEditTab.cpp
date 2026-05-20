@@ -278,14 +278,11 @@ void SceneEditTab::Draw()
 
     auto l_scene = m_scene.lock();
 
-    // Update scene rules if simulation is running and not paused
+    // Update scene rules if simulation is running and not paused.
+    // UpdateLogic runs physics + scene rules only; the editor owns all I/O.
     if (m_isGameRunning && !m_isGamePaused)
     {
-        m_editor.GetEngineContents().io->UpdateInputs(); // Ensure we have the latest input state for this frame before updating the scene.
-        auto l_physics = RE::Physics::Manager::Get().lock();
-        l_physics->Step(l_dt);
-
-        l_scene->Update(l_dt);
+        m_editor.GetEngineContents().core->UpdateLogic(l_dt);
     }
 
     // Render the infinite grid first (before ImGui)
@@ -320,18 +317,23 @@ void SceneEditTab::Draw()
         glBindVertexArray(0);
         glUseProgram(0);
     }
-    
-    if (l_scene)
-    {
-        // Begin screen-space UI rendering (sets ortho projection, reads mouse).
-        Vector2 l_screenSize = m_window->GetScreenSize();
-        m_editor.GetUIRenderer().BeginFrame(l_screenSize);
 
+
+    Vector2 l_screenSize = m_window->GetScreenSize();
+    m_editor.GetUIRenderer().BeginFrame(l_screenSize);
+
+    // Draw the scene directly — no extra glClear or buffer swap.
+    // The editor owns the clear (Editor::Draw) and the swap (end of Editor::Draw).
+    if (l_scene)
         l_scene->Draw();
+
+    if(m_isGameRunning && !m_isGamePaused)
+    {
+        return;
     }
 
     // Draw gizmo over selected entity (editor mode only).
-    if (!m_isGameRunning && m_sceneSettings.showGizmos && m_selectedEntityId >= 0)
+    if (m_sceneSettings.showGizmos && m_selectedEntityId >= 0)
     {
         RE::Core::EntityRegistry& l_reg = l_scene->GetRegistry();
 
@@ -394,7 +396,7 @@ void SceneEditTab::Draw()
     }
 
     // Viewport drop target: accept texture/model drops onto the scene
-    if (!m_isGameRunning && m_selectedEntityId >= 0)
+    if (m_selectedEntityId >= 0)
     {
         ImGuiIO& l_dropIO = ImGui::GetIO();
         ImGui::SetNextWindowPos(ImVec2(0, 0));
@@ -436,7 +438,15 @@ void SceneEditTab::Draw()
         ImGui::End();
     }
 
-	DrawEditorUI();
+    // Disable all editor panels while the game is running (even when paused).
+    // Only the Stop/Pause toolbar drawn above remains interactive.
+    if (m_isGameRunning)
+        ImGui::BeginDisabled();
+
+    DrawEditorUI();
+
+    if (m_isGameRunning)
+        ImGui::EndDisabled();
 }
 
 void SceneEditTab::Run()

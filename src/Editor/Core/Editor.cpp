@@ -71,7 +71,7 @@ Editor::Editor(RE::EngineContents& engineContents, Project& project)
     m_stateRegistry.RegisterCondition("scene_tab", [l_raw]{ return l_raw->m_state == State::SceneEdit; });
     m_stateRegistry.RegisterCondition("text_tab",  [l_raw]{ return l_raw->m_state == State::TextEdit; });
     m_stateRegistry.RegisterAction("scene_tab", [l_raw]{ l_raw->m_state = State::SceneEdit; });
-    m_stateRegistry.RegisterAction("text_tab",  [l_raw]{ l_raw->m_state = State::TextEdit; });
+    m_stateRegistry.RegisterAction("text_tab",  [l_raw]{ l_raw->m_sceneEdit->CloseAllPanels(); l_raw->m_state = State::TextEdit; });
 
     RE::Log::Message("Editor initialized with UI panels");
 
@@ -587,7 +587,12 @@ void Editor::HandleInput()
 
     RE::IO::MouseInfo l_mouseInfo = m_engineContents.io->GetMouseInfo();
     RE::IO::MouseInfo l_lastMouseInfo = m_engineContents.io->GetLastFrameMouseInfo();
-    
+
+    // All mouse-driven editor interactions (panning, entity pick, gizmo) are
+    // suppressed while the game is running so the game can capture input freely.
+    if (!m_sceneEdit->IsGameRunning())
+    {
+
     // Pan screen with MMB down
     if (l_mouseInfo.MMBDown && !l_lastMouseInfo.MMBDown)
     {
@@ -988,7 +993,9 @@ void Editor::HandleInput()
         m_sceneEdit->m_camera->SetCameraWidth(m_sceneEdit->m_camera->GetCameraWidth() + l_mouseInfo.deltaScroll);
     }
 
-    if (!ImGui::GetIO().WantTextInput)
+    } // end !IsGameRunning() mouse guard
+
+    if (!ImGui::GetIO().WantTextInput && !m_sceneEdit->IsGameRunning())
     {
         // Gizmo mode shortcuts (T/R/S — mnemonic)
         SceneSettings& l_ss = m_sceneEdit->GetSceneSettings();

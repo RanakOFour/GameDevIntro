@@ -30,12 +30,14 @@ void AutoCompleteTree::SetTextEdit(std::weak_ptr<TextEditTab> _editTab)
 
 void AutoCompleteTree::textCallback()
 {
-    m_editTab.lock()->m_fileToEdit->FlagReloaded();
+    auto l_tab = m_editTab.lock();
+    if (!l_tab || !l_tab->m_fileToEdit) return;
+    l_tab->m_fileToEdit->FlagReloaded();
 }
 
 void AutoCompleteTree::transactionCallback(std::vector<TextEditor::Change>& _changes)
 {
-    std::string l_isInsert = _changes.back().insert ? "Insert" : "Remove";
+    if (_changes.empty()) return;
 
     for(auto& l_lastChange : _changes)
     {
@@ -45,7 +47,7 @@ void AutoCompleteTree::transactionCallback(std::vector<TextEditor::Change>& _cha
             {
                 m_lastCompleteWord = "";
             }
-            else
+            else if (!l_lastChange.text.empty())
             {
                 switch(l_lastChange.text.back())
                 {

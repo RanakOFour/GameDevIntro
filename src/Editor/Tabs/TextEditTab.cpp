@@ -1,4 +1,5 @@
 #include "Editor/Tabs/TextEditTab.h"
+#include "Editor/Tabs/SceneEditTab.h"
 #include "Editor/Support/AutoCompleteTree.h"
 
 #include "RanakEngine/Log.h"
@@ -33,7 +34,12 @@ TextEditTab::TextEditTab(Editor& _editor)
     );
 
     m_textEditor.SetTransactionCallback([this](std::vector<TextEditor::Change>& _changes){ m_acTree.transactionCallback(_changes); });
-    m_textEditor.SetChangeCallback([this](){ m_acTree.textCallback();});
+    m_textEditor.SetChangeCallback([this]()
+    {
+        m_acTree.textCallback();
+        if (m_fileToEdit)
+            m_fileToEdit->FlagReloaded();
+    });
     m_textEditor.SetLanguage(TextEditor::Language::Lua());
     TextEditor::AutoCompleteConfig* l_config = new TextEditor::AutoCompleteConfig();
     l_config->triggerOnTyping = true;
@@ -224,7 +230,9 @@ void TextEditTab::Draw()
                     m_textEditor.ClearText();
                     m_fileToEdit = l_activeFile;
                     if (m_fileToEdit)
-                        m_textEditor.SetText(m_fileToEdit->GetCode());
+                    {
+                        m_textEditor.SetText(m_fileToEdit->GetCode());   
+                    }
                 }
 
                 if(m_fileToEdit != nullptr)
@@ -319,6 +327,7 @@ void TextEditTab::SaveCurrentFile()
             // New rule not yet in the scene — create and add it.
             RE::Core::Rule l_newRule = l_luaCtx->CreateRule(m_fileToEdit);
             l_scene->AddRule(l_newRule);
+            m_editor.GetSceneEdit().RegisterRule(l_newRule.GetName(), m_fileToEdit->GetPath());
 
             m_fileToEdit->Reload();
             RE::Log::Message("Rule created and added to scene: " + m_fileToEdit->GetPath());

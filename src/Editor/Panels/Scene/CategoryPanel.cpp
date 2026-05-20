@@ -137,7 +137,8 @@ void CategoryPanel::SelectCategory(int _idx)
                       ->GetCategory(m_loadedCategories[m_selectedCategory])
                       .lock();
 
-    m_selectedCategoryOrigin = l_category->GetOriginFile().lock();
+    if (l_category)
+        m_selectedCategoryOrigin = l_category->GetOriginFile().lock();
 }
 
 std::string CategoryPanel::GetCategoryAt(int _idx)
@@ -248,7 +249,6 @@ void CategoryPanel::CreateNewCategory(const std::string _name)
 
     RE::Log::Message("Category created: " + l_path.string());
 
-    m_editor.SaveProjectInfo();
     LoadCategoryFromFile(l_path.string());
 }
 
@@ -259,10 +259,21 @@ void CategoryPanel::LoadCategoryFromFile(const std::string _path)
 
     auto l_categoryFile = l_engineContents.resources->Load<RE::Asset::LuaFile>(_path);
     auto l_categoryWPtr = l_luaContext->CreateCategory(l_categoryFile);
-    
-    m_loadedCategories.push_back(l_categoryWPtr.lock()->GetName());
+    auto l_categoryPtr = l_categoryWPtr.lock();
+    if (!l_categoryPtr)
+    {
+        RE::Log::Error("Failed to create category from: " + _path);
+        return;
+    }
+    std::string l_newName = l_categoryPtr->GetName();
+    m_loadedCategories.push_back(l_newName);
 
-    m_needsRefresh = true;
+    RefreshCategoryList();
+
+    auto it = std::find(m_loadedCategories.begin(), m_loadedCategories.end(), l_newName);
+    if (it != m_loadedCategories.end())
+        SelectCategory(static_cast<int>(std::distance(m_loadedCategories.begin(), it)));
+
     m_editor.SaveProjectInfo();
     RE::Log::Message("Category loaded from: " + _path);
 }
