@@ -71,6 +71,7 @@ class TutorialPanel : public Panel
     int m_currentStep = 0; ///< Index of the currently displayed step.
     int m_lastAppliedForceStep = -1; ///< Tracks which step's force state was last applied.
     bool m_waitSatisfiedAtEntry = false; ///< True when the wait_state condition was already met when the step was entered (e.g. satisfied by force_state). Auto-advance is suppressed until the condition first drops false.
+    bool m_waitStateSatisfied = false; ///< True once a wait_state step's condition has been genuinely satisfied; enables the manual Next button instead of auto-advancing.
 
     std::vector<bool> m_checklistDone; ///< Per-item fulfillment state for the current step's checklist.
 

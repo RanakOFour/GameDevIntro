@@ -265,6 +265,7 @@ void TutorialPanel::Draw()
         // auto-advance until the condition first drops false, ensuring the user
         // has to naturally achieve the state rather than having it gifted by force.
         m_waitSatisfiedAtEntry = l_isWaitState && IsStateAchieved(l_step.waitState);
+        m_waitStateSatisfied = false;
         m_checklistDone.assign(l_step.checklist.size(), false);
     }
 
@@ -311,26 +312,19 @@ void TutorialPanel::Draw()
         }
     }
 
-    // Auto-advance: check required editor state.
+    // Unlock the manual Next button once the wait_state condition is genuinely satisfied.
     // Skipped on the entry frame (l_justEntered) and also suppressed while
     // m_waitSatisfiedAtEntry is true — i.e. when the condition was already met
     // on entry (e.g. because force_state put us there). The flag is cleared once
     // the condition drops to false, after which a genuine user action can satisfy it.
-    if (l_isWaitState && !l_justEntered)
+    if (l_isWaitState && !l_justEntered && !m_waitStateSatisfied)
     {
         bool l_conditionMet = IsStateAchieved(l_step.waitState);
         if (!l_conditionMet)
             m_waitSatisfiedAtEntry = false;  // condition dropped — next true will be genuine
         if (l_conditionMet && !m_waitSatisfiedAtEntry)
         {
-            if (l_isLast)
-            {
-                m_showPanel = false;
-            }
-            else
-            {
-                m_currentStep++;
-            }
+            m_waitStateSatisfied = true;
         }
     }
 
@@ -482,13 +476,34 @@ void TutorialPanel::Draw()
     }
     else if (l_isWaitState)
     {
-        // Tutorial is waiting for a specific editor state – show progress bar and hint.
+        // Tutorial is waiting for a specific editor state. Once satisfied,
+        // the Next/Finish button becomes available rather than auto-advancing.
         float l_progress = m_steps.size() > 1
             ? (float)m_currentStep / (float)(m_steps.size() - 1) : 1.0f;
-        ImGui::ProgressBar(l_progress, ImVec2(-1.0f, 0.0f), "");
-        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
-        ImGui::TextWrapped("Waiting for: %s", l_step.waitState.c_str());
-        ImGui::PopStyleColor();
+        ImGui::ProgressBar(l_progress, ImVec2(-85.0f, 0.0f), "");
+        ImGui::SameLine();
+
+        if (!m_waitStateSatisfied)
+            ImGui::BeginDisabled();
+        if (l_isLast)
+        {
+            if (ImGui::Button("Finish", ImVec2(80, 0)))
+                m_showPanel = false;
+        }
+        else
+        {
+            if (ImGui::Button("Next >", ImVec2(80, 0)))
+                m_currentStep++;
+        }
+        if (!m_waitStateSatisfied)
+            ImGui::EndDisabled();
+
+        if (!m_waitStateSatisfied)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+            ImGui::TextWrapped("Waiting for: %s", l_step.waitState.c_str());
+            ImGui::PopStyleColor();
+        }
     }
     else if (l_isChecklist)
     {

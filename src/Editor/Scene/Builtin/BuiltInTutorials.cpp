@@ -159,287 +159,210 @@ Have fun building your game!]],
         },
         {
             "Asteroids",
-            R"(
-                return {
-    title = "Build Asteroids – An Introduction to Programming & Game Making",
+            R"(return {
+    title = "Asteroids",
     steps = {
         {
             title       = "Welcome!",
             force_state = "scene_tab",
-            body        = [[Welcome to the editor!
+            body        = [[Welcome to the editor.
 
-In this tutorial you will build the classic arcade game **Asteroids** –
-completely from scratch.
+In this tutorial you will build the classic arcade game Asteroids from scratch.
+You will fly a small ship, dodge rocks drifting across the screen, and shoot
+them down before they hit you. This tutorial is designed for someone who has
+never written code before. Every idea is introduced before it is used.
+If a sentence does not click the first time, read it again, then keep going.
+Ideas become familiar with repetition.
 
-More importantly, this tutorial is designed for people who have
-**never programmed before**.  We will explain every concept before we
-use it, so nothing should feel like magic.
+By the end you will have:
+- A working game you built yourself.
+- A working mental model of how programs are written.
+- Hands-on practice with this editor and the Lua language.
 
-By the end, you will have:
-
-  - A working game you built yourself.
-  - An understanding of the core ideas behind all programming.
-  - Practical experience with this editor and the Lua language.
-
-There is no rush.  Read every step carefully.  If something does not
-make sense, re-read it – it will click.
-
-Press **Next >** when you are ready to begin.]],
+When you are ready, click the Next button at the bottom of this panel.]],
         },
         {
-            title       = "What is Programming?",
+            title       = "What exactly are we doing?",
             force_state = "scene_tab",
-            body        = [[Before we touch the editor, let's answer the most important question:
+            body        = [[Before we do anything, it is important to understand what programming 'does' so we know exactly what we are doing when we are 'programming'.
 
-**What is programming?**
+A 'program' is a set of steps that solve a specific problem.
+For this tutorial, our problem is 'playing asteroids'. So when we are programming,
+we are writing instructions for the computer to do that will make it play our game.
 
-A computer can only do exactly what it is told, in exact detail.
-Programming is the act of writing those instructions.
+Programming broadly contains 3 types of instructions:
 
-Think of it like a recipe:
+1. Creating variables - data that can change (hence 'variable') and be referenced later
+2. Making decisions e.g. "If the player presses W, move the ship forward." 
+3. Manipulating existing variables - To move the ship forward, change it's position variable
 
-  - The **ingredients** are data (numbers, positions, timers).
-  - The **recipe steps** are the instructions the computer follows.
-  - The **dish** is your running game.
+We will be writing instructions in a language called Lua. Lua was designed to be simple
+to read, which makes it a friendly first language.
 
-You write your recipe in a **programming language** – a special
-language designed to give instructions to a computer.  We will be
-using one called **Lua**, which was designed to be simple and easy to
-learn.
-
-Do not worry about memorising any of this yet.  We will introduce
-each idea one piece at a time as we need it.
-
-Press **Next >** to continue.]],
+Click Next when you are ready.]],
         },
         {
-            title       = "Variables – Storing Information",
+            title       = "How a Game Runs: The Frame Loop",
             force_state = "scene_tab",
-            body        = [[The first building block of programming is the **variable**.
+            body        = [[There is one extra idea you need before we touch the editor: how a game actually runs. 
+A game is not a single script that executes top to bottom. Instead,
+90% of the instructions occur in a large loop. Each pass through the
+loop is called a frame, and on every frame the program:
 
-A variable is a **named container** that holds a value.  Think of a
-labelled box: the label is the name, the contents are the value.
+1. Reads the keyboard, mouse and other I/O (Input/Output) devices.
+2. Update the game to respond those inputs.
+3. Draws the result on screen.
 
-In Lua it looks like this:
+That is it, forever, until the game stops. Each iteration of the loop is
+called a 'frame'. The game engine used in this application is limited to
+running at 60 fps (frames per second).
 
-  local speed = 5.0
+There are times when it makes sense to think about game mechanics in terms
+of frames, and other times when it is better to think in seconds.
+For this, the engine gives you a number called DeltaTime (Often shortened to
+just 'dt') that says how long the most recent frame took. A typical value is
+around 0.016 seconds.
 
-This creates a box labelled "speed" and puts the value 5.0 inside it.
-Later in the code you can:
+To move something 5 units per second, you write:
 
-  - **Read** it:    position.x + speed * dt
-  - **Change** it:  speed = 10.0
+position.x = position.x + 5 * dt
 
-Common types of values:
+If you forgot the '* dt' part, the object would move 5 units every frame,
+which is 300 units per second at 60 fps. That is the difference between 
+walking and teleporting.
 
-  Number   –  5.0,  -3,  200     (whole or decimal numbers)
-  Boolean  –  true  or  false
-  String   –  "hello"            (text, surrounded by quotes)
+Inside this engine, deltatime is hidden behind a function, called Core.DeltaTime(),
+so the actual code would look like this:
 
-Throughout this tutorial, whenever you see a number in code, remember:
-it is just a labelled box holding a value that you can change later.
+position.x = position.x + 5 * Core.DeltaTime()
 
-Press **Next >** to continue.]],
+Click Next for an overview of the editor.]],
         },
         {
-            title       = "Functions – Reusable Instructions",
+            title       = "A Tour of the Editor",
             force_state = "scene_tab",
-            body        = [[The second big idea is the **function**.
+            body        = [[The window in front of you has two distinct modes; the Scene View where you will build your game; and the Text Editor where you will write Lua scripts that form the logic of your game.
 
-A function is a **named group of instructions** you can run whenever
-you want, just by using its name.
+In Scene View, there are also several panels:
+- "Entity List" shows every object currently in the scene.
+- "Entity Properties" displays the data attached to the selected entity.
+- "Category List" shows data templates you have loaded.
+- "Rules List" shows behaviour scripts you have loaded.
 
-In Lua:
+Most of these panels can be opened by right clicking the screen and
+opening them from the context menu. The Entity Properties panel is
+opened when selecting an entity on the screen with the mouse.
 
-  local function greet()
-      print("Hello!")
-  end
-
-  greet()   -- this runs the instructions inside
-
-Functions can accept **inputs** (called parameters) and give back an
-**output** (called a return value):
-
-  local function add(a, b)
-      return a + b
-  end
-
-  local result = add(3, 5)   -- result is now 8
-
-In our game, every Rule has an **Update** function.  The engine calls
-that function automatically every frame.  You write what should
-happen inside it.
-
-Press **Next >** to continue.]],
-        },
-        {
-            title       = "Conditions – Making Decisions",
-            force_state = "scene_tab",
-            body        = [[The third key idea is the **condition** (also called an if statement).
-
-A condition lets your code make a decision:
-
-  if IO.GetKeyDown('w') then
-      -- this only runs when W is held down
-      position.y = position.y + 1
-  end
-
-You can add an alternative path with else:
-
-  if lives > 0 then
-      print("Still alive!")
-  else
-      print("Game over!")
-  end
-
-Conditions test whether something is true or false:
-
-  x > 5    – is x greater than 5?
-  x == 0   – is x equal to zero?  (two equals signs, not one)
-  x <= 10  – is x less than or equal to 10?
-
-That is the core of all programming:
-
-  **Variables**  – hold data.
-  **Functions**  – group instructions.
-  **Conditions** – make decisions.
-
-Everything else in this tutorial builds on these three ideas.
-
-Press **Next >** to learn how games use them.]],
-        },
-        {
-            title       = "The Game Loop",
-            force_state = "scene_tab",
-            body        = [[Here is something crucial about how games work:
-
-**Games run in a loop.**
-
-Every fraction of a second the engine:
-
-  1. Checks for keyboard and mouse input.
-  2. Runs all of your Update functions.
-  3. Draws everything on screen.
-  4. Goes back to step 1.
-
-This repeats roughly 60 times per second.  Each pass is called a
-**frame**.
-
-This is why we multiply movement by **delta time** (written `dt` in
-code).  `dt` is the duration of the most recent frame in seconds –
-about 0.016 at 60 fps.
-
-Multiplying by `dt` keeps movement at a consistent speed regardless
-of how fast the computer is running:
-
-  -- Moves 5 units per SECOND, not per frame
-  position.x = position.x + 5.0 * dt
-
-Without `* dt`, the object would move 5 units per *frame* –
-that is 300 units per second on a 60 fps machine!
-
-Press **Next >** to meet the editor.]],
-        },
-        {
-            title       = "Meet the Editor",
-            force_state = "scene_tab",
-            body        = [[Now let's explore the editor window.
-
-The window is divided into several areas:
-
-**Tabs** (top of the window):
-  - **Scene** – your game world lives here.
-  - **Text Editor** – where you write Lua scripts.
-  - **Console** – shows messages and errors from your scripts.
-
-**Entity List** (left side):
-  - Lists every object in your scene.
-  - Click an entry to select it.
-
-**Viewport** (large centre area):
-  - The 3D view of your game world.
-  - Right-click here to get a context menu.
-
-**Panels** (bottom or sides):
-  - **Entity Properties** – shows data for the selected entity.
-  - **Categories** – manage data templates.
-  - **Rules** – manage behaviour scripts.
-
-Take a moment to look at each of these areas.
-
-Press **Next >** to look at each area in more detail.]],
+Click Next when you are ready.]],
         },
         {
             title       = "The Entity List",
             force_state = "scene_tab",
             highlight   = "Entity List",
-            body        = [[Let's look at the **Entity List** on the left.
+            body        = [[Look at the "Entity List" panel.
 
-Right now it is empty – there are no objects in the scene yet.
+In this engine, every object in the game is called an entity.
+An entity can be the player's ship, a bullet, a chunk of rock,
+or even an invisible object whose only job is to spawn other entities.
 
-In game engines, every object in the world is called an **Entity**.
-Entities can be:
+Right now there are no entities. You will change this. 
+Three things you can do with the Entity List:
+- Click an entity's name to select it.
+- Right-click in the viewport and pick "Create Entity" to make one.
+- Double-click an entity's name to rename it.
 
-  - The player's ship.
-  - A bullet.
-  - An asteroid.
-  - An invisible manager that spawns new objects.
+An entity by itself does nothing. It is just a name.
+It comes to life only when you attach data and behavior to it.
+That is the next idea we will cover.
 
-An entity by itself does nothing.  It only becomes interesting when
-you attach **Categories** (data) and **Rules** (behaviour) to it.
-
-You can:
-
-  - **Click** an entity to select it.
-  - **Right-click** the viewport to create new ones.
-  - **Double-click** an entity's name in the list to rename it.
-
-Press **Next >** to look at Entity Properties.]],
+Click Next to continue.]],
         },
         {
-            title       = "Entity Properties",
+            title       = "Entity Properties and the Transform",
             force_state = "scene_tab",
             highlight   = "Entity Properties",
-            body        = [[The **Entity Properties** panel shows the data attached to the
-currently selected entity.
+            body        = [[When you select an entity, the "Entity Properties" panel shows the data attached to it.
 
-Every entity automatically gets a **Transform** category which holds:
+Every entity is automatically given one piece of data called the Transform. It contains:
+- Position where the entity is in the world, as (x, y).
+- Rotation which way it faces, in degrees.
+- Scale how big it is along the x and y axes.
 
-  - **Position** – where the entity is in the world (x, y).
-  - **Rotation** – which direction it faces, in degrees.
-  - **Scale** – its size along x and y.
-
-When you create your own Categories (coming soon), their fields also
-appear here.  This is how you inspect and tweak values while building
-your game.
-
-Think of this panel as the "property sheet" for the selected object.
-
-Press **Next >** to look at the viewport.]],
+You can click into any of these fields and type a new value.
+The viewport updates immediately to reflect the change.
+Later you will define your own data alongside the Transform,
+and those fields will appear in this same panel.]],
         },
         {
-            title       = "The Viewport",
+            title       = "The Viewport and Coordinates",
             force_state = "scene_tab",
-            body        = [[The **Viewport** is the large area where your game world is displayed.
+            body        = [[The viewport is the large area in the middle of the window.
+It shows your game from the camera's point of view.
+The coordinate system works like graph paper:
+- (0, 0) is the centre of the screen.
+- Positive x goes to the right.
+- Positive y goes up.
 
-While in the **editor**:
-  - You can orbit the camera to view the scene from different angles.
-  - Right-click to open a context menu with actions like Create Entity.
+So Position (3, 0) means three units to the right of centre,
+and Position (0, -2) means two units below centre. When you
+press the Play button in the toolbar, the editor switches into
+play mode and your scripts start running. There are no loaded
+scripts currently, so nothing will happen. Press Stop to return to editing.]],
+        },
+        {
+            title       = "Entities, Categories, and Rules",
+            force_state = "scene_tab",
+            body        = [[This engine builds games out of three pieces.
+Entities are one of them.
+The other two are what we are about to use.
 
-While the game is **playing**:
-  - The viewport shows the game as the player would see it.
-  - Your Lua scripts control everything that moves.
+- Categories: A labelled set of data attached to entities.
+- Rules: instructions that manipulate the data in certain entities.
 
-The coordinate system works like this:
+The Transform you saw earlier is a category. You can define your own.
+You can also create rules. Rules are Lua scripts that run every frame
+for every entity that has a particular set of categories.
+Read that one more time. The pattern is: entities belong to categories, and 
+rules run on entities that have certain category combinations. 
 
-  - (0, 0) is the centre of the screen.
-  - Positive X goes right.
-  - Positive Y goes up.
+For Asteroids we will define four categories:
 
-For Asteroids, everything happens in a flat 2D plane, so we only care
-about X and Y.
+- Ship: The player's stats and shooting cooldown.
+- Bullet: a bullet's velocity and remaining lifetime.
+- Asteroid: an asteroid's velocity and size.
+- Spawner: data for the script that creates new asteroids.
 
-Press **Next >** to start building the game!]],
+And four rules to act on them, one per category. We will write the categories first, then the rules. 
+
+Click Next.]],
+        },
+        {
+            title       = "Variables, in Plain Lua",
+            force_state = "scene_tab",
+            body        = [[Before writing the first category file, one tiny piece of syntax.
+A variable is a named slot that holds a value. In Lua you create one like this:
+
+local speed = 5.0
+  
+That single line says: "make a slot called speed, and put 5.0 inside it."
+Later you can read it or change it:
+
+-- Example of a read
+position.x = position.x + speed * dt
+
+-- Example of a change
+speed = 10.0
+
+The word local means "this slot is only visible inside the script that creates it."
+You will see it on almost every variable.
+
+There are several kinds of values we will use:
+- Numbers: 5.4, -3, 200 (whole or decimal)
+- Booleans: true or false
+- Strings: "hello" (text in double (") or single (') quotes)
+- Tables: a group of named variables, written with { ... }
+
+A category file is just one big table. You will see in a moment.]],
         },
         {
             title       = "Create the Ship Entity",
@@ -447,833 +370,573 @@ Press **Next >** to start building the game!]],
             event       = "wait_state",
             wait_state  = "entity_selected",
             highlight   = "Entity List",
-            body        = [[Time to create our first entity – the player's spaceship.
+            body        = [[Time to create the first entity — the player's ship.
+1. Right-click anywhere in the viewport.
+2. Choose "Create Entity" from the menu.
 
-  1. **Right-click** anywhere in the viewport.
-  2. Choose **Create Entity** from the menu.
-     A new entry appears in the Entity List.
-  3. **Click** that entity in the Entity List to select it.
+A new entry appears in the Entity List. Click that entry in the Entity List to select it.
+Once the entity is selected, the Transform will show up in Entity Properties. Set its values to:
 
-Once selected, its Transform data will appear in Entity Properties.
+Position (0, 0) centre of the screen
+Rotation 0 pointing upward
+Scale (0.3, 0.5) a small, tall rectangle
 
-You can also double-click its name in the Entity List to rename it
-to "Ship" – this keeps things organised but is optional.
-
-The tutorial advances automatically once an entity is selected.]],
+You can also double-click the entity's name to rename it to Ship. The tutorial advances automatically once you have an entity selected.]],
         },
-        {
-            title       = "Setting the Ship's Transform",
-            force_state = "scene_tab",
-            body        = [[With the ship entity selected, find the **Entity Properties** panel.
-
-You will see the Transform category with Position, Rotation and Scale.
-Set them to:
-
-  Position:  (0, 0)        ← centre of the screen
-  Rotation:  90            ← pointing upward
-  Scale:     (0.3, 0.5)    ← a narrow, tall rectangle
-
-**Why these values?**
-
-  - Position (0, 0) starts the ship in the middle.
-  - Rotation 90° means the front faces upward (positive Y direction).
-  - Scale (0.3, 0.5) makes it look like a small ship.
-
-Click into each field in Entity Properties and type the new values.
-
-Press **Next >** once you have set them.]],
-        },
-        {
-            title       = "What are Categories?",
-            force_state = "scene_tab",
-            body        = [[You have used the built-in Transform category.  Now let's understand
-what categories really are.
-
-A **Category** is a collection of named variables grouped under one
-label, which can be attached to any entity.
-
-Think of it like a form with labelled fields:
-
-  Ship form:
-  ┌──────────────────────────────┐
-  │ speed:          5.0          │
-  │ rotSpeed:     200.0          │
-  │ shootTimer:     0.0          │
-  │ shootInterval:  0.25         │
-  └──────────────────────────────┘
-
-When you attach this "form" to an entity, that entity gains all those
-fields.  A different entity (an asteroid) has a completely different
-form with different fields.
-
-You define categories in **Lua files** and load them into the editor.
-We will write four categories for the game:
-
-  - **Ship**     – speed, rotation speed, shooting timer.
-  - **Bullet**   – velocity and lifetime.
-  - **Asteroid** – velocity and radius.
-  - **Spawner**  – spawn interval and cap.
-
-Press **Next >** to switch to the Text Editor.]],
-        },
-        {
-            title       = "Opening the Text Editor",
+)"
+            R"(        {
+            title       = "Open the Text Editor",
             force_state = "text_tab",
-            body        = [[Click the **Text Editor** tab at the top of the window.
-(Your view may have switched automatically.)
+            body        = [[Look at the "Text Editor" tab. The view may have
+switched to it already. This is where you write Lua scripts.
 
-This is a built-in code editor where you will write all your Lua
-scripts.  Useful shortcuts:
+The basics:
+- "Ctrl+N" creates a new file.
+- "Ctrl+S" saves the current file.
+- "Ctrl+Z" undoes your last change.
 
-  Ctrl+N – create a new file.
-  Ctrl+S – save the current file.
-  Ctrl+Z – undo.
+Your project has two folders we care about:
+- Categories: where category files live.
+- Rules: where rule scripts live.
 
-In the Text Editor you write Lua code, save it into your project
-folder, and the engine loads it from there.
-
-In the next few steps we will write the four category files.  Take
-your time – there is no hurry.
-
-Press **Next >** when you are ready to write your first file.]],
+When you save a file into one of those folders, the engine
+can load it from the panel on the Scene tab. You will do that shortly.]],
         },
         {
-            title       = "A Note About Lua Category Files",
+            title       = "Write Ship.lua",
             force_state = "text_tab",
-            body        = [[Before writing the first category, here is how category files work.
+            body        = [[Press "Ctrl+N" for a new file. Type the code below,
+then save the file as Ship.lua inside the Categories folder.
 
-Each file uses a special keyword provided by the engine:
+return Category {
+	speed = 5.0,
+	rotSpeed = 200.0,
+	shootTimer = 0.0,
+	shootInterval = 0.25,
+}
 
-  return Category { ... }
+What each line means:
+- return Category { ... } : Tells the engine: "this file defines a category."
+- speed = 5.0 : How fast the ship moves, in units per second.
+- rotSpeed = 200.0 : How quickly the ship rotates, in degrees per second.
+- shootTimer = 0.0 : A countdown the rule will use to limit firing rate. Starts at zero, meaning "ready to fire right away."
+- shootInterval = 0.25 : The minimum gap between shots, in seconds. 0.25 means at most four shots per second.
 
-The `{ ... }` part is a **table** – Lua's way of grouping values
-together (similar to the "form" described earlier).
-
-Inside the table, each line is a field definition:
-
-  fieldName = defaultValue,
-
-The `=` sets the starting (default) value.  Every entity that gets
-this category starts with these defaults.  You can change the values
-in Entity Properties afterwards.
-
-The `--` starts a **comment** – text that the computer ignores.
-Comments are notes for the humans reading the code:
-
-  speed = 5.0,   -- how fast the ship moves (units per second)
-
-Press **Next >** to write the first category file.]],
+The comma at the end of each line is required. The text after
+the last value (return Category) is what ties it all together. Save the file, then click Next.]],
         },
         {
-            title       = "Creating Ship.lua",
+            title       = "Write Bullet.lua",
             force_state = "text_tab",
-            body        = [[Press **Ctrl+N** to create a new file.
+            body        = [[Create another new file ("Ctrl+N") and save it as Bullet.lua inside the Categories folder.
 
-Type or paste the code below, then save it (**Ctrl+S**) inside your
-project's **Categories/** folder as **Ship.lua**:
+return Category {
+	velocity = Vector2(0.0)
+	lifetime = 2.0,
+	speed = 12.0,
+	entityId = Field(0, { hidden = true }),
+}
 
-  return Category {
-      speed         = 5.0,      -- how fast the ship moves (units/sec)
-      rotSpeed      = 200.0,    -- rotation speed in degrees/sec
-      shootTimer    = 0.0,      -- internal cooldown (starts ready)
-      shootInterval = 0.25,     -- minimum seconds between shots
-  }
+Velocity is the bullet's velocity. The ship's Rule will fill
+these in when it spawns the bullet. Lifetime is the number of seconds
+the bullet lives before disappearing. Without this, bullets would fly
+forever and slowly choke the game. EntityId is the bullet's own ID number.
+Every entity has a unique ID, and we store it here so the rule can later
+say "remove this specific bullet." Field(0, { hidden = true }) is a special
+form that means "default to zero, and do not show this field in the Entity
+Properties panel" - you never set it by hand.
 
-**What each field does:**
-
-  speed         – distance moved per second when W is held.
-  rotSpeed      – degrees rotated per second with A or D.
-  shootTimer    – a countdown that prevents firing too fast.
-  shootInterval – the gap between shots (0.25 sec = max 4 per second).
-
-Save the file, then press **Next >**.]],
+Save and click Next.]],
         },
         {
-            title       = "Creating Bullet.lua",
+            title       = "Write Asteroid.lua",
             force_state = "text_tab",
-            body        = [[Create another new file (**Ctrl+N**) and save it as
-**Categories/Bullet.lua**:
+            body        = [[Create a new file and save it as Asteroid.lua inside the Categories folder.
 
-  return Category {
-      velX     = 0.0,   -- horizontal velocity
-      velY     = 0.0,   -- vertical velocity
-      lifetime = 2.0,   -- seconds before the bullet is removed
-      speed    = 12.0,  -- how fast the bullet travels
-      entityId = Field(0, { hidden = true }),
-  }
+return Category {
+	velocity = Vector2(0.0),
+	radius = 1.0,
+	entityId = Field(0, { hidden = true }),
+}
 
-**About entityId:**
+Radius is the asteroid's size for hit detection. When a bullet gets
+closer to the asteroid than this distance, we count it as a hit. A
+larger radius means an easier target.
+EntityId is again the asteroid's own ID, used when destroying it.
 
-Each entity has a unique ID number so the engine can find it.
-When a bullet is created, we store its own ID inside this field so
-the rules can later say "remove *this specific* bullet".
-
-It is marked `hidden` because you never need to edit it yourself –
-the rules manage it automatically.
-
-Save the file and press **Next >**.]],
+Save and click Next.]],
         },
         {
-            title       = "Creating Asteroid.lua",
+            title       = "Write Spawner.lua",
             force_state = "text_tab",
-            body        = [[Create a new file and save it as **Categories/Asteroid.lua**:
+            body        = [[Create the last category file and save it as Spawner.lua inside the Categories folder.
 
-  return Category {
-      velX     = 0.0,   -- horizontal velocity
-      velY     = 0.0,   -- vertical velocity
-      radius   = 1.0,   -- collision size (used for hit detection)
-      entityId = Field(0, { hidden = true }),
-  }
+return Category {
+	spawnTimer = 0.0,
+	spawnInterval = 4.0,
+	maxAsteroids = 12,
+}
 
-**What radius does:**
+SpawnTimer is the countdown until the next asteroid appears.
+The spawner rule will decrease it every frame and reset it to
+spawnInterval when it hits zero. spawnInterval is the gap between
+spawns, in seconds. MaxAsteroids is a safety limit. Without it the
+spawner would keep adding asteroids forever and the game would slow to a crawl.
 
-When checking whether a bullet has hit an asteroid, we measure the
-distance between them.  If the distance is less than the asteroid's
-`radius`, it is a hit.  A larger radius means the asteroid is
-easier to hit.
+We will attach this category to an invisible entity
+in a moment. The entitys only purpose is to give the
+spawner rule something to run on.
 
-Save the file and press **Next >**.]],
+Save and click Next.]],
         },
         {
-            title       = "Creating Spawner.lua",
+            title       = "What a Rule Looks Like",
             force_state = "text_tab",
-            body        = [[Create a new file and save it as **Categories/Spawner.lua**:
+            body        = [[You have written the data. Now we add the behaviour. A rule is a Lua script with this shape:
 
-  return Category {
-      spawnTimer    = 0.0,   -- countdown until the next asteroid appears
-      spawnInterval = 2.0,   -- seconds between spawns
-      maxAsteroids  = 12,    -- maximum number of asteroids at one time
-  }
+local MyRule = Rule {
+	categories = { "Transform", "MyCategory" },
+}
 
-**How the spawner works:**
-
-We will attach this category to a special invisible entity.
-Every frame, `spawnTimer` counts down.  When it reaches zero, a new
-asteroid is created and the timer resets to `spawnInterval`.)"
-
-R"(`maxAsteroids` stops the game from creating too many asteroids and
-grinding to a halt.
-
-Save the file and press **Next >**.]],
-        },
-        {
-            title       = "What are Rules?",
-            force_state = "text_tab",
-            body        = [[You have written the data (categories).  Now we need **behaviour**.
-
-A **Rule** is a Lua script that runs every frame for every entity
-that has the matching categories attached.
-
-The structure of every rule looks like this:
-
-  local MyRule = Rule {
-      categories = { "Transform", "MyCategory" },
-  }
-
-  function MyRule:Update(_entityData)
-      -- This runs every frame for each matching entity.
-      local tf  = _entityData["Transform"]
-      local cat = _entityData["MyCategory"]
-  end
-
-  return MyRule
-
-Key points:
-
-  - `categories` lists which categories an entity MUST have for
-    this rule to run on it.
-  - `_entityData["Transform"]` gives you that entity's Transform
-    fields (Position, Rotation, Scale).
-  - Changes you make to `tf.Position` are applied immediately.
-
-We will write four rules.  Press **Next >** to start the first one.]],
-        },
-        {
-            title       = "A Little Maths: Working Out Directions",
-            force_state = "text_tab",
-            body        = [[The ship needs to move in the direction it faces.
-
-To work out that direction from a rotation angle, we use **sine**
-and **cosine** (sin and cos).  You do not need to understand the
-maths deeply – just the key idea:
-
-  If the ship faces angle θ (in radians):
-    dirX = cos(θ)   ← how much to move horizontally
-    dirY = sin(θ)   ← how much to move vertically
-
-To move the ship forward by `speed` units per second:
-
-  position.x = position.x + dirX * speed * dt
-  position.y = position.y + dirY * speed * dt
-
-The engine does not expose the standard Lua maths library, so we
-define our own sin/cos using a **Taylor series** – a technique for
-approximating these functions with arithmetic.  The code is
-pre-written for you; just copy it as-is.
-
-We also need to convert **degrees to radians** first (the engine
-stores rotation in degrees, but sin/cos work in radians):
-
-  radians = degrees × π ÷ 180
-
-The engine provides `Math.DegToRad()` to handle this.
-
-Press **Next >** to write ShipControl.lua.]],
-        },
-        {
-            title       = "Writing ShipControl.lua",
-            force_state = "text_tab",
-            body        = [[Create a new file and save it as **Rules/ShipControl.lua**.
-
-Paste the full script below.  Each section has comments explaining it:
-
--- Simple sine and cosine using a Taylor series.
-local PI = 3.14159265358979
-
-local function sin(x)
-    x = x % (2 * PI)
-    if x > PI then x = x - 2 * PI end
-    local x2 = x * x
-    return x * (1 - x2 / 6 * (1 - x2 / 20 * (1 - x2 / 42)))
+function MyRule:Update(_entityData)
+	local tf = _entityData["Transform"]
+	local cat = _entityData["MyCategory"]
+-- runs every frame for each matching entity
 end
 
-local function cos(x)
-    return sin(x + PI / 2)
+function MyRule:Draw(_entityData)
+
+-- Also runs every frame, but only during the draw phase (After Update)
 end
 
--- ShipControl runs on any entity that has both Transform and Ship.
+return MyRule
+
+The categories list says: "this rule only runs on entities that
+have all of these categories at once." If an entity is missing
+one of them, the engine skips it.
+
+MyRule:Update is a function, which means it is a callable piece of code.
+The ':' between MyRule and Update is shorthand for writing the function as:
+MyRule.Update(MyRule, _entityData).
+
+The words in then brackets are called 'parameters'. The _entityData parameter
+is a table containing the fields of every category the entity has. You pull out
+the parts you need with brackets, like _entityData["Transform"].
+
+Click Next.]],
+        },
+        {
+            title       = "A Pinch of Maths: Direction From Angle",
+            force_state = "text_tab",
+            body        = [[The ship needs to move in the direction it is facing.
+Given a rotation angle, we get the direction with two functions called sine
+and cosine (sin and cos). You do not need to understand the maths behind them. Just the following:
+
+direction = Vector2(Math.Cos(shipAngle), Math.Sin(shipAngle))
+
+Then to move forward:
+position = position + direction * speed * dt
+
+Click Next to write ShipControl.lua.]],
+        },
+)"
+            R"(        {
+            title       = "Write ShipControl.lua",
+            force_state = "text_tab",
+            body        = [[Create a new file and save it as ShipControl.lua inside the Rules folder.
+
 local ShipControl = Rule {
-    categories = { "Transform", "Ship" },
+	categories = { "Transform", "Ship" },
 }
 
 function ShipControl:Update(_entityData)
-    local tf   = _entityData["Transform"]   -- built-in position/rotation/scale
-    local ship = _entityData["Ship"]        -- our custom category data
-    local dt   = Core.DeltaTime()           -- seconds since last frame
+	local tf = _entityData["Transform"]
+	local ship = _entityData["Ship"]
+	local dt = Core.DeltaTime()
 
-    -- Rotate with A/D
-    if IO.GetKeyDown('a') then
-        tf.Rotation = tf.Rotation + ship.rotSpeed * dt
-    end
-    if IO.GetKeyDown('d') then
-        tf.Rotation = tf.Rotation - ship.rotSpeed * dt
-    end
+	if IO.GetKeyDown('a') then
+		tf.Rotation = tf.Rotation + ship.rotSpeed * dt
+	end
 
-    -- Calculate forward direction from current rotation.
-    local rad  = Math.DegToRad(tf.Rotation)
-    local dirX = cos(rad)
-    local dirY = sin(rad)
+	if IO.GetKeyDown('d') then
+		tf.Rotation = tf.Rotation - ship.rotSpeed * dt
+	end
 
-    -- Thrust forward with W
-    if IO.GetKeyDown('w') then
-        tf.Position = Vector2(
-            tf.Position.x + dirX * ship.speed * dt,
-            tf.Position.y + dirY * ship.speed * dt
-        )
-    end
+	
+	local direction = Vector2(Math.Cos(shipAngle), Math.Sin(shipAngle))
 
-    -- Screen wrapping: when the ship leaves one edge, it appears on the opposite.
-    local camW  = Core.Camera:getCameraWidth()
-    local scrn  = IO.GetScreenSize()
-    local halfW = camW / 2
-    local halfH = halfW / (scrn.x / scrn.y)   -- aspect ratio
-    local px = tf.Position.x
-    local py = tf.Position.y
-    if px >  halfW then px = -halfW end
-    if px < -halfW then px =  halfW end
-    if py >  halfH then py = -halfH end
-    if py < -halfH then py =  halfH end
-    tf.Position = Vector2(px, py)
+	if IO.GetKeyDown('w') then
+		tf.Position = tf.Position + (direction * ship.speed * dt)
+	end
 
-    -- Shooting with Space (can fire repeatedly at the shoot interval)
-    ship.shootTimer = ship.shootTimer - dt
-    if IO.GetKeyDown(' ') and ship.shootTimer <= 0 then
-        ship.shootTimer = ship.shootInterval
+-- We need to make sure that when the ship leaves the screen, it reappears on the other side
+	local camW = Core.Camera:getCameraWidth()
+	local screenSize = IO.GetScreenSize()
 
-        -- Create a new bullet entity.
-        local bId = Core.CurrentScene:addEntity()
-        Core.CurrentScene:addToCategory(bId, "Bullet")
-        local bData = Core.CurrentScene:getAttributesOf(bId)
-        local bTf   = bData["Transform"]
-        local bBul  = bData["Bullet"]
+	local halfW = camW / 2
+	local halfH = halfW / (screenSize.x / screenSize.y)
 
-        -- Place bullet just in front of the ship.
-        bTf.Position = Vector2(
-            tf.Position.x + dirX * 0.6,
-            tf.Position.y + dirY * 0.6
-        )
-        bTf.Rotation = tf.Rotation
-        bTf.Scale    = Vector2(0.15, 0.15)
-        bBul.velX     = dirX * bBul.speed
-        bBul.velY     = dirY * bBul.speed
-        bBul.entityId = bId   -- store the ID for later removal
-    end
+	local px, py = tf.Position.x, tf.Position.y
+
+	-- Flip ship if it goes off the screen on the X axis
+	if px > halfW then px = -halfW end
+	if px < -halfW then px = halfW end
+
+	-- Flip ship if it goes off the screen on the Y axis
+	if py > halfH then py = -halfH end
+	if py < -halfH then py = halfH end
+
+	tf.Position = Vector2(px, py)
+
+	ship.shootTimer = ship.shootTimer - dt
+
+	if(IO.GetKeyDown(' ') and ship.shootTimer <= 0) then
+		ship.shootTimer = ship.shootInterval
+		local bId = Core.CurrentScene:addEntity()
+		Core.CurrentScene:addToCategory(bId, "Bullet")
+		local bData = Core.CurrentScene:getAttributesOf(bId)
+	
+		local bTf = bData["Transform"]
+		local bBul = bData["Bullet"]
+		
+		-- Spawn bullet slightly ahead of the ship
+		bTf.Position = tf.Position + direction * 0.6
+		bTf.Rotation = tf.Rotation
+		bTf.Scale = Vector2(0.15, 0.15)
+
+		bBul.velocity = direction * bBul.speed
+		bBul.entityId = bId
+	end
 end
 
 return ShipControl
 
-Save the file and press **Next >**.]],
+Click next when ready]],
         },
         {
-            title       = "Understanding ShipControl",
+            title       = "Reading ShipControl, Section by Section",
             force_state = "text_tab",
-            body        = [[Let's walk through ShipControl section by section.
+            body        = [[Take a moment to map the script to its four jobs.
+- Rotation. Holding A or D adds or subtracts rotSpeed times dt every frame.
+  With rotSpeed at 200, a 60 fps frame rotates the ship by about 3.3 degrees.
 
-**Rotation (A / D keys)**
+- Thrust. Holding W moves the ship along its facing direction, computed from
+  cos and sin of the rotation. The ship moves where its nose points, not where
+  the camera points.
 
-  tf.Rotation = tf.Rotation + ship.rotSpeed * dt
+- Screen wrap. We ask the camera for its width and the window for its aspect ratio,
+  then compute half-extents in world units. If the ship crosses an edge, we teleport
+  it to the opposite edge.
 
-Each frame while A is held, the rotation increases by
-200° × 0.016 ≈ 3.2°.  That is a smooth, controlled spin.
+- Shooting. shootTimer counts down every frame. When Space is held and the timer has
+  reached zero, we create a new entity, attach the Bullet category to it, place it slightly
+  ahead of the ship, and copy the ship's forward direction into the bullet's velocity. The timer
+  is reset to shootInterval, enforcing the cooldown.
 
-**Thrust (W key)**
 
-  tf.Position = Vector2(pos.x + dirX * speed * dt, ...)
-
-`dirX` and `dirY` come from converting the rotation angle with
-cos and sin.  The ship moves in exactly the direction it faces.
-
-**Screen wrapping**
-
-  if px > halfW then px = -halfW end
-
-When the ship crosses the right edge, it teleports to the left
-edge.  The same check is applied to all four edges.
-
-**Shooting**
-
-`shootTimer` counts down from `shootInterval` each frame.
-When Space is pressed AND the timer has reached zero, a new bullet
-entity is created, positioned just ahead of the ship, and launched
-in the ship's forward direction.  The timer then resets, enforcing
-the firing cooldown.
-
-Press **Next >** to write BulletLogic.lua.]],
+Click Next to write the bullet's rule.]],
         },
         {
-            title       = "Writing BulletLogic.lua",
+            title       = "Write BulletLogic.lua",
             force_state = "text_tab",
-            body        = [[Create a new file and save it as **Rules/BulletLogic.lua**:
+            body        = [[Create a new file and save it as BulletLogic.lua inside the Rules folder.
 
-  local BulletLogic = Rule {
-      categories = { "Transform", "Bullet" },
-  }
+local BulletLogic = Rule {
+	categories = { "Transform", "Bullet" },
+}
 
-  function BulletLogic:Update(_entityData)
-      local tf = _entityData["Transform"]
-      local b  = _entityData["Bullet"]
-      local dt = Core.DeltaTime()
+function BulletLogic:Update(_entityData)
+	local tf = _entityData["Transform"]
+	local b = _entityData["Bullet"]
+	local dt = Core.DeltaTime()
+	tf.Position = tf.Position + b.velocity * dt
+	b.lifetime = b.lifetime - dt
+	
+	if b.lifetime <= 0 then
+		Core.CurrentScene:removeEntity(b.entityId)
+		return
+	end
+	
+	local asteroids = Core.CurrentScene:getEntitiesWith({"Asteroid"})
+	-- #asteroids means 'the number of asteroids'
+	for i = 1, #asteroids do
+		local aId = asteroids[i]
+		local aData = Core.CurrentScene:getAttributesOf(aId)
+		if aData then
+			local aTf = aData["Transform"]
+			local aAst = aData["Asteroid"]
+			local dx = tf.Position.x - aTf.Position.x
+			local dy = tf.Position.y - aTf.Position.y
+			
+			if dx * dx + dy * dy < aAst.radius * aAst.radius then
+				Core.CurrentScene:removeEntity(aAst.entityId)
+				Core.CurrentScene:removeEntity(b.entityId)
+				return
+			end
+		end
+	end
+end
 
-      -- Move the bullet along its stored velocity.
-      tf.Position = Vector2(
-          tf.Position.x + b.velX * dt,
-          tf.Position.y + b.velY * dt
-      )
+return BulletLogic
 
-      -- Count down lifetime; remove the bullet when it expires.
-      b.lifetime = b.lifetime - dt
-      if b.lifetime <= 0 then
-          Core.CurrentScene:removeEntity(b.entityId)
-          return
-      end
+The collision check uses squared distances:
 
-      -- Check for collision with every asteroid.
-      local asteroids = Core.CurrentScene:getEntitiesWith({"Asteroid"})
-      for i = 1, #asteroids do
-          local aId   = asteroids[i]
-          local aData = Core.CurrentScene:getAttributesOf(aId)
-          if aData then
-              local aTf  = aData["Transform"]
-              local aAst = aData["Asteroid"]
-              local dx = tf.Position.x - aTf.Position.x
-              local dy = tf.Position.y - aTf.Position.y
-              if dx * dx + dy * dy < aAst.radius * aAst.radius then
-                  -- Hit! Destroy the asteroid and the bullet.
-                  Core.CurrentScene:removeEntity(aAst.entityId)
-                  Core.CurrentScene:removeEntity(b.entityId)
-                  return
-              end
-          end
-      end
-  end
+dx * dx + dy * dy < radius * radius
 
-  return BulletLogic
+That avoids a square root and gives the same answer as comparing the real
+distance to the radius. It is a tiny speed-up that you will see in almost every game engine.
 
-**About the collision check:**
-
-  dx*dx + dy*dy < radius*radius
-
-We compare the *squared* distance to the *squared* radius instead of
-computing a square root.  This gives the same result but is faster.
-(Pythagoras: distance² = dx² + dy²)
-
-Save the file and press **Next >**.]],
+Save and click Next.]],
         },
         {
-            title       = "Writing AsteroidLogic.lua",
+            title       = "Write AsteroidLogic.lua",
             force_state = "text_tab",
-            body        = [[Create a new file and save it as **Rules/AsteroidLogic.lua**:
+            body        = [[Create a new file and save it as AsteroidLogic.lua inside the Rules folder.
 
-  local AsteroidLogic = Rule {
-      categories = { "Transform", "Asteroid" },
-  }
+local AsteroidLogic = Rule {
+	categories = { "Transform", "Asteroid" },
+}
 
-  function AsteroidLogic:Update(_entityData)
-      local tf  = _entityData["Transform"]
-      local ast = _entityData["Asteroid"]
-      local dt  = Core.DeltaTime()
+function AsteroidLogic:Update(_entityData)
+	local tf = _entityData["Transform"]
+	local ast = _entityData["Asteroid"]
+	local dt = Core.DeltaTime()
+	tf.Position = tf.Position + ast.velocity * dt
 
-      -- Drift in a straight line.
-      tf.Position = Vector2(
-          tf.Position.x + ast.velX * dt,
-          tf.Position.y + ast.velY * dt
-      )
+local camW = Core.Camera:getCameraWidth()
+local scrn = IO.GetScreenSize()
+local halfW = camW / 2
+local halfH = halfW / (scrn.x / scrn.y)
+local m = ast.radius
 
-      -- Screen wrap (with margin so asteroids appear fully off-screen first).
-      local camW  = Core.Camera:getCameraWidth()
-      local scrn  = IO.GetScreenSize()
-      local halfW = camW / 2
-      local halfH = halfW / (scrn.x / scrn.y)
-      local m  = ast.radius
-      local px = tf.Position.x
-      local py = tf.Position.y
-      if px >  halfW + m then px = -halfW - m end
-      if px < -halfW - m then px =  halfW + m end
-      if py >  halfH + m then py = -halfH - m end
-      if py < -halfH - m then py =  halfH + m end
-      tf.Position = Vector2(px, py)
+local px, py = tf.Position.x, tf.Position.y
 
-      -- Collision with the player ship.
-      local ships = Core.CurrentScene:getEntitiesWith({"Ship"})
-      if #ships > 0 then
-          local sData = Core.CurrentScene:getAttributesOf(ships[1])
-          if sData then
-              local sTf = sData["Transform"]
-              local dx  = tf.Position.x - sTf.Position.x
-              local dy  = tf.Position.y - sTf.Position.y
-              local hitDist = ast.radius + 0.25   -- approximate ship size
-              if dx * dx + dy * dy < hitDist * hitDist then
-                  -- Ship hit – reset to centre and destroy the asteroid.
-                  sTf.Position = Vector2(0, 0)
-                  Core.CurrentScene:removeEntity(ast.entityId)
-                  return
-              end
-          end
-      end
-  end
+if px > halfW + m then px = -halfW - m end
+if px < -halfW - m then px = halfW + m end
 
-  return AsteroidLogic
+if py > halfH + m then py = -halfH - m end
+if py < -halfH - m then py = halfH + m end
 
-When an asteroid hits the ship, the ship resets to the centre and
-the asteroid is destroyed.  Simple, but it works!
+tf.Position = Vector2(px, py)
+local ships = Core.CurrentScene:getEntitiesWith({"Ship"})
 
-Save the file and press **Next >**.]],
+if #ships > 0 then
+	local sData = Core.CurrentScene:getAttributesOf(ships[1])
+	if sData then
+		local sTf = sData["Transform"]
+		local dx = tf.Position.x - sTf.Position.x
+		local dy = tf.Position.y - sTf.Position.y
+		local hit = ast.radius + 0.25
+		
+		if dx * dx + dy * dy < hit * hit then
+			sTf.Position = Vector2(0, 0)
+			Core.CurrentScene:removeEntity(ast.entityId)
+			return
+		end
+	end
+end
+
+end
+
+return AsteroidLogic
+
+Two jobs:
+- Drift in a straight line, wrapping at the screen edge.
+  The extra m margin lets the asteroid leave the screen fully
+  before reappearing on the other side, which looks nicer than popping.
+
+- Check whether this asteroid has touched the ship. If so, snap the ship
+  back to the centre and remove the asteroid.
+
+Save and click Next.]],
         },
-        {
-            title       = "Writing AsteroidSpawner.lua",
+)"
+            R"(        {
+            title       = "Write AsteroidSpawner.lua",
             force_state = "text_tab",
-            body        = [[Create the last rule file and save it as **Rules/AsteroidSpawner.lua**:
+            body        = [[Create the last rule file and save it as AsteroidSpawner.lua inside the Rules folder.
 
-  local PI = 3.14159265358979
+local AsteroidSpawner = Rule {
+	categories = { "Transform", "Spawner" },
+}
 
-  local function sin(x)
-      x = x % (2 * PI)
-      if x > PI then x = x - 2 * PI end
-      local x2 = x * x
-      return x * (1 - x2 / 6 * (1 - x2 / 20 * (1 - x2 / 42)))
-  end
-  local function cos(x) return sin(x + PI / 2) end
+function AsteroidSpawner:Update(_entityData)
+	local sp = _entityData["Spawner"]
+	local dt = Core.DeltaTime()
+	sp.spawnTimer = sp.spawnTimer - dt
+	
+	if sp.spawnTimer > 0 then return end
+		sp.spawnTimer = sp.spawnInterval
+		local existing = Core.CurrentScene:getEntitiesWith({"Asteroid"})
+		
+		if #existing >= sp.maxAsteroids then return end
+			local camW = Core.Camera:getCameraWidth()
+			local scrn = IO.GetScreenSize()
+			local halfW = camW / 2
+			local halfH = halfW / (scrn.x / scrn.y)
+			local side = random()
+			local px, py
+			
+			if side < 0.25 then
+				px = randomRange(-halfW, halfW); py = halfH + 1
+			elseif side < 0.5 then
+				px = randomRange(-halfW, halfW); py = -halfH - 1
+			elseif side < 0.75 then
+				px = -halfW - 1; py = Math.RandomRange(-halfH, halfH)
+			else
+				px = halfW + 1; py = Math.RandomRange(-halfH, halfH)
+			end
+			
+			local len = Vector2(toCX, toCY):Length()
+			local toCX = -px / len
+			local toCY = -py / len
+			
+			local spread = Math.RandomRange(-0.7, 0.7)
+			local cs = Math.Cos(spread)
+			local sn = sin(spread)
+			
+			local speed = Math.RandomRange(1.5, 3.5)
+			
+			local radius = Math.RandomRange(0.5, 1.5)
+			local aId = Core.CurrentScene:addEntity()
+			Core.CurrentScene:addToCategory(aId, "Asteroid")
+			local aData = Core.CurrentScene:getAttributesOf(aId)
+			
+			local aTf = aData["Transform"]
+			local aAst = aData["Asteroid"]
+			aTf.Position = Vector2(px, py)
+			aTf.Scale = Vector2(radius, radius)
+			aAst.velocity = Vector2((toCX * cs - toCY * sn) * speed,
+								    (toCX * sn + toCY * cs) * speed
+									)
+			aAst.radius = radius
+			aAst.entityId = aId
+		end
+		
+return AsteroidSpawner
 
-  -- A simple number generator (engine does not provide math.random).
-  local _seed = 42
-  local function random()
-      _seed = (_seed * 16807) % 2147483647
-      return _seed / 2147483647
-  end
-  local function randomRange(lo, hi)
-      return lo + random() * (hi - lo)
-  end
-
-  local AsteroidSpawner = Rule {
-      categories = { "Transform", "Spawner" },
-  }
-
-  function AsteroidSpawner:Update(_entityData)
-      local sp = _entityData["Spawner"]
-      local dt = Core.DeltaTime()
-
-      sp.spawnTimer = sp.spawnTimer - dt
-      if sp.spawnTimer > 0 then return end
-      sp.spawnTimer = sp.spawnInterval
-
-      local existing = Core.CurrentScene:getEntitiesWith({"Asteroid"})
-      if #existing >= sp.maxAsteroids then return end
-
-      local camW  = Core.Camera:getCameraWidth()
-      local scrn  = IO.GetScreenSize()
-      local halfW = camW / 2
-      local halfH = halfW / (scrn.x / scrn.y)
-
-      -- Pick a random edge and a random position along it.
-      local side = random()
-      local px, py
-      if side < 0.25 then
-          px = randomRange(-halfW, halfW);  py =  halfH + 1
-      elseif side < 0.5 then
-          px = randomRange(-halfW, halfW);  py = -halfH - 1
-      elseif side < 0.75 then
-          px = -halfW - 1;  py = randomRange(-halfH, halfH)
-      else
-          px =  halfW + 1;  py = randomRange(-halfH, halfH)
-      end
-
-      -- Aim roughly toward the centre with a random spread.
-      local toCX = -px;  local toCY = -py
-      local len  = Vector2(toCX, toCY):Length()
-      toCX = toCX / len;  toCY = toCY / len
-      local spread = randomRange(-0.7, 0.7)
-      local cs = cos(spread);  local sn = sin(spread)
-      local speed  = randomRange(1.5, 3.5)
-      local vx = (toCX * cs - toCY * sn) * speed
-      local vy = (toCX * sn + toCY * cs) * speed
-      local radius = randomRange(0.5, 1.5)
-
-      local aId = Core.CurrentScene:addEntity()
-      Core.CurrentScene:addToCategory(aId, "Asteroid")
-      local aData = Core.CurrentScene:getAttributesOf(aId)
-      local aTf   = aData["Transform"]
-      local aAst  = aData["Asteroid"]
-      aTf.Position  = Vector2(px, py)
-      aTf.Scale     = Vector2(radius, radius)
-      aAst.velX     = vx
-      aAst.velY     = vy
-      aAst.radius   = radius
-      aAst.entityId = aId
-  end
-
-  return AsteroidSpawner
-
-**About the random number generator:**
-
-The "Lehmer" generator multiplies a seed by a large prime and uses
-the remainder.  It is not cryptographically secure, but perfectly
-fine for games.  Changing `local _seed = 42` to any other number
-gives a completely different sequence of asteroids.
-
-All the code is written!  Save and press **Next >**.]],
+Save and click Next.]],
         },
         {
-            title       = "Opening the Categories Panel",
+            title       = "Load the Categories",
             force_state = "scene_tab",
             event       = "click_panel",
             highlight   = "Categories",
-            body        = [[Switch back to the **Scene** tab and find the **Categories** panel.
+            body        = [[Switch back to the "Scene" tab and find the "Categories" panel. Click on it to open it. The tutorial will advance once you do. If you cannot find the panel, look along the edges of the window. Panels can be rearranged, so its exact position depends on your layout.
 
-Click it to open it.  The tutorial advances automatically once you
-do so.
-
-(If you are not sure where it is, look at the bottom and sides of
-the window.  Panel positions can be rearranged.)]],
+Once you have it open, you will see a list which is currently empty. That is where your category files will appear.]],
         },
         {
-            title       = "Loading Your Categories",
+            title       = "Attach Ship to the Ship Entity",
             force_state = "scene_tab",
-            body        = [[Inside the Categories panel, load all four category files:
+            body        = [[Now we tell the engine that the entity you created earlier is a ship.
+1. Click the ship entity in the "Entity List" to select it.
+2. In the "Categories" panel, click the Ship category.
+3. Click "Assign to Entity".
 
-  1. Click the **Load** button.
-  2. Navigate to your project's **Categories/** folder.
-  3. Select **Ship.lua** and click Open.
-  4. Repeat for **Bullet.lua**, **Asteroid.lua**, and **Spawner.lua**.
+Look at "Entity Properties". The Ship fields (speed, rotSpeed, shootTimer, shootInterval)
+should now appear next to the Transform. The entity has both categories attached. Take a
+moment to look at the values. These are the defaults you wrote in Ship.lua. You can edit
+any of them right here, without touching the script.
 
-After loading, all four should appear in the categories list.
-
-**What is happening?**
-
-The engine reads each Lua file, builds the category definition, and
-makes it available to attach to entities.  Until you load a category
-file, the engine does not know it exists.
-
-Press **Next >** when all four are loaded.]],
-        },
-        {
-            title       = "Attach the Ship Category",
-            force_state = "scene_tab",
-            body        = [[Now attach the **Ship** category to your ship entity.
-
-  1. Click the ship entity in the **Entity List** to select it.
-  2. In the Categories panel, click **Ship**.
-  3. Click **Assign to Entity**.
-
-You should now see the Ship fields (speed, rotSpeed, etc.) appear
-inside **Entity Properties** alongside the Transform.
-
-**Try it:** Change `speed` to 10.0 and see the difference when you
-play later.  Change it back to 5.0 afterwards if you prefer.
-
-Press **Next >** after the assignment.]],
+Click Next.]],
         },
         {
             title       = "Create the Spawner Entity",
             force_state = "scene_tab",
-            body        = [[The AsteroidSpawner rule needs an entity to run on.  Let's create
-an invisible one.
+            body        = [[The spawner rule needs an entity to live on. Let's create one.
+1. Right-click the viewport and choose "Create Entity".
+2. Select the new entity in the "Entity List".
+3. Double-click its name and rename it to Spawner.
+4. In "Entity Properties", set its Scale to (0, 0). The entity becomes invisible and unable to collide.
+5. In the "Categories" panel, click Spawner and "Assign to Entity".
 
-  1. **Right-click** the viewport → **Create Entity**.
-  2. Select the new entity in the Entity List.
-  3. Double-click its name and rename it "Spawner".
-  4. In Entity Properties set its Scale to **(0, 0)** so it is invisible.
-  5. In the Categories panel, select **Spawner** and click
-     **Assign to Entity**.
+Why an invisible entity? The AsteroidSpawner rule only runs on entities that
+have the Spawner category, but those entities do not need to be visible. By giving 
+it zero scale we get a hidden container whose only job is to carry the spawner data
+and schedule new asteroids.
 
-**Why an invisible entity?**
-
-The AsteroidSpawner rule only runs on entities that have the Spawner
-category.  By making its Scale (0, 0) it takes up no visible space
-and cannot be collided with – it is just a container for the
-spawner data.)"
-
-R"(Press * *Next >**when done.]],
+Click Next.]],
         },
         {
-            title       = "Opening the Rules Panel",
+            title       = "Load the Rules",
             force_state = "scene_tab",
             event       = "click_panel",
             highlight   = "Rules",
-            body        = [[Find the **Rules** panel and click it to open it.
-
-The tutorial advances automatically when you click the panel.
-
-Rules is where you load all the behaviour scripts you wrote.
-Once loaded, the engine automatically applies each rule to every
-entity that has the matching categories.]],
+            body        = [[Find the "Rules" panel and click it to open. The tutorial
+advances once you do. The Rules panel works just like the Categories panel
+where you load the script files, and the engine starts applying each rule to
+every entity with matching categories on every frame.]],
         },
         {
-            title       = "Loading Your Rules",
+            title       = "What the Rules do",
             force_state = "scene_tab",
-            body        = [[Inside the Rules panel, load all four rule files:
-
-  1. Click **Load**.
-  2. Navigate to your project's **Rules/** folder.
-  3. Load **ShipControl.lua**.
-  4. Repeat for **BulletLogic.lua**, **AsteroidLogic.lua**,
-     and **AsteroidSpawner.lua**.
-
-Once all four appear in the rules list, the engine will run them
-every frame.
-
-**A quick recap of what each rule does:**
-
-  ShipControl     – input, thrust, shooting, screen wrap for the ship.
-  BulletLogic     – moves bullets, expires them, detects asteroid hits.
-  AsteroidLogic   – moves asteroids, wraps them, detects ship hit.
-  AsteroidSpawner – creates new asteroids at random edges over time.
-
-Press **Next >** when all four are loaded.]],
+            body        = [[A quick reminder of what each one does:
+- ShipControl reads input and drives the ship.
+- BulletLogic moves bullets, expires them, hits asteroids.
+- AsteroidLogic moves asteroids and detects ship collisions.
+- AsteroidSpawner creates new asteroids over time.]],
         },
         {
-            title       = "Play Your Game!",
+            title       = "Play Your Game",
             force_state = "scene_tab",
-            body        = [[Everything is in place.  Let's play!
+            body        = [[Everything is in place. Press the "Play" button in the toolbar,
+or use "Ctrl+P". Controls:
 
-Press the **Play** button in the toolbar (or **Ctrl+P**).
+- "A" / "D" rotate left / right
+- "W" thrust forward
+- "Space" fire
 
-Controls:
+Asteroids will start appearing after a couple of seconds and drift toward
+the middle of the screen. Shoot them before they reach you. If one hits the ship,
+you respawn in the centre and the asteroid disappears. If something looks wrong:
+1. Press "Stop" to leave play mode.
+2. Click the "Console" tab. Lua errors appear there with the filename and line number where the problem was found.
+3. Switch back to the "Text Editor", fix the issue, save, and press "Play" again.
 
-  A / D    – rotate left / right
-  W        – thrust forward
-  Space    – fire bullets
+This cycle - run, read the error, fix, repeat - is called debugging.
+Every programmer does it, including the ones who have been at it for decades.
+It is not a sign that you are doing it wrong; it is just how programs are written.
 
-Asteroids will start appearing after a couple of seconds and drift
-toward the centre.  Shoot them before they reach you!
-
-**If something goes wrong:**
-
-  1. Press **Stop** to end the game.
-  2. Click the **Console** tab – it shows any Lua error messages.
-  3. The error will say which file and line number the problem is on.
-  4. Switch to the **Text Editor**, fix the issue, save, and try again.
-
-This cycle – run, read the error, fix, repeat – is called
-**debugging**, and it is a completely normal part of programming.
-Every developer does it.
-
-Press **Next >** when you are done playing.]],
+Click Next when you are done playing.]],
         },
         {
-            title       = "Experiment: Tweak the Values",
+            title       = "Experiment, Then a Recap",
             force_state = "scene_tab",
-            body        = [[Before we finish, try experimenting with the values.
+            body        = [[Before we close, change some numbers and see what happens.
+Tweaking values until a game feels right is one of the most important
+skills in game development - professional teams spend weeks on it.
 
-This is one of the most important skills in game development.
-Change a number, test it, decide if it feels better or worse.
-Professional developers do this constantly.
+Some experiments to try:
+- Select the ship. Change Ship.speed from 5.0 to 15.0. Play.
+- Change Ship.rotSpeed from 200.0 to 50.0. Easier or harder?
+- In the Spawner entity, drop spawnInterval to 0.5 for chaos.
+- Bump maxAsteroids from 12 to 30.
+- In Categories/Ship.lua, change shootInterval to 0.05. Machine gun mode.
 
-**Suggested experiments:**
+You do not have to reload anything after editing a script - just save, press "Stop", and press "Play" again.
 
-  1. Select the ship entity.  In Entity Properties, change
-     **Ship → speed** from 5.0 to 15.0.  Play and feel the difference.
+Concepts you used in this tutorial:
+- Variables and tables, the building blocks of data.
+- Functions, including the Update function the engine calls on every frame.
+- Conditions (if / else) that decide what to do.
+- Loops (for) that step through every asteroid.
+- Delta time, keeping movement frame-rate independent.
+- Entities, categories, and rules — this engine's ECR model.
 
-  2. Change **Ship → rotSpeed** from 200.0 to 50.0.
-     Is the game harder or easier to control?
+Where to go next:
+- Add a score by creating a GameState category and updating it when a bullet destroys an asteroid.
+- Split a large asteroid into two smaller ones when hit.
+- Give the ship three lives and a game-over state.
+- Make asteroids gradually speed up to ramp up difficulty.
+- Give the ship momentum instead of instant stop-and-go movement.
 
-  3. Change **Spawner → spawnInterval** from 2.0 to 0.5 to make
-     things hectic.
-
-  4. Change **Spawner → maxAsteroids** from 12 to 30 for chaos.
-
-  5. Open **Rules/ShipControl.lua**, find `bBul.speed` and try
-     increasing the bullet speed.  How does it feel?
-
-  6. In **Categories/Ship.lua**, change `shootInterval` to 0.05.
-     Now you have a machine gun!
-
-After editing a script you do not need to reload – just save,
-stop the game, and press Play again.
-
-Press **Next >** when you are done experimenting.]],
-        },
-        {
-            title       = "Congratulations!",
-            force_state = "scene_tab",
-            body        = [[You just built a complete Asteroids game from scratch – and learned
-the fundamentals of programming along the way!
-
-**Programming concepts you have used:**
-
-  Variables   – named containers that hold data.
-  Functions   – named groups of reusable instructions.
-  Conditions  – if/else decisions that change behaviour.
-  Loops       – the `for` loop that checks every asteroid.
-  Delta time  – keeping movement speed frame-rate independent.
-
-**Editor skills you have practised:**
-
-  Creating and configuring entities.
-  Writing and loading custom Categories.
-  Writing and loading Rules.
-  Reading error messages from the Console.
-  Tuning values to change how the game feels.
-
-**Ideas for extending the game:**
-
-  Add a score – create a GameState category and display it in a
-  Rule's Draw function.
-
-  Split large asteroids into two smaller ones when hit.
-
-  Add lives – give the player three chances before game over.
-
-  Make asteroids gradually speed up to increase difficulty.
-
-  Give the ship momentum instead of instant stop-and-go movement.
-
-The best way to keep learning is to keep building.
-Pick one of the ideas above and try to implement it yourself!]],
+You built a game. Pick one idea above and build a little more.]],
         },
 
     }
-    }
-            )"
+}
+)"
         }
     };
 };
