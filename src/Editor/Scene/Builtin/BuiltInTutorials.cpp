@@ -381,7 +381,23 @@ Position (0, 0) centre of the screen
 Rotation 0 pointing upward
 Scale (0.3, 0.5) a small, tall rectangle
 
-You can also double-click the entity's name to rename it to Ship. The tutorial advances automatically once you have an entity selected.]],
+You can also double-click the entity's name to rename it to Ship.
+
+Notice that nothing actually appears in the viewport yet. The editor draws a thin
+outline around every entity so you can see where it sits, but that outline is only a
+helper. The engine will not draw a real, visible object unless the entity has a Texture
+category attached. A Texture tells the engine which image to paint onto the entity; with
+no Texture, there is nothing to draw.
+
+Let's give the ship something to show:
+1. With the ship selected, scroll to the bottom of the "Entity Properties" panel and
+   click the "Add to Category" button.
+2. Pick "Texture" from the list that appears. A Texture section is added to Entity
+   Properties, with a texturePath field.
+3. Set texturePath to an image: click the field to open the file picker, or drag an
+   image from the Asset Browser onto it. The ship now appears in the viewport.
+
+The tutorial advances automatically once you have an entity selected.]],
         },
 )"
             R"(        {
